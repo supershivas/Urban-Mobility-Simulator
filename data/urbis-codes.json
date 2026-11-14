@@ -1,0 +1,90 @@
+{
+  "source": "UrbIS – Réseaux de transport, spécifications de produit (Network_TechSpec_FR20240408.pdf) et UrbIS – Occupation du sol (LandCover_TechSpec_FR20240401.pdf), Paradigm. Libellés français recopiés ; libellés anglais traduits pour le jeu.",
+  "specifications": [
+    "https://urbisdownload.datastore.brussels/UrbIS/TechSpec/Network_TechSpec_FR20240408.pdf",
+    "https://urbisdownload.datastore.brussels/UrbIS/TechSpec/LandCover_TechSpec_FR20240401.pdf"
+  ],
+  "axeType": {
+    "S": { "fr": "Tronçon de rue", "en": "Street segment" },
+    "I": { "fr": "Carrefour", "en": "Junction" },
+    "T": { "fr": "Tunnel routier", "en": "Road tunnel" },
+    "PT": { "fr": "Tunnel piéton", "en": "Pedestrian tunnel" },
+    "B": { "fr": "Pont/Viaduc routier", "en": "Road bridge/viaduct" },
+    "PB": { "fr": "Pont piéton", "en": "Pedestrian bridge" },
+    "A": { "fr": "Rampe d'accès", "en": "Access ramp" },
+    "P": { "fr": "Place", "en": "Square" },
+    "G": { "fr": "Galerie", "en": "Gallery" },
+    "W": { "fr": "Chemin/ruelle/venelle", "en": "Path/lane/alley" },
+    "M": { "fr": "Terre-plein/berme/rond-point", "en": "Median/verge/roundabout" },
+    "C": { "fr": "Site propre aménagé pour les transports en commun", "en": "Dedicated public transport right-of-way" },
+    "AC": { "fr": "Rampe d'accès pour les trams / bus", "en": "Tram/bus access ramp" },
+    "IC": { "fr": "Carrefour partagé avec des voies de trams", "en": "Junction shared with tram tracks" },
+    "K": { "fr": "Zone de parking en voirie", "en": "On-street parking area" },
+    "SC": { "fr": "Tronçon partagé avec des voies de tram", "en": "Segment shared with tram tracks" },
+    "IL": { "fr": "Carrefour/passage à niveau", "en": "Level crossing" },
+    "O": { "fr": "Zone non praticable pour la circulation motorisée", "en": "Area closed to motor traffic" },
+    "MS": { "fr": "Station de métro", "en": "Metro station" },
+    "RS": { "fr": "Gare de chemin de fer", "en": "Railway station" },
+    "RT": { "fr": "Tunnels du chemin de fer", "en": "Railway tunnels" },
+    "MT": { "fr": "Tunnels du métro", "en": "Metro tunnels" }
+  },
+  "hierarchie": {
+    "H": { "fr": "Autoroute", "en": "Motorway" },
+    "MER": { "fr": "Voirie métropolitaine", "en": "Metropolitan road" },
+    "MAR": { "fr": "Voirie principale", "en": "Main road" },
+    "IDR": { "fr": "Voie interquartier", "en": "Inter-district road" },
+    "DC": { "fr": "Collecteur de quartier", "en": "District collector" },
+    "DR": { "fr": "Voirie de quartier", "en": "Local street" },
+    "UN": { "fr": "Inconnu", "en": "Unknown" }
+  },
+  "noeudType": {
+    "A": { "fr": "Rampe d'accès", "en": "Access ramp" },
+    "DE": { "fr": "Cul de sac", "en": "Dead end" },
+    "TE": { "fr": "Entrée/sortie de tunnel", "en": "Tunnel entrance/exit" },
+    "I": { "fr": "Carrefour", "en": "Junction" },
+    "O": { "fr": "Hors région", "en": "Outside the Region" }
+  },
+  "surfaceType": {
+    "S": { "fr": "Tronçon de rue", "en": "Carriageway" },
+    "A": { "fr": "Rampe d'accès", "en": "Access ramp" },
+    "AC": { "fr": "Rampe d'accès pour les trams / bus", "en": "Tram/bus access ramp" },
+    "B": { "fr": "Pont / Viaduc routier", "en": "Road bridge/viaduct" },
+    "C": { "fr": "Site propre aménagé pour les transports en commun", "en": "Dedicated public transport right-of-way" },
+    "G": { "fr": "Galerie", "en": "Gallery" },
+    "I": { "fr": "Intersection", "en": "Intersection" },
+    "IC": { "fr": "Carrefour partagé avec des voies de trams", "en": "Junction shared with tram tracks" },
+    "IL": { "fr": "Carrefour / passage à niveau", "en": "Level crossing" },
+    "K": { "fr": "Zone de parking en voirie", "en": "On-street parking area" },
+    "M": { "fr": "Terre-plein/berme/rond-point", "en": "Median/verge/roundabout" },
+    "MS": { "fr": "Station de métro", "en": "Metro station" },
+    "MT": { "fr": "Tunnels du métro", "en": "Metro tunnels" },
+    "P": { "fr": "Place", "en": "Square" },
+    "RS": { "fr": "Gare de chemin de fer", "en": "Railway station" },
+    "RT": { "fr": "Tunnels du chemin de fer", "en": "Railway tunnels" },
+    "SC": { "fr": "Tronçon partagé avec des voies de tram", "en": "Carriageway shared with tram tracks" },
+    "SW": { "fr": "Trottoir", "en": "Sidewalk" }
+  },
+  "administrateur": {
+    "REGION_VL": { "fr": "Région flamande", "en": "Flemish Region" },
+    "MUN_RE_VL": { "fr": "Voirie communale gérée par la Région flamande", "en": "Municipal road managed by the Flemish Region" },
+    "MUN_RBC": { "fr": "Commune (Région de Bruxelles-Capitale)", "en": "Municipality (Brussels-Capital Region)" },
+    "REGION_RBC": { "fr": "Région de Bruxelles-Capitale", "en": "Brussels-Capital Region" },
+    "MUN_RE_RBC": { "fr": "Voirie communale gérée par la Région de Bruxelles-Capitale", "en": "Municipal road managed by the Brussels-Capital Region" }
+  },
+  "railType": {
+    "RW": { "fr": "Rail de chemin de fer", "en": "Railway track" },
+    "TW": { "fr": "Rail de tram", "en": "Tram track" }
+  },
+  "tunnelType": {
+    "RAT": { "fr": "Tunnel de chemin de fer", "en": "Railway tunnel" },
+    "MT": { "fr": "Tunnel de métro", "en": "Metro tunnel" },
+    "ROT": { "fr": "Tunnel routier", "en": "Road tunnel" },
+    "PT": { "fr": "Tunnel piéton", "en": "Pedestrian tunnel" }
+  },
+  "pontType": {
+    "RAB": { "fr": "Pont de chemin de fer", "en": "Railway bridge" },
+    "MB": { "fr": "Pont de métro", "en": "Metro bridge" },
+    "ROB": { "fr": "Pont routier", "en": "Road bridge" },
+    "PB": { "fr": "Pont piéton", "en": "Pedestrian bridge" }
+  }
+}

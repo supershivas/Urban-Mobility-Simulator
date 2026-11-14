@@ -10,5 +10,14 @@
         ]
       }
     ]
+  },
+  "permissions": {
+    "deny": [
+      "Read(vendor/**)",
+      "Read(data/original/**)",
+      "Read(data/processed/*.geojson)",
+      "Read(node_modules/**)",
+      "Read(captures/**)"
+    ]
   }
 }

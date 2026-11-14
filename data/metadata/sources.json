@@ -1,0 +1,78 @@
+{
+  "description": "Registre des sources (pitch §7.6). Les dates de récupération, empreintes et nombres d'objets de chaque fichier sont dans data/original/manifest.json.",
+  "sources": [
+    {
+      "id": "urbis",
+      "organisme": "Paradigm (ex-CIRB/CIBG), Région de Bruxelles-Capitale",
+      "nom": "UrbIS vector — Réseaux de transport (StreetAxes, StreetNodes, TramNetwork) et Occupation du sol (StreetSurfaces, Bridges, Tunnels, Buildings), Points d'intérêt (stations de métro)",
+      "urlFiche": "https://be.brussels/fr/propos-de-la-region/les-donnees-urbis",
+      "urlMetadonnees": "https://geobru-geonetwork.irisnet.be/geonetwork/srv/eng/csw?service=CSW&version=2.0.2&request=GetRecordById&outputSchema=http://www.isotc211.org/2005/gmd&elementSetName=full&id=af847c40-848b-11ee-9a1f-00090ffe0001",
+      "urlService": "https://geoservices-urbis.irisnet.be/geoserver/urbisvector/ows (WFS 2.0.0, GetFeature, outputFormat=application/json)",
+      "specifications": [
+        "https://urbisdownload.datastore.brussels/UrbIS/TechSpec/Network_TechSpec_FR20240408.pdf",
+        "https://urbisdownload.datastore.brussels/UrbIS/TechSpec/LandCover_TechSpec_FR20240401.pdf"
+      ],
+      "dateRecuperation": "2026-11-14",
+      "versionOuDatePublication": "Fiche Réseaux de transport : révision du 2026-11-06 (métadonnées ISO). Version du jeu non exposée par le WFS.",
+      "format": "GeoJSON rendu par GeoServer (membre crs = EPSG:31370) — fichiers *.wfs.json conservés tels quels dans data/original/urbis/",
+      "systemeCoordonnees": "EPSG:31370 (Belgian Lambert 72)",
+      "licence": "CC0 1.0 (domaine public) — indiqué par le service lui-même : « Creative Commons (CC-0) - no conditions for reuse, the data is in the public domain » (WFS GetCapabilities, ows:Fees)",
+      "attribution": "Non exigée par la licence ; citée par courtoisie : « UrbIS © Paradigm »",
+      "restrictions": "Aucune limitation d'accès public (ows:AccessConstraints). Usage commercial permis par CC0.",
+      "couches": {
+        "StreetAxes": ["INSPIRE_ID", "TYPE", "HIERARCHY", "LVL", "STARTSN_ID", "ENDSN_ID", "STRNAMEFRE", "STRNAMEDUT", "SLOPE", "LENGTH"],
+        "StreetNodes": ["INSPIRE_ID", "TYPE", "LVL", "XL72", "YL72"],
+        "StreetSurfaces": ["INSPIRE_ID", "TYPE", "LVL"],
+        "Buildings": ["INSPIRE_ID"],
+        "Bridges": ["INSPIRE_ID", "TYPE", "LVL"],
+        "Tunnels": ["INSPIRE_ID", "TYPE", "LVL"],
+        "TramNetwork": ["INSPIRE_ID", "TYPE", "LVL"],
+        "PointsOfInterest": ["INSPIRE_ID", "TYPE", "NAMEFRE"]
+      },
+      "filtre": "Objets dont la géométrie touche l'emprise du corridor (CQL INTERSECTS), gardés entiers ; plus les nœuds cités par ces axes hors de l'emprise.",
+      "qualite": [
+        "Aucune largeur, aucun nombre de voies, aucun sens, aucune vitesse sur les axes.",
+        "Les couches StreetAxes_Underground et StreetNodes_Underground rendent en WFS les mêmes objets que StreetAxes et StreetNodes : non téléchargées, LVL distingue les niveaux.",
+        "120 axes ont des identifiants de nœud vides (« …/streetnode/ ») dans la source : affichés « Non renseigné (absent de la source) ».",
+        "Codes hors spécification rencontrés : HIERARCHY = T (1 axe), Tunnels TYPE = MS (12).",
+        "Bâtiments : emprise au sol seulement ; aucune hauteur dans cette couche.",
+        "Détail : data/metadata/quality-report.md."
+      ]
+    },
+    {
+      "id": "osm",
+      "organisme": "Fondation OpenStreetMap — contributeurs OpenStreetMap",
+      "nom": "Chemins highway=* (complément : sens, voies, vitesse)",
+      "urlFiche": "https://www.openstreetmap.org/copyright",
+      "urlService": "https://api.openstreetmap.org/api/0.6/map.json (tuiles de 0,01°, une requête par seconde)",
+      "dateRecuperation": "2026-11-14",
+      "versionOuDatePublication": "État de la base au 2026-11-14T10:03Z ; version et horodatage de chaque chemin conservés.",
+      "format": "JSON (extrait : chemins highway=* et géométrie de leurs nœuds, tags inchangés) — data/original/osm/highways.json",
+      "systemeCoordonnees": "EPSG:4326 (WGS84)",
+      "licence": "ODbL 1.0",
+      "attribution": "« © les contributeurs OpenStreetMap » — affichée dans la barre d'état du jeu et dans le README",
+      "restrictions": "Base dérivée soumise au partage à l'identique (ODbL) : data/processed/network.json contient des attributs OSM appariés.",
+      "couches": { "ways": ["highway", "oneway", "lanes", "maxspeed", "cycleway*", "busway*", "sidewalk*", "junction", "surface", "name"] },
+      "filtre": "Seuls les chemins de chaussée (motorway … living_street, service, pedestrian, busway) servent à l'appariement.",
+      "qualite": [
+        "Appariement géométrique, pas une correspondance d'identifiants : confiance « moyenne » au mieux, jamais « vérifiée ».",
+        "Candidats aux tags contradictoires : aucune valeur retenue (« ambiguë »).",
+        "Les tunnels et ponts (LVL ≠ 0) ne sont pas appariés."
+      ]
+    }
+  ],
+  "nonRecuperees": [
+    {
+      "id": "brussels-mobility",
+      "nom": "Brussels Mobility — routes régionales, comptages",
+      "url": "https://data.mobility.brussels/",
+      "raison": "Hôte data.mobility.brussels bloqué par le réseau de la session de développement (2026-11-14). Non bloquant pour la v0.1."
+    },
+    {
+      "id": "stib-gtfs",
+      "nom": "STIB-MIVB GTFS",
+      "url": "https://data.belgianmobility.io/en/data.html",
+      "raison": "Prévu pour les versions suivantes (pitch §7.4)."
+    }
+  ]
+}

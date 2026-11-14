@@ -2,7 +2,7 @@
   "name": "urban-mobility-simulator",
   "private": true,
   "type": "module",
-  "description": "npm sert uniquement à récupérer les dépendances (copiées dans vendor/) et à lancer Vitest. Pas de bundler.",
+  "description": "npm sert uniquement à récupérer les dépendances (copiées dans vendor/) et à lancer Vitest. Vite n'est là que parce que Vitest en dépend : pas de bundler, le jeu n'est jamais construit.",
   "scripts": {
     "vendor": "node outils/vendor.mjs",
     "donnees": "node outils/donnees/construire.mjs",
@@ -14,6 +14,7 @@
   },
   "devDependencies": {
     "@turf/buffer": "7.4.0",
-    "vitest": "5.0.5"
+    "vitest": "5.0.5",
+    "vite": "8.3.4"
   }
 }

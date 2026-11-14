@@ -2,9 +2,11 @@
 
 > Jeu de conception urbaine sur le corridor réel **Schuman — Roodebeek** (Bruxelles) : redistribuer l'espace de la rue entre piétons, vélos, transports publics et voitures, dans une largeur qui ne s'agrandit pas.
 
-**Statut :** cadrage — prototype 0.1 en préparation\
+**Statut :** prototype 0.1.0 — carte 2D du corridor, sélection et inspecteur (à valider)\
 **Langues :** français, anglais\
 **Cible :** navigateur de bureau (porte ouverte vers Steam)
+
+**Jouer :** https://supershivas.github.io/urban-mobility-simulator/ · **Aperçu téléphone :** https://supershivas.github.io/urban-mobility-simulator/apercu.html
 
 ## Le principe
 
@@ -43,15 +45,35 @@ npm test
 
 Puis servir le dossier avec n'importe quel serveur statique (le jeu n'a pas de bundler) et ouvrir `index.html`. Aucun service distant n'est nécessaire au démarrage.
 
+```bash
+python3 -m http.server 8000
+```
+
+`vendor/` et `data/` sont commités : le jeu se lance sans `npm install`. npm ne sert qu'à mettre à jour `vendor/` et à lancer les tests.
+
+Reconstruire les données (le téléchargement est la seule étape qui touche le réseau) :
+
+```bash
+node outils/donnees/telecharger.mjs
+```
+
+```bash
+npm run donnees
+```
+
 ## Technique
 
 - Modules ES sans bundler, structure [game-system](https://github.com/supershivas/game-system).
 - npm sert uniquement à récupérer les dépendances (copiées dans `vendor/`) et à lancer Vitest.
-- MapLibre GL JS (2D), three.js (3D, à partir de 0.2), proj4js, Turf.js.
+- MapLibre GL JS 6.16.0 (2D), proj4js 2.22.0, copiés dans `vendor/` ; three.js à partir de 0.2 ; Turf (`@turf/buffer`) seulement dans le pipeline de données.
 - Travail métrique en EPSG:31370 (Lambert 72), affichage en GeoJSON WGS84.
 
 ## Données et licences
 
-Sources prévues : UrbIS / Datastore Brussels, Brussels Mobility, OpenStreetMap, STIB-MIVB (GTFS). Le détail (URL, date, licence, attribution) sera consigné dans `data/metadata/sources.json`.
+Le détail (URL, date, format, licence, attribution, champs, qualité) est dans [`data/metadata/sources.json`](data/metadata/sources.json), le contrôle des données dans [`data/metadata/quality-report.md`](data/metadata/quality-report.md).
+
+- **UrbIS** (Paradigm, Région de Bruxelles-Capitale) : axes, nœuds, surfaces de voirie, bâtiments, ponts, tunnels, rails, stations — licence **CC0**. « UrbIS © Paradigm ».
+- **OpenStreetMap** : complément (sens, voies, vitesse), par appariement géométrique.
+- Prévues : Brussels Mobility, STIB-MIVB (GTFS).
 
 Données OpenStreetMap © les contributeurs OpenStreetMap, sous licence [ODbL](https://www.openstreetmap.org/copyright).

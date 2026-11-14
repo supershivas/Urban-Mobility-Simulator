@@ -1,7 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
-  <!-- À redessiner pour le jeu : lisible à 16 px, dans la palette du jeu -->
-  <rect width="16" height="16" rx="3" fill="#14182e"/>
-  <path fill="#e9ecf5" d="M5 3h6v1h1v4h-1v1H5V8H4V4h1z"/>
-  <path fill="#14182e" d="M6 5h1v1H6zM9 5h1v1H9z"/>
-  <path fill="#e0573e" d="M5 9h6v2H5zM5 11h1v2H5zM10 11h1v2h-1z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+  <!-- Un carrefour vu de dessus : deux rues blanches entre des îlots bâtis, un tronçon choisi en vermillon -->
+  <rect width="16" height="16" rx="3" fill="#F2EFE8"/>
+  <rect x="1" y="1" width="5" height="5" fill="#D3CBBE"/>
+  <rect x="10" y="1" width="5" height="5" fill="#D3CBBE"/>
+  <rect x="1" y="10" width="5" height="5" fill="#D3CBBE"/>
+  <rect x="10" y="10" width="5" height="5" fill="#D3CBBE"/>
+  <path d="M0 8h16M8 0v16" stroke="#22262B" stroke-width="2"/>
+  <path d="M8 8h8" stroke="#D9442B" stroke-width="3"/>
+  <circle cx="8" cy="8" r="1.6" fill="#2E5A88"/>
 </svg>

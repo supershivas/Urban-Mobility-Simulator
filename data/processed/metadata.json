@@ -1,0 +1,52 @@
+{
+  "construitLe": "2026-11-14T10:01:19.919Z",
+  "emprise": {
+    "tamponMetres": 600,
+    "stations": [
+      "STATION SCHUMAN",
+      "STATION MERODE",
+      "STATION MONTGOMERY",
+      "STATION JOSEPHINE-CHARLOTTE",
+      "STATION GRIBAUMONT",
+      "STATION TOMBERG",
+      "STATION ROODEBEEK",
+      "STATION GEORGES HENRI"
+    ]
+  },
+  "comptes": {
+    "streetSegments": 1489,
+    "intersections": 1018,
+    "streets": 322,
+    "surfaces": 6100,
+    "buildings": 14478,
+    "infrastructure": 215
+  },
+  "topologie": {
+    "croisementsDenivele": 88,
+    "anomalies": {
+      "noeud-absent-source": 240,
+      "extremite-eloignee-du-noeud": 54,
+      "noeud-isole": 75,
+      "geometrie-dupliquee": 1,
+      "croisement-sans-noeud": 7
+    }
+  },
+  "osm": {
+    "extraitLe": "2026-11-14T10:03:01.264Z",
+    "chemins": 12597,
+    "cheminsChaussee": 3406,
+    "bilan": {
+      "moyenne": 1228,
+      "ambigue": 46,
+      "aucun": 215
+    }
+  },
+  "octets": {
+    "streets": 429760,
+    "intersections": 151762,
+    "surfaces": 4247286,
+    "buildings": 4609963,
+    "infrastructure": 237934,
+    "network": 1778383
+  }
+}

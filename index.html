@@ -2,77 +2,110 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<meta name="theme-color" content="#14182e">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F2EFE8">
 <title>Urban Mobility Simulator</title>
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="js/lib/game.css">
-<link rel="stylesheet" href="css/style.css">
+<meta property="og:title" content="Urban Mobility Simulator">
+<meta property="og:image" content="og.png">
+<link rel="stylesheet" href="vendor/maplibre-gl/maplibre-gl.css?v=0.1.0">
+<link rel="stylesheet" href="js/lib/game.css?v=0.1.0">
+<link rel="stylesheet" href="css/style.css?v=0.1.0">
 </head>
 <body>
-<div class="jeu-ecran" id="ecran">
-  <canvas class="jeu-canvas" id="canvas" aria-label="Urban Mobility Simulator"></canvas>
-
-  <!-- HUD : en DOM par-dessus le canvas, mêmes couleurs que lui -->
-  <div class="hud safe-top" id="hud" hidden>
-    <span class="hud-score" id="score">0</span>
-    <button class="icone" id="pause" aria-label="Pause">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>
+<div class="jeu-ecran app" id="ecran">
+  <header class="entete">
+    <a class="entete-nom" id="nom-jeu" href="./" data-i18n-aria="entete.retour-titre">Urban Mobility Simulator</a>
+    <span class="entete-corridor" data-i18n="entete.corridor"></span>
+    <span class="entete-version" id="entete-version"></span>
+    <button class="icone" id="ouvrir-menu" data-i18n-aria="pause.titre">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 4.3c.4-1.8 2.9-1.8 3.4 0a1.7 1.7 0 0 0 2.6 1.1c1.5-.9 3.3.8 2.4 2.4a1.7 1.7 0 0 0 1 2.5c1.8.5 1.8 3 0 3.4a1.7 1.7 0 0 0-1 2.6c.9 1.5-.9 3.3-2.4 2.4a1.7 1.7 0 0 0-2.6 1c-.5 1.8-3 1.8-3.4 0a1.7 1.7 0 0 0-2.5-1c-1.6.9-3.3-.9-2.4-2.4a1.7 1.7 0 0 0-1.1-2.6c-1.8-.4-1.8-2.9 0-3.4a1.7 1.7 0 0 0 1.1-2.5c-.9-1.6.8-3.3 2.4-2.4 1 .6 2.3.1 2.5-1.1z"/><circle cx="12" cy="12" r="3"/></svg>
     </button>
-  </div>
+  </header>
+
+  <aside class="outils" id="outils">
+    <h2 data-i18n="outils.titre"></h2>
+    <div class="couches" id="couches"></div>
+    <button class="bouton" id="recentrer" data-i18n="outils.recentrer"></button>
+    <p class="aide" data-i18n="outils.aide"></p>
+  </aside>
+
+  <main class="carte-zone">
+    <div class="carte" id="carte" role="application" data-i18n-aria="carte.libelle"></div>
+    <p class="chargement" id="chargement" data-i18n="chargement"></p>
+  </main>
+
+  <aside class="inspecteur" id="inspecteur" aria-live="polite">
+    <div class="inspecteur-tete">
+      <h2 data-i18n="inspecteur.titre"></h2>
+      <button class="icone" id="deselectionner" data-i18n-aria="inspecteur.fermer" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div id="inspecteur-corps"><p class="vide" data-i18n="inspecteur.vide"></p></div>
+  </aside>
+
+  <footer class="statut" id="statut">
+    <span data-i18n="statut.sources"></span>
+    <span data-i18n="statut.projection"></span>
+    <span id="statut-emprise"></span>
+    <span id="statut-donnees"></span>
+    <a href="data/metadata/quality-report.md" data-i18n="statut.rapport"></a>
+  </footer>
 
   <!-- Écran titre : pas de sous-titre (section 3) -->
   <section class="titre" id="titre">
     <h1>Urban Mobility Simulator</h1>
     <nav class="titre-menu">
-      <button class="bouton" id="continuer" hidden>Continuer</button>
-      <button class="bouton" id="nouvelle">Nouvelle partie</button>
+      <button class="bouton" id="continuer" data-i18n="titre.continuer" hidden></button>
+      <button class="bouton" id="nouvelle" data-i18n="titre.nouvelle"></button>
     </nav>
-    <button class="icone titre-reglages" id="ouvrir-reglages" aria-label="Réglages">
+    <button class="icone titre-reglages" id="ouvrir-reglages" data-i18n-aria="titre.reglages">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 4.3c.4-1.8 2.9-1.8 3.4 0a1.7 1.7 0 0 0 2.6 1.1c1.5-.9 3.3.8 2.4 2.4a1.7 1.7 0 0 0 1 2.5c1.8.5 1.8 3 0 3.4a1.7 1.7 0 0 0-1 2.6c.9 1.5-.9 3.3-2.4 2.4a1.7 1.7 0 0 0-2.6 1c-.5 1.8-3 1.8-3.4 0a1.7 1.7 0 0 0-2.5-1c-1.6.9-3.3-.9-2.4-2.4a1.7 1.7 0 0 0-1.1-2.6c-1.8-.4-1.8-2.9 0-3.4a1.7 1.7 0 0 0 1.1-2.5c-.9-1.6.8-3.3 2.4-2.4 1 .6 2.3.1 2.5-1.1z"/><circle cx="12" cy="12" r="3"/></svg>
     </button>
   </section>
 </div>
 
 <!-- Les boîtes de dialogue sont rattachées au body (section 17) -->
-<dialog id="dialogue-pause" aria-label="Pause">
-  <h2>Pause</h2>
+<dialog id="dialogue-pause" data-i18n-aria="pause.titre">
+  <h2 data-i18n="pause.titre"></h2>
   <div class="menu">
-    <button class="bouton" id="reprendre">Reprendre</button>
-    <button class="bouton" id="pause-reglages">Réglages</button>
-    <button class="bouton" id="quitter">Écran titre</button>
+    <button class="bouton" id="reprendre" data-i18n="pause.reprendre"></button>
+    <button class="bouton" id="pause-reglages" data-i18n="pause.reglages"></button>
+    <button class="bouton" id="quitter" data-i18n="pause.quitter"></button>
   </div>
 </dialog>
 
-<dialog id="dialogue-reglages" aria-label="Réglages">
-  <h2>Réglages</h2>
-  <label class="curseur">Musique <input type="range" id="vol-musique" min="0" max="100" step="10"></label>
-  <label class="curseur">Effets <input type="range" id="vol-effets" min="0" max="100" step="10"></label>
+<dialog id="dialogue-reglages" data-i18n-aria="reglages.titre">
+  <h2 data-i18n="reglages.titre"></h2>
+  <label class="champ-reglage"><span data-i18n="reglages.langue"></span>
+    <select id="langue"><option value="fr">Français</option><option value="en">English</option></select>
+  </label>
   <hr>
   <p class="version" id="version">v…</p>
   <details>
-    <summary>Dernières versions</summary>
+    <summary data-i18n="reglages.versions"></summary>
     <div id="changelog"></div>
   </details>
   <div class="menu">
-    <button class="bouton" id="exporter">Exporter la sauvegarde</button>
-    <button class="bouton" id="importer">Importer une sauvegarde</button>
+    <button class="bouton" id="exporter" data-i18n="reglages.exporter"></button>
+    <button class="bouton" id="importer" data-i18n="reglages.importer"></button>
   </div>
-  <p class="liens"><a href="atelier.html">Atelier</a></p>
-  <form method="dialog"><button class="bouton">Fermer</button></form>
+  <p class="liens"><a href="atelier.html" data-i18n="reglages.atelier"></a></p>
+  <form method="dialog"><button class="bouton" data-i18n="reglages.fermer"></button></form>
 </dialog>
 
-<dialog id="dialogue-confirmer" aria-label="Confirmer">
-  <p>Une partie est en cours. La remplacer ?</p>
+<dialog id="dialogue-confirmer">
+  <p data-i18n="confirmer.texte"></p>
   <form method="dialog" class="menu">
-    <button class="bouton" value="oui">Nouvelle partie</button>
-    <button class="bouton" value="non">Annuler</button>
+    <button class="bouton" value="oui" data-i18n="confirmer.oui"></button>
+    <button class="bouton" value="non" data-i18n="confirmer.non"></button>
   </form>
 </dialog>
 
 <div class="jeu-toast" id="toast" role="status" hidden></div>
-<script type="module" src="js/main.js"></script>
+<script type="module" src="js/main.js?v=0.1.0"></script>
 </body>
 </html>

@@ -1,4 +1,5 @@
 # Changelog
 
 ## 0.1.0 — 2026-11-14
-- Premier lancement : écran titre, réglages, sauvegarde
+- La carte réelle du corridor Schuman — Roodebeek : rues, nœuds, bâtiments, couches
+- Un clic sur une rue l'inspecte : ce que disent les sources, et ce qu'elles ne disent pas

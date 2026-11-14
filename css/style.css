@@ -1,57 +1,113 @@
 /* L'habillage du jeu. Les couleurs viennent de js/palette.js (posées en
    variables --jeu-* par main.js au lancement) : aucune valeur de couleur ici.
-   Le design system des jeux reste à définir (game-system/DESIGN-SYSTEM.md). */
+   Échelle déclarée une fois : --pas (espacements), --t-* (tailles de texte). */
 
 :root {
   --jeu-cible: 44px;
-  --jeu-police: ui-monospace, 'DM Mono', monospace;   /* à remplacer par la police du jeu, auto-hébergée (fonts/) */
-  --pas: 8px;                                          /* l'échelle d'espacement : multiples de --pas */
+  --jeu-police: system-ui, -apple-system, 'Segoe UI', sans-serif; /* police système : aucune police distante */
+  --pas: 8px;
+  --t-petit: 12px;
+  --t-texte: 14px;
+  --t-titre: 16px;
+  --entete: 48px;
+  --statut: 32px;
+  --largeur-outils: 232px;
+  --largeur-inspecteur: 360px;
+  --trait: 1px;
 }
 
-.hud {
-  position: absolute; inset: 0 0 auto 0;
-  display: flex; justify-content: space-between; align-items: center;
-  padding: var(--pas) calc(var(--pas) * 2);
-  pointer-events: none;
+/* ─── Mise en page : en-tête, outils | carte | inspecteur, barre d'état ─── */
+.app {
+  display: grid;
+  grid-template-columns: var(--largeur-outils) minmax(0, 1fr) var(--largeur-inspecteur);
+  grid-template-rows: var(--entete) minmax(0, 1fr) auto;
+  grid-template-areas: 'entete entete entete' 'outils carte inspecteur' 'statut statut statut';
+  font-size: var(--t-texte);
 }
-.hud > * { pointer-events: auto; }
-.hud-score { font-size: 20px; color: var(--jeu-encre); }
+.entete { grid-area: entete; display: flex; align-items: center; gap: calc(var(--pas) * 2); padding: 0 var(--pas) 0 calc(var(--pas) * 2); border-bottom: var(--trait) solid var(--jeu-ombre); background: var(--jeu-surface); }
+.entete-nom { font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--jeu-encre); text-decoration: none; min-height: var(--jeu-cible); display: flex; align-items: center; }
+.entete-corridor { flex: 1; text-align: center; letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.entete-version { font-variant-numeric: tabular-nums; }
 
-.icone { display: grid; place-items: center; width: var(--jeu-cible); height: var(--jeu-cible); padding: 0; background: none; border: 0; color: var(--jeu-encre); }
-.icone svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.outils { grid-area: outils; overflow: auto; padding: calc(var(--pas) * 2); border-right: var(--trait) solid var(--jeu-ombre); display: flex; flex-direction: column; gap: calc(var(--pas) * 2); }
+.outils h2, .inspecteur h2 { margin: 0; font-size: var(--t-titre); }
+.couches { display: grid; }
+.couche { display: flex; align-items: center; gap: var(--pas); min-height: var(--jeu-cible); cursor: pointer; }
+.couche input { width: 18px; height: 18px; margin: 0; accent-color: var(--jeu-encre); }
+.couche kbd { margin-left: auto; font: inherit; font-size: var(--t-petit); padding: 0 6px; border: var(--trait) solid var(--jeu-ombre); }
+.aide { margin: 0; font-size: var(--t-petit); line-height: 1.5; }
+
+.carte-zone { grid-area: carte; position: relative; min-width: 0; min-height: 0; }
+.carte { position: absolute; inset: 0; }
+.chargement { position: absolute; inset: auto 0 50% 0; margin: 0; text-align: center; }
+.chargement[hidden] { display: none; }
+
+.inspecteur { grid-area: inspecteur; overflow: auto; padding: calc(var(--pas) * 2); border-left: var(--trait) solid var(--jeu-ombre); user-select: text; -webkit-user-select: text; }
+.inspecteur-tete { display: flex; align-items: center; justify-content: space-between; min-height: var(--jeu-cible); }
+.inspecteur h3 { margin: calc(var(--pas) * 2) 0 var(--pas); font-size: var(--t-petit); letter-spacing: .08em; text-transform: uppercase; }
+.inspecteur dl { display: grid; grid-template-columns: minmax(0, 9em) minmax(0, 1fr); gap: 4px var(--pas); margin: 0; }
+.inspecteur dt { font-weight: 600; }
+.inspecteur dd { margin: 0; overflow-wrap: anywhere; }
+.inspecteur dd small { display: block; font-size: var(--t-petit); }
+.inspecteur .inconnu { color: var(--jeu-inconnu); font-style: italic; }
+.inspecteur .vide { margin: var(--pas) 0; }
+.inspecteur .nom-troncon { font-size: var(--t-titre); font-weight: 700; margin: var(--pas) 0 0; }
+
+.statut { grid-area: statut; display: flex; flex-wrap: wrap; align-items: center; gap: 0 calc(var(--pas) * 3); min-height: var(--statut); padding: 0 calc(var(--pas) * 2); border-top: var(--trait) solid var(--jeu-ombre); font-size: var(--t-petit); background: var(--jeu-surface); }
+.statut a { color: var(--jeu-lien); display: flex; align-items: center; min-height: var(--statut); }
+.statut span { padding: 8px 0; }
+
+/* Fenêtre étroite : la carte d'abord, les panneaux dessous (on fait défiler) */
+@media (max-width: 960px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: var(--entete) 62dvh auto auto auto;
+    grid-template-areas: 'entete' 'carte' 'inspecteur' 'outils' 'statut';
+    overflow-y: auto; touch-action: pan-y;
+  }
+  .outils, .inspecteur { border: 0; border-top: var(--trait) solid var(--jeu-ombre); overflow: visible; }
+  .entete-corridor { display: none; }
+}
+
+/* ─── Éléments communs ───────────────────────────────────────────────────── */
+.icone { display: grid; place-items: center; width: var(--jeu-cible); height: var(--jeu-cible); padding: 0; background: none; border: 0; color: var(--jeu-encre); cursor: pointer; }
+.icone svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.bouton {
+  min-height: var(--jeu-cible); padding: 0 calc(var(--pas) * 2);
+  background: var(--jeu-encre); color: var(--jeu-fond);
+  border: 0; font: inherit; font-size: var(--t-texte); cursor: pointer;
+}
+.bouton:focus-visible, .icone:focus-visible, .couche input:focus-visible, a:focus-visible { outline: 2px solid var(--jeu-accent); outline-offset: 2px; }
+@media (hover: hover) { .bouton:hover { background: var(--jeu-lien); } }
 
 .titre {
-  position: absolute; inset: 0;
+  position: absolute; inset: 0; z-index: 5;
   display: grid; place-content: center; justify-items: center; gap: calc(var(--pas) * 4);
   background: var(--jeu-fond);
 }
 .titre[hidden] { display: none; }
-.titre h1 { margin: 0; font-size: clamp(28px, 9vmin, 64px); letter-spacing: .08em; color: var(--jeu-encre); text-align: center; }
+.titre h1 { margin: 0; font-size: clamp(28px, 6vmin, 56px); letter-spacing: .08em; text-transform: uppercase; color: var(--jeu-encre); text-align: center; }
 .titre-menu, .menu { display: grid; gap: var(--pas); min-width: min(260px, 80vw); }
 .titre-reglages { position: absolute; top: calc(var(--pas) + env(safe-area-inset-top, 0px)); right: var(--pas); }
 
-.bouton {
-  padding: 0 calc(var(--pas) * 2);
-  background: var(--jeu-encre); color: var(--jeu-fond);
-  border: 0; border-bottom: 4px solid var(--jeu-ombre);
-  font-size: 16px;
-}
-.bouton:focus-visible, .icone:focus-visible { outline: 2px solid var(--jeu-accent); outline-offset: 2px; }
-@media (hover: hover) { .bouton:hover { background: var(--jeu-accent); color: var(--jeu-encre); } }
-
-dialog {
-  background: var(--jeu-fond); color: var(--jeu-encre);
-  border: 2px solid var(--jeu-encre); padding: calc(var(--pas) * 3);
-}
+dialog { background: var(--jeu-fond); color: var(--jeu-encre); border: 2px solid var(--jeu-encre); padding: calc(var(--pas) * 3); max-width: min(420px, 92vw); }
 dialog h2 { margin: 0 0 calc(var(--pas) * 2); font-size: 18px; }
-dialog hr { border: 0; border-top: 1px solid var(--jeu-ombre); margin: calc(var(--pas) * 2) 0; }
-.curseur { display: grid; grid-template-columns: 7em 1fr; align-items: center; min-height: var(--jeu-cible); }
-.curseur input { accent-color: var(--jeu-accent); }
-.version { margin: 0; opacity: .8; }
+dialog hr { border: 0; border-top: var(--trait) solid var(--jeu-ombre); margin: calc(var(--pas) * 2) 0; }
+.champ-reglage { display: grid; grid-template-columns: 7em 1fr; align-items: center; min-height: var(--jeu-cible); }
+.champ-reglage select { min-height: 36px; font: inherit; }
+.version { margin: 0; }
 details { margin: var(--pas) 0 calc(var(--pas) * 2); }
 summary { min-height: var(--jeu-cible); display: flex; align-items: center; cursor: pointer; }
-#changelog h3 { font-size: 14px; margin: var(--pas) 0 0; }
-#changelog ul { margin: 4px 0; padding-left: 1.2em; font-size: 14px; }
-.liens { font-size: 14px; }
-.liens a { color: inherit; display: inline-block; min-height: var(--jeu-cible); line-height: var(--jeu-cible); }
+#changelog h3 { font-size: var(--t-texte); margin: var(--pas) 0 0; }
+#changelog ul { margin: 4px 0; padding-left: 1.2em; font-size: var(--t-texte); }
+.liens a { color: var(--jeu-lien); display: inline-block; min-height: var(--jeu-cible); line-height: var(--jeu-cible); }
 dialog form { margin-top: calc(var(--pas) * 2); }
+
+/* Étiquettes des stations : DOM, pas de glyphes MapLibre (aucune ressource distante) */
+.etiquette-station { padding: 2px 6px; background: var(--jeu-encre); color: var(--jeu-surface); font-size: var(--t-petit); font-weight: 600; letter-spacing: .04em; pointer-events: none; white-space: nowrap; transform: translateY(-16px); }
+.maplibregl-ctrl-scale { background: var(--jeu-surface); color: var(--jeu-encre); border-color: var(--jeu-encre); font-size: var(--t-petit); }
+.maplibregl-ctrl-attrib { display: none; } /* l'attribution est dans la barre d'état */
+[hidden] { display: none !important; }
+.maplibregl-canvas:focus { outline: none; }
+.maplibregl-canvas:focus-visible { outline: 2px solid var(--jeu-accent); outline-offset: -2px; }

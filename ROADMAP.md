@@ -9,19 +9,36 @@ Statuts : **à l'étude** · **validé** (Jérôme a tranché) · **en cours** �
 
 ## En cours
 
-### Lot minimal
+### Lot minimal — v0.1
 
-**Statut** : en cours
+**Statut** : à mesurer (livré en 0.1.0, attend la validation de Jérôme)
 
-- [ ] La boucle de jeu, jouable aux deux cibles
-- [ ] Le critère de validation, mesuré (voir DESIGN.md)
+- [x] Carte 2D du corridor Schuman–Roodebeek : rues, intersections, bâtiments
+- [x] Couches activables, retour à l'emprise
+- [x] Sélection d'un tronçon, surbrillance, inspecteur
+- [x] Valeurs inconnues « Non renseigné », estimations OSM avec méthode et confiance
+- [x] Critère mesuré : `npm test` + `node outils/critere-v01.mjs` (40/40, carte prête en ~1,6 s)
+
+## Validé (pitch, dans l'ordre)
+
+| Version | Contenu |
+|---|---|
+| 0.2 | Rendu 3D three.js, bâtiments, caméra libre, sélection synchronisée |
+| 0.3 | Éditeur de section transversale, contraintes de largeur, undo/redo |
+| 0.4 | Éditeur d'intersections et raccordements |
+| 0.5 | Simulation simplifiée et indicateurs |
+| 0.6 | Scénarios, comparaison, sauvegarde, finition |
 
 ## À l'étude
 
-<!-- ### Titre
+### Largeur disponible par tronçon
+
+**Statut** : à l'étude (bloque la v0.3)
+**Constat** : UrbIS n'a aucune largeur sur les axes ; les surfaces (`StreetSurfaces` : chaussée S/SC, trottoir SW, terre-plein M, site propre C…) existent.
+**Proposition** : mesurer des coupes perpendiculaires à l'axe sur les surfaces, avec méthode et confiance.
+**Mesure** : comparaison avec quelques largeurs relevées sur le terrain.
+
+### Sources complémentaires
+
 **Statut** : à l'étude
-**Constat** : ce qui a été observé (playtest, mesure, retour).
-**Proposition** :
-**Ce que ça coûte** : systèmes, écrans, contenu à produire.
-**Ce qu'on retire en échange** : (la question d'abord posée)
-**Mesure** : ce qui dira si c'est réussi. -->
+Brussels Mobility (hôte `data.mobility.brussels` bloqué en session), STIB GTFS (v0.5), hauteurs de bâtiments (v0.2).
