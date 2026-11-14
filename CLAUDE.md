@@ -23,7 +23,7 @@ Jeu de conception urbaine inspiré des city builders, limité à l'espace public
 | Vue | 3D caméra libre ou orbitale (cible) — **v0.1 en carte 2D MapLibre**, three.js à partir de v0.2 |
 | Public | Joueur averti |
 | Session | Partie longue continue |
-| Cible | Bureau (≈ 1440 × 900), toutes tailles de fenêtre |
+| Cible | **Ordinateur uniquement** (≈ 1440 × 900), toutes tailles de fenêtre ; pas de version téléphone (Jérôme, v0.1.4) |
 | Commandes | Clavier + souris |
 | Langues | Français + anglais (tout texte passe par `i18n.js`) |
 | Son | Aucun pour la v0 |
