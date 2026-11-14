@@ -1,5 +1,5 @@
 {
-  "version": "0.1.2",
+  "version": "0.1.3",
   "date": "2026-11-14",
-  "changes": ["Un écran de chargement s'affiche jusqu'à ce que la carte soit prête"]
+  "changes": ["Un bouton « Copier » à côté des identifiants du tronçon choisi"]
 }

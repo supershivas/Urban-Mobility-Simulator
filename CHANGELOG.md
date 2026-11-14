@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.3 — 2026-11-14
+- Un bouton « Copier » à côté des identifiants du tronçon choisi
+
 ## 0.1.2 — 2026-11-14
 - Un écran de chargement s'affiche jusqu'à ce que la carte soit prête
 

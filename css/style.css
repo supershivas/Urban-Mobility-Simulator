@@ -47,6 +47,8 @@
 .inspecteur dt { font-weight: 600; }
 .inspecteur dd { margin: 0; overflow-wrap: anywhere; }
 .inspecteur dd small { display: block; font-size: var(--t-petit); }
+.inspecteur .copier { display: inline-flex; align-items: center; justify-content: center; min-width: var(--jeu-cible); min-height: var(--jeu-cible); margin-left: var(--pas); padding: 0 var(--pas); background: none; border: 0; color: var(--jeu-lien); font: inherit; font-size: var(--t-petit); text-decoration: underline; cursor: pointer; }
+.inspecteur .copier:focus-visible { outline: 2px solid var(--jeu-accent); outline-offset: 2px; }
 .inspecteur .inconnu { color: var(--jeu-inconnu); font-style: italic; }
 .inspecteur .vide { margin: var(--pas) 0; }
 .inspecteur .nom-troncon { font-size: var(--t-titre); font-weight: 700; margin: var(--pas) 0 0; }

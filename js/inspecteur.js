@@ -5,11 +5,11 @@
 /**
  * segment : entrée de network.json (streetSegments)
  * ctx : { t (i18n), lang, codes (data/urbis-codes.json), noeuds: Map(id → intersection), rues: Map(id → street) }
- * → [{ titre, lignes: [{ champ, valeur, inconnu, source? }] }]
+ * → [{ titre, lignes: [{ champ, valeur, inconnu, source?, copiable? }] }]  (copiable : identifiants, bouton « Copier »)
  */
 export function lignesInspecteur(segment, { t, lang, codes, noeuds, rues }) {
   const inconnu = (champ, cle = 'valeur.inconnu') => ({ champ: t(champ), valeur: t(cle), inconnu: true });
-  const ligne = (champ, valeur, source) => ({ champ: t(champ), valeur: String(valeur), inconnu: false, ...(source ? { source } : {}) });
+  const ligne = (champ, valeur, source, copiable = false) => ({ champ: t(champ), valeur: String(valeur), inconnu: false, ...(source ? { source } : {}), ...(copiable ? { copiable: true } : {}) });
   const libelle = (table, code) => {
     if (code === null || code === undefined) return null;
     const l = codes[table]?.[code];
@@ -22,8 +22,8 @@ export function lignesInspecteur(segment, { t, lang, codes, noeuds, rues }) {
   const rue = segment.streetId ? rues.get(segment.streetId) : null;
   const identite = [
     nom.length ? ligne('champ.nom', [...new Set(nom)].join(' / ')) : inconnu('champ.nom'),
-    ligne('champ.id', segment.id),
-    ligne('champ.id-source', segment.sourceIds.urbis),
+    ligne('champ.id', segment.id, null, true),
+    segment.sourceIds.urbis ? ligne('champ.id-source', segment.sourceIds.urbis, null, true) : inconnu('champ.id-source'),
     rue ? ligne('champ.rue', t('valeur.rue', { n: rue.segmentIds.length })) : inconnu('champ.rue'),
   ];
 

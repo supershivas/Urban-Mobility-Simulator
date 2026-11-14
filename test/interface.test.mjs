@@ -50,6 +50,14 @@ test('aucune couleur en dur dans le CSS du jeu', () => {
 });
 
 group('inspecteur');
+test('seuls les identifiants présents se copient', () => {
+  const s = lignesInspecteur(segment(), ctx);
+  assert.equal(valeur(s, 'champ.id').copiable, true);
+  assert.equal(valeur(s, 'champ.id-source').copiable, true);
+  assert.ok(!valeur(s, 'champ.rue').copiable);
+  const sans = valeur(lignesInspecteur(segment({ sourceIds: { urbis: null, osm: [] } }), ctx), 'champ.id-source');
+  assert.ok(sans.inconnu && !sans.copiable);
+});
 test('les valeurs absentes restent « Non renseigné »', () => {
   const s = lignesInspecteur(segment(), ctx);
   for (const champ of ['champ.nom', 'champ.sens', 'champ.voies', 'champ.vitesse', 'champ.pente', 'champ.gestionnaire', 'champ.longueur-source']) {
