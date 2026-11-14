@@ -80,9 +80,16 @@
   <h2 data-i18n="pause.titre"></h2>
   <div class="menu">
     <button class="bouton" id="reprendre" data-i18n="pause.reprendre"></button>
+    <button class="bouton" id="pause-aide" data-i18n="pause.aide"></button>
     <button class="bouton" id="pause-reglages" data-i18n="pause.reglages"></button>
     <button class="bouton" id="quitter" data-i18n="pause.quitter"></button>
   </div>
+</dialog>
+
+<dialog id="dialogue-aide" data-i18n-aria="aide.titre">
+  <h2 data-i18n="aide.titre"></h2>
+  <div id="aide-corps"></div>
+  <form method="dialog"><button class="bouton" data-i18n="reglages.fermer"></button></form>
 </dialog>
 
 <dialog id="dialogue-reglages" data-i18n-aria="reglages.titre">

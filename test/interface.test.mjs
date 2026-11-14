@@ -6,6 +6,7 @@ import { TEXTES } from '../js/data/textes.js';
 import { PALETTE } from '../js/palette.js';
 import { REGLAGES } from '../js/data/reglages.js';
 import { styleCarte, couleursDuStyle, COUCHES } from '../js/carte/style.js';
+import { COMMANDES_AIDE } from '../js/data/aide.js';
 import { lignesInspecteur } from '../js/inspecteur.js';
 
 const codes = JSON.parse(readFileSync(new URL('../data/urbis-codes.json', import.meta.url), 'utf8'));
@@ -47,6 +48,13 @@ test('chaque couche activable commande des couches qui existent', () => {
 test('aucune couleur en dur dans le CSS du jeu', () => {
   const css = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
   assert.ok(!/#[0-9a-f]{3,6}\b|rgb\(/i.test(css));
+});
+
+group('aide clavier');
+test('chaque commande de l\'aide a ses textes en français et en anglais', () => {
+  for (const lang of ['fr', 'en']) for (const id of COMMANDES_AIDE) for (const k of ['action', 'clavier', 'souris']) {
+    assert.ok(TEXTES[lang][`aide.${id}.${k}`], `${lang} aide.${id}.${k}`);
+  }
 });
 
 group('inspecteur');

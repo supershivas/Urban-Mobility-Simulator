@@ -10,6 +10,7 @@ import { createI18n } from './lib/i18n.js?v=0.1.3';
 import { startUpdateCheck, loadVersion, loadChangelog, downloadJSON } from './lib/app-update.js?v=0.1.3';
 import { PALETTE, ROLES } from './palette.js?v=0.1.3';
 import { TEXTES } from './data/textes.js?v=0.1.3';
+import { COMMANDES_AIDE } from './data/aide.js?v=0.1.3';
 import { styleCarte, COUCHES, COUCHES_ACTIVES, COUCHES_SELECTIONNABLES } from './carte/style.js?v=0.1.3';
 import { lignesInspecteur } from './inspecteur.js?v=0.1.3';
 import { chargerContenu } from './design-store.js?v=0.1.3';
@@ -239,6 +240,18 @@ $('nom-jeu').onclick = e => { e.preventDefault(); sauvegarder(); montrerTitre();
 $('ouvrir-menu').onclick = () => $('dialogue-pause').showModal();
 $('reprendre').onclick = () => $('dialogue-pause').close();
 $('quitter').onclick = () => { $('dialogue-pause').close(); sauvegarder(); montrerTitre(); };
+// Aide clavier : texte relu à chaque ouverture, donc toujours dans la langue courante
+function basculerAide() {
+  const d = $('dialogue-aide');
+  if (d.open) { d.close(); return; }
+  $('aide-corps').replaceChildren(el('dl', {}, ...COMMANDES_AIDE.flatMap(id => [
+    el('dt', { textContent: t(`aide.${id}.action`) }),
+    el('dd', {}, el('kbd', { textContent: t(`aide.${id}.clavier`) }), ` — ${t('aide.souris')} : ${t(`aide.${id}.souris`)}`),
+  ])));
+  d.showModal();
+  d.scrollTop = 0; // le focus initial sur « Fermer » faisait défiler la boîte jusqu'en bas
+}
+$('pause-aide').onclick = basculerAide;
 $('pause-reglages').onclick = () => $('dialogue-reglages').showModal();
 $('ouvrir-reglages').onclick = () => $('dialogue-reglages').showModal();
 $('recentrer').onclick = recentrer;
@@ -297,10 +310,12 @@ function toast(texte) {
 const enCarte = () => !!etat && $('titre').hidden && !document.querySelector('dialog[open]');
 createKeys({
   actions: {
-    recentrer: 'r', troncon: 't', zoomPlus: ['+', '='], zoomMoins: ['-', '_'],
+    recentrer: 'r', troncon: 't', aide: 'i', zoomPlus: ['+', '='], zoomMoins: ['-', '_'],
     ...Object.fromEntries(TOUCHES_COUCHES.map(([c, touche]) => [`couche:${c}`, touche])),
   },
   onAction: nom => {
+    // I ouvre l'aide depuis la carte et la ferme quand elle est ouverte (les autres boîtes la laissent fermée)
+    if (nom === 'aide') { if ($('dialogue-aide').open || enCarte()) basculerAide(); return; }
     if (!enCarte()) return;
     if (nom === 'recentrer') recentrer();
     else if (nom === 'troncon') { const c = carte.project(carte.getCenter()); selectionner(tronconPlusProche(c)); }

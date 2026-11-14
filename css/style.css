@@ -92,6 +92,11 @@
 .titre-reglages { position: absolute; top: calc(var(--pas) + env(safe-area-inset-top, 0px)); right: var(--pas); }
 
 dialog { background: var(--jeu-fond); color: var(--jeu-encre); border: 2px solid var(--jeu-encre); padding: calc(var(--pas) * 3); max-width: min(420px, 92vw); }
+#dialogue-aide { max-height: 90dvh; overflow: auto; }
+#aide-corps dl { margin: 0; }
+#aide-corps dt { margin-top: calc(var(--pas) * 1.5); font-weight: 700; }
+#aide-corps dd { margin: 2px 0 0; overflow-wrap: anywhere; }
+#aide-corps kbd { font: inherit; font-weight: 600; padding: 0 4px; border: var(--trait) solid var(--jeu-ombre); }
 dialog h2 { margin: 0 0 calc(var(--pas) * 2); font-size: 18px; }
 dialog hr { border: 0; border-top: var(--trait) solid var(--jeu-ombre); margin: calc(var(--pas) * 2) 0; }
 .champ-reglage { display: grid; grid-template-columns: 7em 1fr; align-items: center; min-height: var(--jeu-cible); }

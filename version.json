@@ -3,6 +3,7 @@
   "date": "2026-11-14",
   "changes": [
     "Un bouton « Copier » à côté des identifiants du tronçon choisi",
-    "Le nombre d'anomalies de la barre d'état ouvre le rapport de qualité"
+    "Le nombre d'anomalies de la barre d'état ouvre le rapport de qualité",
+    "La touche I ouvre l'aide clavier"
   ]
 }
