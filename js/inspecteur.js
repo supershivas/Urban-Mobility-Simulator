@@ -1,4 +1,4 @@
-// Ce que l'inspecteur affiche pour un tronçon. Pur (aucun DOM), testé.
+// Ce que l'inspecteur affiche pour un tronçon ou un bâtiment. Pur (aucun DOM), testé.
 // Règle : une valeur absente reste « Non renseigné », jamais remplacée par une
 // valeur supposée ; une estimation (OSM) affiche sa méthode et sa confiance.
 
@@ -84,4 +84,42 @@ export function lignesInspecteur(segment, { t, lang, codes, noeuds, rues }) {
     ],
   });
   return sections;
+}
+
+/**
+ * batiment : { id, hauteur (m ou null), solides (nombre de solides UrbIS 3D associés) } — propriétés de buildings.geojson
+ * ctx : { t, lang, infos : metadata.json → batiments ({ prefixeUrbis, hauteurs: { dateSource } }) }
+ * La hauteur ne vient que de la source ; sans solide associé elle reste « Non renseigné ».
+ */
+export function lignesInspecteurBatiment(batiment, { t, lang, infos }) {
+  const inconnu = (champ, cle = 'valeur.inconnu') => ({ champ: t(champ), valeur: t(cle), inconnu: true });
+  const ligne = (champ, valeur, source, copiable = false) => ({ champ: t(champ), valeur: String(valeur), inconnu: false, ...(source ? { source } : {}), ...(copiable ? { copiable: true } : {}) });
+  const nombre = n => n.toLocaleString(lang === 'en' ? 'en-GB' : 'fr-BE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const numero = batiment.id.replace(/^bld-u/, '');
+  const connue = typeof batiment.hauteur === 'number';
+  return [
+    {
+      titre: t('inspecteur.section.identite'),
+      lignes: [
+        ligne('champ.id', batiment.id, null, true),
+        infos?.prefixeUrbis ? ligne('champ.id-source', `${infos.prefixeUrbis}${numero}`, null, true) : inconnu('champ.id-source'),
+      ],
+    },
+    {
+      titre: t('inspecteur.section.volume'),
+      lignes: [
+        connue
+          ? ligne('champ.hauteur', t('valeur.metres', { n: nombre(batiment.hauteur) }), t('valeur.source-hauteur', { date: infos?.hauteurs?.dateSource ?? '?', n: batiment.solides }))
+          : inconnu('champ.hauteur', 'valeur.hauteur-absente'),
+        inconnu('champ.etages', 'valeur.etages-absents'),
+      ],
+    },
+    {
+      titre: t('inspecteur.section.qualite'),
+      lignes: [
+        ligne('champ.geometrie', t('valeur.geometrie-batiment')),
+        ligne('champ.methode-hauteur', t(connue ? 'valeur.methode-hauteur' : 'valeur.methode-hauteur-absente')),
+      ],
+    },
+  ];
 }

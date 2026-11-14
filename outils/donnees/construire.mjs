@@ -13,6 +13,8 @@ import { longueur } from '../../js/geo/geometrie.js';
 import { controler } from '../../js/geo/topologie.js';
 import { indexer, apparier, HIGHWAY_CHAUSSEE } from '../../js/geo/appariement.js';
 import { calculerEmprise } from './emprise.mjs';
+import { boite } from '../../js/geo/geometrie.js';
+import { hauteurDepuisSolides, METHODE_HAUTEUR } from './urbis3d.mjs';
 
 const O = 'data/original', P = 'data/processed', M = 'data/metadata';
 mkdirSync(P, { recursive: true });
@@ -153,11 +155,34 @@ tailles.surfaces = ecrire(`${P}/street-surfaces.geojson`, collection(features('s
   properties: { id: idInterne('surf', f.properties.INSPIRE_ID), type: nul(f.properties.TYPE), niveau: nul(f.properties.LVL) },
   geometry: vers(f.geometry, 6),
 }))));
-tailles.buildings = ecrire(`${P}/buildings.geojson`, collection(features('batiments').map(f => ({
-  type: 'Feature',
-  properties: { id: idInterne('bld', f.properties.INSPIRE_ID) },
-  geometry: vers(f.geometry, 6),
-}))));
+// Hauteurs : seulement depuis UrbIS 3D, par l'identifiant du bâtiment. Sans solide associé : null.
+const urbis3d = existsSync(`${O}/urbis3d/solides.json`) ? lire(`${O}/urbis3d/solides.json`) : null;
+const solidesParBatiment = new Map();
+for (const [, bat, zmin, zmax] of urbis3d?.solides ?? []) {
+  if (!solidesParBatiment.has(bat)) solidesParBatiment.set(bat, []);
+  solidesParBatiment.get(bat).push([zmin, zmax]);
+}
+const batiments = features('batiments').map(f => {
+  const h = hauteurDepuisSolides(solidesParBatiment.get(Number(numero(f.properties.INSPIRE_ID))));
+  return {
+    type: 'Feature',
+    properties: { id: idInterne('bld', f.properties.INSPIRE_ID), hauteur: h ? h.hauteur : null, solides: h ? h.solides : 0 },
+    geometry: vers(f.geometry, 6),
+  };
+});
+tailles.buildings = ecrire(`${P}/buildings.geojson`, collection(batiments));
+const hauteurs = batiments.map(b => b.properties.hauteur).filter(h => h !== null).sort((a, b) => a - b);
+const infoHauteurs = {
+  source: urbis3d ? 'urbis3d' : null,
+  dateSource: urbis3d?.dateTuiles ?? null,
+  methode: urbis3d ? METHODE_HAUTEUR : null,
+  confiance: urbis3d ? 'mesure photogrammétrique de la source, non vérifiée sur le terrain' : null,
+  renseignees: hauteurs.length,
+  nonRenseignees: batiments.length - hauteurs.length,
+  minMetres: hauteurs[0] ?? null,
+  medianeMetres: hauteurs.length ? hauteurs[Math.floor(hauteurs.length / 2)] : null,
+  maxMetres: hauteurs.at(-1) ?? null,
+};
 const infra = [
   ...features('tram').map(f => ({ type: 'Feature', properties: { id: idInterne('rail', f.properties.INSPIRE_ID), famille: 'rail', type: nul(f.properties.TYPE), niveau: nul(f.properties.LVL) }, geometry: vers(f.geometry, 7) })),
   ...features('tunnels').map(f => ({ type: 'Feature', properties: { id: idInterne('tun', f.properties.INSPIRE_ID), famille: 'tunnel', type: nul(f.properties.TYPE), niveau: nul(f.properties.LVL) }, geometry: vers(f.geometry, 6) })),
@@ -181,9 +206,15 @@ tailles.network = ecrire(`${P}/network.json`, reseau);
 
 const anomaliesParType = {};
 for (const a of topo.anomalies) (anomaliesParType[a.type] ??= []).push(a);
+// Origine du repère local de la scène 3D : le centre de la boîte de l'emprise, en
+// Lambert 72, arrondi à 100 m (une convention d'affichage, pas une donnée).
+const be = boite(emprise.lambert);
+const origineLocale = [Math.round((be[0] + be[2]) / 200) * 100, Math.round((be[1] + be[3]) / 200) * 100];
 const metadonnees = {
   construitLe: manifeste.fichiers['data/original/urbis/axes.wfs.json']?.recupereLe ?? null,
   emprise: { tamponMetres: corridor.tamponMetres, stations: emprise.stations.map(f => f.properties.NAMEFRE) },
+  repereLocal: { crs: 'EPSG:31370', origine: origineLocale, methode: 'Centre de la boîte de l\'emprise, arrondi à 100 m ; x local = Est − origine, y local = Nord − origine (mètres).' },
+  batiments: { prefixeUrbis: 'https://databrussels.be/id/building/', hauteurs: infoHauteurs },
   comptes: {
     streetSegments: segments.length, intersections: noeuds.size, streets: rues.size,
     surfaces: features('surfaces').length, buildings: features('batiments').length, infrastructure: infra.length,
@@ -229,6 +260,21 @@ ${tableau(metadonnees.comptes)}
 ${champsAbsents}
 | largeur de chaussée | 0 | ${segments.length} |
 | gestionnaire (axe) | 0 | ${segments.length} |
+
+## Hauteur des bâtiments
+
+${urbis3d ? `Source : UrbIS – Constructions 3D (tuiles du ${urbis3d.dateTuiles}), ${urbis3d.bilan.solidesRetenus} solides associés par identifiant (\`BU_ID\`) à un bâtiment chargé.
+${METHODE_HAUTEUR}
+
+| Bâtiments | Nombre |
+|---|---|
+| hauteur renseignée | ${infoHauteurs.renseignees} |
+| hauteur non renseignée (aucun solide associé) | ${infoHauteurs.nonRenseignees} |
+
+Hauteurs renseignées : de ${infoHauteurs.minMetres} m à ${infoHauteurs.maxMetres} m, médiane ${infoHauteurs.medianeMetres} m. Une hauteur absente reste \`null\` : le bâtiment est dessiné à plat et l'inspecteur affiche « Non renseigné ».
+${urbis3d.bilan.solidesSansBatiment} solides des tuiles lues n'ont pas d'identifiant de bâtiment (\`BU_ID\` vide) : ils ne sont rattachés à rien, aucune correspondance géométrique n'est tentée.` : 'Aucune source de hauteur : toutes les hauteurs sont `null`.'}
+
+## Attributs des axes : ce qui manque
 
 UrbIS ne donne ni largeur, ni nombre de voies, ni sens, ni vitesse sur les axes. Sens, voies et vitesse viennent seulement
 d'OSM, par appariement géométrique (confiance « moyenne », jamais « vérifiée »). La largeur reste inconnue : les surfaces de

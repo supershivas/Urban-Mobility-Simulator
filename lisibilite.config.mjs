@@ -21,6 +21,12 @@ export default {
     { avant: 'bord', fond: 'voirie', role: 'signe', ou: 'axe secondaire sur la chaussée' },
     { avant: 'noeud', fond: 'voirie', role: 'signe', ou: 'nœud, rail de tram sur la chaussée' },
     { avant: 'encre', fond: 'bati', role: 'signe', ou: 'emprise du corridor sur le bâti' },
+    { avant: 'encre', fond: 'selection', role: 'signe', ou: 'contour du bâtiment choisi (2D et 3D)' },
+    // « selection sur bati » ne vaut que 2,71 (mesuré, v0.2.0) : le bâtiment choisi est donc toujours cerné d'encre,
+    // et c'est ce contour (encre sur bati 9,46 ; encre sur selection 3,49) qui porte le signe.
+    { avant: 'inconnu', fond: 'papier', role: 'signe', ou: 'contour d\'un bâtiment de hauteur non renseignée (3D)' },
+    { avant: 'inconnu', fond: 'bati', role: 'signe', ou: 'contour d\'un bâtiment à plat sur son emprise (3D)' },
+    { avant: 'encre', fond: 'voirie', role: 'texte', ou: 'légende et barre d\'échelle de la vue 3D' },
   ],
   groupes: {},
   poses: [],

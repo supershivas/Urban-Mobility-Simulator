@@ -42,3 +42,7 @@ writeFileSync(join(dossierProj, 'proj4.mjs'),
   `// Généré par outils/vendor.mjs à partir de proj4.js (UMD) : ne pas modifier.\n` +
   `const module = { exports: {} }; const exports = module.exports;\n${umd}\nexport default module.exports;\n`);
 rmSync(join(dossierProj, 'proj4.js'));
+
+// three.js (MIT) : le module ES et son cœur (three.module.js importe ./three.core.js).
+// Le paquet ne publie pas de build minifié de ces deux fichiers : copiés tels quels.
+copier('three', ['build/three.module.js', 'build/three.core.js'], join(VENDOR, 'three'));

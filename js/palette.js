@@ -23,4 +23,5 @@ export const ROLES = {
   accent: PALETTE.selection,
   lien: PALETTE.noeud,
   inconnu: PALETTE.inconnu,
+  bati: PALETTE.bati,
 };

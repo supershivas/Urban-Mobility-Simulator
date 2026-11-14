@@ -13,6 +13,28 @@
       "STATION GEORGES HENRI"
     ]
   },
+  "repereLocal": {
+    "crs": "EPSG:31370",
+    "origine": [
+      152800,
+      170300
+    ],
+    "methode": "Centre de la boîte de l'emprise, arrondi à 100 m ; x local = Est − origine, y local = Nord − origine (mètres)."
+  },
+  "batiments": {
+    "prefixeUrbis": "https://databrussels.be/id/building/",
+    "hauteurs": {
+      "source": "urbis3d",
+      "dateSource": "2026-11-07",
+      "methode": "Hauteur = altitude du point le plus haut des solides UrbIS 3D (LoD 2) associés au bâtiment par son identifiant (BU_ID), moins l'altitude de leur point le plus bas (base du solide). Hauteur au faîte, toiture comprise ; arrondie au décimètre.",
+      "confiance": "mesure photogrammétrique de la source, non vérifiée sur le terrain",
+      "renseignees": 13757,
+      "nonRenseignees": 721,
+      "minMetres": 1.2,
+      "medianeMetres": 14.9,
+      "maxMetres": 105.4
+    }
+  },
   "comptes": {
     "streetSegments": 1489,
     "intersections": 1018,
@@ -45,7 +67,7 @@
     "streets": 429760,
     "intersections": 151762,
     "surfaces": 4247286,
-    "buildings": 4609963,
+    "buildings": 4995838,
     "infrastructure": 237934,
     "network": 1778383
   }

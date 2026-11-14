@@ -108,6 +108,108 @@
       "recupereLe": "2026-11-14T10:03:01.328Z",
       "sha256": "dd7ffa912470adbb224e538f1322cd4b684e387dd947bc72c44a58fa6c29838a",
       "octets": 4706332
+    },
+    "data/original/urbis3d/solides.json": {
+      "source": "urbis3d",
+      "url": "https://urbisdownload.datastore.brussels/atomfeed/e9ec2aa4-cffd-11ee-bccc-00090ffe0001-fr.xml",
+      "objets": 14276,
+      "crs": "EPSG:31370",
+      "filtre": "BuildingSolids des tuiles de l'emprise, associés à un bâtiment chargé",
+      "tuiles": [
+        {
+          "url": "https://urbisdownload.datastore.brussels/UrbIS/Vector/M8/UrbIS-Buildings3D/SHP/UrbISBuildings3D_31370_SHP_150169_20261107.zip",
+          "sha256": "4da7e938400773293245853b5b0e2d2c16adf6bb83744197739752e8470b4f9b",
+          "octets": 6680582
+        },
+        {
+          "url": "https://urbisdownload.datastore.brussels/UrbIS/Vector/M8/UrbIS-Buildings3D/SHP/UrbISBuildings3D_31370_SHP_150170_20261107.zip",
+          "sha256": "ea5e042814953e1335104c038423b5cd13f4500485250e3d14492a2f86b277e4",
+          "octets": 5114740
+        },
+        {
+          "url": "https://urbisdownload.datastore.brussels/UrbIS/Vector/M8/UrbIS-Buildings3D/SHP/UrbISBuildings3D_31370_SHP_150171_20261107.zip",
+          "sha256": "ab4467cf8aad9c9db3d4319d4610a27977b28b64cb500d75d1b10d9917538e80",
+          "octets": 8130608
+        },
+        {
+          "url": "https://urbisdownload.datastore.brussels/UrbIS/Vector/M8/UrbIS-Buildings3D/SHP/UrbISBuildings3D_31370_SHP_151169_20261107.zip",
+          "sha256": "1f6413515283edbf5c528188e3a2bba879234e8fb6cd6c862376d634a1ff9153",
+          "octets": 6934176
+        },
+        {
+          "url": "https://urbisdownload.datastore.brussels/UrbIS/Vector/M8/UrbIS-Buildings3D/SHP/UrbISBuildings3D_31370_SHP_151170_20261107.zip",
+          "sha256": "faec5c1906bf3fb0726820c875b6cab8fb5004aacb4630eb0a1f8032e639e443",
+          "octets": 5294838
+        },
+        {
+          "url": "https://urbisdownload.datastore.brussels/UrbIS/Vector/M8/UrbIS-Buildings3D/SHP/UrbISBuildings3D_31370_SHP_151171_20261107.zip",
+          "sha256": "b73933b9c28c1661490a1b4891744c536fbfb4b309a2d31daca423c8e2b01e8f",
+          "octets": 6692027
+        },
+        {
+          "url": "https://urbisdownload.datastore.brussels/UrbIS/Vector/M8/UrbIS-Buildings3D/SHP/UrbISBuildings3D_31370_SHP_152169_20261107.zip",
+          "sha256": "8a12c429fe1d2414c217a08212ea7818d7a9336369a41f08f657e91575e1a300",
+          "octets": 4361520
+        },
+        {
+          "url": "https://urbisdownload.datastore.brussels/UrbIS/Vector/M8/UrbIS-Buildings3D/SHP/UrbISBuildings3D_31370_SHP_152170_20261107.zip",
+          "sha256": "eacdd9bb3322c71224b1694ce71bf93cd101a44034aaddc39b09baa9a433660c",
+          "octets": 5628198
+        },
+        {
+          "url": "https://urbisdownload.datastore.brussels/UrbIS/Vector/M8/UrbIS-Buildings3D/SHP/UrbISBuildings3D_31370_SHP_152171_20261107.zip",
+          "sha256": "910a9c4161c60727bde23bd0f45c5f74c9e494c7fca8b37ae3ef42a7fa3a95ae",
+          "octets": 2681130
+        },
+        {
+          "url": "https://urbisdownload.datastore.brussels/UrbIS/Vector/M8/UrbIS-Buildings3D/SHP/UrbISBuildings3D_31370_SHP_153169_20261107.zip",
+          "sha256": "66caa88755488bf2283cf6827ad09ec5519b393055c1e26081f4de44e24ce110",
+          "octets": 3694613
+        },
+        {
+          "url": "https://urbisdownload.datastore.brussels/UrbIS/Vector/M8/UrbIS-Buildings3D/SHP/UrbISBuildings3D_31370_SHP_153170_20261107.zip",
+          "sha256": "e80bd71af823cb485f5244a6476b6b8d9483a4050e87c6afa34b385591ef74fe",
+          "octets": 5786982
+        },
+        {
+          "url": "https://urbisdownload.datastore.brussels/UrbIS/Vector/M8/UrbIS-Buildings3D/SHP/UrbISBuildings3D_31370_SHP_153171_20261107.zip",
+          "sha256": "0bc7df2a802e88f8b54d59d007baaad6d0f49ac88372a209676268c692441359",
+          "octets": 2876271
+        },
+        {
+          "url": "https://urbisdownload.datastore.brussels/UrbIS/Vector/M8/UrbIS-Buildings3D/SHP/UrbISBuildings3D_31370_SHP_154169_20261107.zip",
+          "sha256": "8113dd9a1ea1e249ff263727e5e0c886cd0b68864f7bf9ef07566c28f58482f0",
+          "octets": 3331925
+        },
+        {
+          "url": "https://urbisdownload.datastore.brussels/UrbIS/Vector/M8/UrbIS-Buildings3D/SHP/UrbISBuildings3D_31370_SHP_154170_20261107.zip",
+          "sha256": "717f114fd5367106d0f8f79524367392664aa48f9aa6f8782c31c4728f801277",
+          "octets": 2687849
+        },
+        {
+          "url": "https://urbisdownload.datastore.brussels/UrbIS/Vector/M8/UrbIS-Buildings3D/SHP/UrbISBuildings3D_31370_SHP_154171_20261107.zip",
+          "sha256": "9cb3e25635d89db0591508383742151d7785e39c823722832bac05fad8d64ad0",
+          "octets": 1768475
+        },
+        {
+          "url": "https://urbisdownload.datastore.brussels/UrbIS/Vector/M8/UrbIS-Buildings3D/SHP/UrbISBuildings3D_31370_SHP_155169_20261107.zip",
+          "sha256": "65a64685992fc3826f718c9e962b1dfc35c3dbcee6201610f7b8d2f72e85db10",
+          "octets": 3334079
+        },
+        {
+          "url": "https://urbisdownload.datastore.brussels/UrbIS/Vector/M8/UrbIS-Buildings3D/SHP/UrbISBuildings3D_31370_SHP_155170_20261107.zip",
+          "sha256": "903300462ce440824f7b7d19e0676d4a96e07bf0d811c2e9df8abfbae6bb2579",
+          "octets": 2430140
+        },
+        {
+          "url": "https://urbisdownload.datastore.brussels/UrbIS/Vector/M8/UrbIS-Buildings3D/SHP/UrbISBuildings3D_31370_SHP_155171_20261107.zip",
+          "sha256": "f8eba49ae5ab1207c744b8c10a74c954506f62c383276e628dde553221053ef3",
+          "octets": 946113
+        }
+      ],
+      "recupereLe": "2026-11-14T21:26:48.407Z",
+      "sha256": "f250921bdf05d147760fc7988793ce06a7adfcd6cb03cda51e9a4778c4d7837c",
+      "octets": 445321
     }
   }
 }

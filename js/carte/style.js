@@ -4,7 +4,7 @@
 
 export const COUCHES = {
   // id de couche activable → couches MapLibre qu'elle commande
-  batiments: ['batiments', 'batiments-contour'],
+  batiments: ['batiments', 'batiments-contour', 'batiments-selection', 'batiments-selection-contour'],
   surfaces: ['surfaces', 'surfaces-contour'],
   rues: ['rues-tunnel', 'rues'],
   intersections: ['noeuds'],
@@ -16,9 +16,10 @@ export const COUCHES = {
 export const COUCHES_ACTIVES = { batiments: true, surfaces: true, rues: true, intersections: true, rails: true, ouvrages: false, stations: true, emprise: true };
 export const COUCHES_SELECTIONNABLES = ['rues', 'rues-tunnel'];
 
-const HIERARCHIE_PRINCIPALE = ['H', 'MER', 'MAR'];
-const SURFACE_PIETONNE = ['SW', 'M', 'P', 'G'];
-const SURFACE_SOUTERRAINE = ['MS', 'MT', 'RT', 'RS'];
+// Partagés avec la scène 3D (js/scene/scene3d.js) : mêmes filtres, mêmes teintes dans les deux vues
+export const HIERARCHIE_PRINCIPALE = ['H', 'MER', 'MAR'];
+export const SURFACE_PIETONNE = ['SW', 'M', 'P', 'G'];
+export const SURFACE_SOUTERRAINE = ['MS', 'MT', 'RT', 'RS'];
 
 // Épaisseur proportionnelle au zoom (x2 par niveau au-delà de 15, comme le terrain)
 const largeur = px => ['interpolate', ['exponential', 2], ['zoom'], 11, px * 0.4, 15, px, 20, px * 8];
@@ -55,6 +56,9 @@ export function styleCarte(P, reglages, base = 'data/') {
       },
       { id: 'batiments', type: 'fill', source: 'batiments', paint: { 'fill-color': P.bati } },
       { id: 'batiments-contour', type: 'line', source: 'batiments', minzoom: 15, paint: { 'line-color': P.bord, 'line-width': 0.5 } },
+      // Bâtiment choisi : plein en couleur de sélection, cerné d'encre (même signe que dans la vue 3D)
+      { id: 'batiments-selection', type: 'fill', source: 'batiments', filter: ['==', ['get', 'id'], ''], paint: { 'fill-color': P.selection } },
+      { id: 'batiments-selection-contour', type: 'line', source: 'batiments', filter: ['==', ['get', 'id'], ''], paint: { 'line-color': P.encre, 'line-width': 1.5 } },
       {
         id: 'tunnels', type: 'line', source: 'infra', filter: ['==', ['get', 'famille'], 'tunnel'],
         paint: { 'line-color': P.encre, 'line-width': 1, 'line-dasharray': [2, 2] },

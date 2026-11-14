@@ -23,7 +23,7 @@ Inspirations de mécanique : *Traffic City*, *Junxions*.
 | Version | Contenu |
 |---|---|
 | 0.1 | Carte 2D réelle et navigable, rues, intersections, bâtiments, sélection d'un tronçon, inspecteur |
-| 0.2 | Vue 3D (three.js), caméra libre, sélection synchronisée |
+| 0.2 | Vue 3D (three.js), bâtiments à leur hauteur réelle, caméra orbitale, sélection synchronisée — livrée |
 | 0.3 | Éditeur de section de rue sous contrainte de largeur |
 | 0.4 | Éditeur de carrefours |
 | 0.5 | Simulation simplifiée et indicateurs |
@@ -65,7 +65,7 @@ npm run donnees
 
 - Modules ES sans bundler, structure [game-system](https://github.com/supershivas/game-system).
 - npm sert uniquement à récupérer les dépendances (copiées dans `vendor/`) et à lancer Vitest.
-- MapLibre GL JS 6.16.0 (2D), proj4js 2.22.0, copiés dans `vendor/` ; three.js à partir de 0.2 ; Turf (`@turf/buffer`) seulement dans le pipeline de données.
+- MapLibre GL JS 6.16.0 (2D), three.js 0.187.0 (3D), proj4js 2.22.0, copiés dans `vendor/` avec leur licence ; Turf (`@turf/buffer`) seulement dans le pipeline de données.
 - Travail métrique en EPSG:31370 (Lambert 72), affichage en GeoJSON WGS84.
 
 ## Données et licences

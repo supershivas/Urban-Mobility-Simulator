@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.0 — 2026-11-14
+- Une vue 3D du corridor : bâtiments à leur hauteur réelle (UrbIS 3D), caméra orbitale, bascule 2D / 3D avec V
+- Les bâtiments se choisissent aussi : hauteur de la source ou « Non renseigné », même sélection dans les deux vues
+- La barre d'état tient sur une ligne
+
 ## 0.1.4 — 2026-11-14
 - Le lien des anomalies de la barre d'état est plus facile à toucher (44 px de haut)
 

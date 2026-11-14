@@ -7,7 +7,7 @@ import { PALETTE } from '../js/palette.js';
 import { REGLAGES } from '../js/data/reglages.js';
 import { styleCarte, couleursDuStyle, COUCHES } from '../js/carte/style.js';
 import { COMMANDES_AIDE } from '../js/data/aide.js';
-import { lignesInspecteur } from '../js/inspecteur.js';
+import { lignesInspecteur, lignesInspecteurBatiment } from '../js/inspecteur.js';
 
 const codes = JSON.parse(readFileSync(new URL('../data/urbis-codes.json', import.meta.url), 'utf8'));
 const i18n = createI18n(TEXTES, { lang: 'fr' });
@@ -94,10 +94,40 @@ test('le nœud affiche son type et son nombre de tronçons', () => {
   assert.equal(valeur(lignesInspecteur(segment(), ctx), 'champ.arrivee').valeur, 'node-u9 · Carrefour (I) · 3 tronçon(s)');
 });
 
+group('inspecteur — bâtiment');
+const infos = { prefixeUrbis: 'https://databrussels.be/id/building/', hauteurs: { dateSource: '2026-11-07' } };
+test('une hauteur connue porte sa source, sa date et sa méthode', () => {
+  const s = lignesInspecteurBatiment({ id: 'bld-u1768178', hauteur: 29.8, solides: 2 }, { t, lang: 'fr', infos });
+  const h = valeur(s, 'champ.hauteur');
+  assert.equal(h.valeur, '29,8 m');
+  assert.ok(!h.inconnu);
+  assert.match(h.source, /UrbIS 3D du 2026-11-07 · 2 solide/);
+  assert.equal(valeur(s, 'champ.id-source').valeur, 'https://databrussels.be/id/building/1768178');
+  assert.ok(valeur(s, 'champ.id').copiable && valeur(s, 'champ.id-source').copiable);
+  assert.match(s.at(-1).lignes.at(-1).valeur, /solides UrbIS 3D/);
+});
+test('une hauteur inconnue reste « Non renseigné », sans valeur supposée', () => {
+  const s = lignesInspecteurBatiment({ id: 'bld-u7', hauteur: null, solides: 0 }, { t, lang: 'fr', infos });
+  const h = valeur(s, 'champ.hauteur');
+  assert.ok(h.inconnu && !h.source);
+  assert.match(h.valeur, /^Non renseigné/);
+  assert.ok(!s.flatMap(x => x.lignes).some(l => /\d m$/.test(l.valeur)), 'aucune longueur affichée');
+  assert.ok(valeur(s, 'champ.etages').inconnu, 'le nombre de niveaux n\'a aucune source');
+});
+
 group('sauvegarde');
 test('une vue relue est la même', () => {
   const store = createStore({ game: 'test', entries: { partie: { version: 1 } }, backend: memoryBackend() });
   const partie = { vue: { centre: [4.4, 50.84], zoom: 16.5 }, selection: 'seg-u86475', couches: { batiments: false, rues: true } };
+  store.save('partie', partie);
+  assert.deepEqual(store.load('partie'), partie);
+});
+test('une vue 3D et un bâtiment choisi relus sont les mêmes', () => {
+  const store = createStore({ game: 'test', entries: { partie: { version: 1 } }, backend: memoryBackend() });
+  const partie = {
+    vue: { centre: [4.4, 50.84], zoom: 16.5 }, vue3d: { cible: [-87.4, -585.9], distance: 500, azimut: 0.6, inclinaison: 1.1 },
+    mode: '3d', selection: 'bld-u1768178', couches: { batiments: true, rues: true },
+  };
   store.save('partie', partie);
   assert.deepEqual(store.load('partie'), partie);
 });

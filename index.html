@@ -10,9 +10,9 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta property="og:title" content="Urban Mobility Simulator">
 <meta property="og:image" content="og.png">
-<link rel="stylesheet" href="vendor/maplibre-gl/maplibre-gl.css?v=0.1.4">
-<link rel="stylesheet" href="js/lib/game.css?v=0.1.4">
-<link rel="stylesheet" href="css/style.css?v=0.1.4">
+<link rel="stylesheet" href="vendor/maplibre-gl/maplibre-gl.css?v=0.2.0">
+<link rel="stylesheet" href="js/lib/game.css?v=0.2.0">
+<link rel="stylesheet" href="css/style.css?v=0.2.0">
 </head>
 <body>
 <div class="jeu-ecran app" id="ecran">
@@ -28,12 +28,20 @@
   <aside class="outils" id="outils">
     <h2 data-i18n="outils.titre"></h2>
     <div class="couches" id="couches"></div>
+    <button class="bouton" id="bascule-vue" aria-pressed="false"><span id="bascule-vue-texte" data-i18n="outils.vue3d"></span> <kbd>V</kbd></button>
     <button class="bouton" id="recentrer" data-i18n="outils.recentrer"></button>
     <p class="aide" data-i18n="outils.aide"></p>
   </aside>
 
   <main class="carte-zone">
     <div class="carte" id="carte" role="application" data-i18n-aria="carte.libelle"></div>
+    <!-- Vue 3D (three.js, chargé à la première bascule) : même corridor, mêmes objets, mêmes identifiants -->
+    <div class="scene" id="scene" role="application" data-i18n-aria="scene.libelle" tabindex="0" hidden>
+      <div class="scene-etiquettes" id="scene-etiquettes"></div>
+      <div class="scene-echelle" id="scene-echelle" data-i18n-title="scene.echelle"></div>
+      <p class="scene-legende"><span class="scene-legende-signe" aria-hidden="true"></span><span data-i18n="scene.legende"></span></p>
+      <p class="scene-attente" id="scene-attente" role="status" data-i18n="scene.attente" hidden></p>
+    </div>
   </main>
 
   <aside class="inspecteur" id="inspecteur" aria-live="polite">
@@ -120,6 +128,6 @@
 </dialog>
 
 <div class="jeu-toast" id="toast" role="status" hidden></div>
-<script type="module" src="js/main.js?v=0.1.4"></script>
+<script type="module" src="js/main.js?v=0.2.0"></script>
 </body>
 </html>

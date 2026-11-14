@@ -35,8 +35,32 @@
         "Les couches StreetAxes_Underground et StreetNodes_Underground rendent en WFS les mêmes objets que StreetAxes et StreetNodes : non téléchargées, LVL distingue les niveaux.",
         "120 axes ont des identifiants de nœud vides (« …/streetnode/ ») dans la source : affichés « Non renseigné (absent de la source) ».",
         "Codes hors spécification rencontrés : HIERARCHY = T (1 axe), Tunnels TYPE = MS (12).",
-        "Bâtiments : emprise au sol seulement ; aucune hauteur dans cette couche.",
+        "Bâtiments : emprise au sol seulement ; aucune hauteur dans cette couche (les hauteurs viennent de la source urbis3d).",
         "Détail : data/metadata/quality-report.md."
+      ]
+    },
+    {
+      "id": "urbis3d",
+      "organisme": "Paradigm (ex-CIRB/CIBG), Région de Bruxelles-Capitale",
+      "nom": "UrbIS – Constructions 3D (BuildingSolids) : hauteur des bâtiments",
+      "urlFiche": "https://datastore.brussels/web/data/dataset/e9ec2aa4-cffd-11ee-bccc-00090ffe0001",
+      "urlService": "https://urbisdownload.datastore.brussels/atomfeed/e9ec2aa4-cffd-11ee-bccc-00090ffe0001-fr.xml (flux ATOM ; tuiles Shapefile zippées d'environ 1 km)",
+      "specifications": ["https://urbisdownload.datastore.brussels/UrbIS/TechSpec/3D_TechSpec_FR20240409.pdf"],
+      "dateRecuperation": "2026-11-14",
+      "versionOuDatePublication": "Tuiles du 2026-11-07 (mise à jour mensuelle).",
+      "format": "Esri Shapefile MultiPatch (bâtiments LoD 2). Seul un extrait est conservé : data/original/urbis3d/solides.json (par solide : identifiant, identifiant du bâtiment 2D, Zmin, Zmax). Les 18 tuiles lues (~100 Mo zippées) ne sont pas dans le dépôt : leur URL et leur sha256 sont dans data/original/manifest.json.",
+      "systemeCoordonnees": "EPSG:31370 (Belgian Lambert 72), altitudes en mètres",
+      "licence": "CC0 1.0 (domaine public) — fiche de métadonnées Geobru « no conditions for reuse »",
+      "attribution": "Non exigée par la licence ; citée par courtoisie : « UrbIS © Paradigm »",
+      "restrictions": "Aucune limitation d'accès public.",
+      "couches": { "BuildingSolids": ["INSPIRE_ID", "BU_ID", "DETAILSLEV", "étendue verticale de la forme (Zmin, Zmax)"] },
+      "filtre": "Tuiles qui touchent la boîte de l'emprise ; solides dont BU_ID est un bâtiment de la couche Buildings chargée.",
+      "qualite": [
+        "Produit par photogrammétrie (photos aériennes et plans), niveau de détail LoD 2 ; non vérifié sur le terrain.",
+        "Hauteur retenue = Zmax − Zmin des solides associés au bâtiment : hauteur au faîte (toiture comprise) depuis la base du solide. Ce n'est ni une hauteur de corniche ni un nombre de niveaux.",
+        "721 bâtiments sur 14 478 n'ont aucun solide associé : hauteur null, dessinés à plat, « Non renseigné » dans l'inspecteur.",
+        "1 063 solides des tuiles lues ont un BU_ID vide : rattachés à rien, aucune correspondance géométrique tentée.",
+        "Les toitures (pentes, formes) ne sont pas reprises : le jeu extrude l'emprise au sol jusqu'à la hauteur."
       ]
     },
     {

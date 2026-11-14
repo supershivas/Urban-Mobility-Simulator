@@ -19,11 +19,19 @@ Statuts : **à l'étude** · **validé** (Jérôme a tranché) · **en cours** �
 - [x] Valeurs inconnues « Non renseigné », estimations OSM avec méthode et confiance
 - [x] Critère mesuré : `npm test` + `node outils/critere-v01.mjs` (40/40, carte prête en ~1,6 s)
 
+### Vue 3D — v0.2
+
+**Statut** : à mesurer (livré en 0.2.0, attend la validation de Jérôme)
+
+- [x] Scène three.js dans le repère local (mètres Lambert 72), mêmes objets et identifiants que la carte
+- [x] Bâtiments à la hauteur d'UrbIS 3D ; 721 sans solide restent à plat, « Non renseigné »
+- [x] Caméra orbitale, bascule 2D / 3D (V), sélection et inspecteur partagés, bâtiments sélectionnables
+- [x] Critère mesuré : `node outils/critere-v02.mjs` (scène prête en ~0,9 s dans le conteneur, 12/12 tronçons, 12/12 bâtiments)
+
 ## Validé (pitch, dans l'ordre)
 
 | Version | Contenu |
 |---|---|
-| 0.2 | Rendu 3D three.js, bâtiments, caméra libre, sélection synchronisée |
 | 0.3 | Éditeur de section transversale, contraintes de largeur, undo/redo |
 | 0.4 | Éditeur d'intersections et raccordements |
 | 0.5 | Simulation simplifiée et indicateurs |
@@ -41,4 +49,4 @@ Statuts : **à l'étude** · **validé** (Jérôme a tranché) · **en cours** �
 ### Sources complémentaires
 
 **Statut** : à l'étude
-Brussels Mobility (hôte `data.mobility.brussels` bloqué en session), STIB GTFS (v0.5), hauteurs de bâtiments (v0.2).
+Brussels Mobility (hôte `data.mobility.brussels` bloqué en session), STIB GTFS (v0.5), nombre de niveaux des bâtiments (aucune source).

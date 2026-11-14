@@ -83,5 +83,5 @@ en tirets).
 ## Questions ouvertes
 
 - Largeurs de chaussée : UrbIS fournit des **surfaces** (chaussée, trottoir, terre-plein, site propre) mais aucune largeur ; la méthode de mesure (coupe perpendiculaire à l'axe sur les surfaces ?) est à décider avant l'éditeur (v0.3).
-- Hauteurs des bâtiments pour la 3D (v0.2) : absentes de la couche `Buildings` ; source à trouver.
+- Hauteurs des bâtiments : résolu en v0.2.0 par UrbIS 3D (Zmax − Zmin des solides, par identifiant). Restent sans source : le nombre de niveaux, et 721 bâtiments sans solide (dessinés à plat).
 - Brussels Mobility (routes régionales, comptages) : hôte bloqué pendant la v0.1.

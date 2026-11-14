@@ -32,6 +32,21 @@ Les objets qui touchent l'emprise sont gardés entiers (pas de découpe au bord)
 | largeur de chaussée | 0 | 1489 |
 | gestionnaire (axe) | 0 | 1489 |
 
+## Hauteur des bâtiments
+
+Source : UrbIS – Constructions 3D (tuiles du 2026-11-07), 14276 solides associés par identifiant (`BU_ID`) à un bâtiment chargé.
+Hauteur = altitude du point le plus haut des solides UrbIS 3D (LoD 2) associés au bâtiment par son identifiant (BU_ID), moins l'altitude de leur point le plus bas (base du solide). Hauteur au faîte, toiture comprise ; arrondie au décimètre.
+
+| Bâtiments | Nombre |
+|---|---|
+| hauteur renseignée | 13757 |
+| hauteur non renseignée (aucun solide associé) | 721 |
+
+Hauteurs renseignées : de 1.2 m à 105.4 m, médiane 14.9 m. Une hauteur absente reste `null` : le bâtiment est dessiné à plat et l'inspecteur affiche « Non renseigné ».
+1063 solides des tuiles lues n'ont pas d'identifiant de bâtiment (`BU_ID` vide) : ils ne sont rattachés à rien, aucune correspondance géométrique n'est tentée.
+
+## Attributs des axes : ce qui manque
+
 UrbIS ne donne ni largeur, ni nombre de voies, ni sens, ni vitesse sur les axes. Sens, voies et vitesse viennent seulement
 d'OSM, par appariement géométrique (confiance « moyenne », jamais « vérifiée »). La largeur reste inconnue : les surfaces de
 voirie (chaussée, trottoir, terre-plein…) existent dans UrbIS, mais aucune largeur n'en est encore tirée.
@@ -86,6 +101,6 @@ Les nœuds hors emprise sont ceux d'axes à cheval sur le bord ; un nœud « iso
 | `streets` | 429760 |
 | `intersections` | 151762 |
 | `surfaces` | 4247286 |
-| `buildings` | 4609963 |
+| `buildings` | 4995838 |
 | `infrastructure` | 237934 |
 | `network` | 1778383 |
