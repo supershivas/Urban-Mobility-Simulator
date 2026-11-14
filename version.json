@@ -1,8 +1,5 @@
 {
-  "version": "0.1.0",
+  "version": "0.1.1",
   "date": "2026-11-14",
-  "changes": [
-    "La carte réelle du corridor Schuman — Roodebeek : rues, nœuds, bâtiments, couches",
-    "Un clic sur une rue l'inspecte : ce que disent les sources, et ce qu'elles ne disent pas"
-  ]
+  "changes": ["« Nouvelle partie » attend que la carte soit chargée au lieu de ne rien faire"]
 }

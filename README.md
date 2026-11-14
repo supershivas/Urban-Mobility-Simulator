@@ -6,7 +6,7 @@
 **Langues :** français, anglais\
 **Cible :** navigateur de bureau (porte ouverte vers Steam)
 
-**Jouer :** https://supershivas.github.io/urban-mobility-simulator/ · **Aperçu téléphone :** https://supershivas.github.io/urban-mobility-simulator/apercu.html
+**Jouer :** https://supershivas.github.io/Urban-Mobility-Simulator/ · **Aperçu téléphone :** https://supershivas.github.io/Urban-Mobility-Simulator/apercu.html
 
 ## Le principe
 

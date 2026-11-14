@@ -10,9 +10,9 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta property="og:title" content="Urban Mobility Simulator">
 <meta property="og:image" content="og.png">
-<link rel="stylesheet" href="vendor/maplibre-gl/maplibre-gl.css?v=0.1.0">
-<link rel="stylesheet" href="js/lib/game.css?v=0.1.0">
-<link rel="stylesheet" href="css/style.css?v=0.1.0">
+<link rel="stylesheet" href="vendor/maplibre-gl/maplibre-gl.css?v=0.1.1">
+<link rel="stylesheet" href="js/lib/game.css?v=0.1.1">
+<link rel="stylesheet" href="css/style.css?v=0.1.1">
 </head>
 <body>
 <div class="jeu-ecran app" id="ecran">
@@ -59,8 +59,8 @@
   <section class="titre" id="titre">
     <h1>Urban Mobility Simulator</h1>
     <nav class="titre-menu">
-      <button class="bouton" id="continuer" data-i18n="titre.continuer" hidden></button>
-      <button class="bouton" id="nouvelle" data-i18n="titre.nouvelle"></button>
+      <button class="bouton" id="continuer" data-i18n="titre.continuer" hidden disabled></button>
+      <button class="bouton" id="nouvelle" data-i18n="titre.nouvelle" disabled></button>
     </nav>
     <button class="icone titre-reglages" id="ouvrir-reglages" data-i18n-aria="titre.reglages">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 4.3c.4-1.8 2.9-1.8 3.4 0a1.7 1.7 0 0 0 2.6 1.1c1.5-.9 3.3.8 2.4 2.4a1.7 1.7 0 0 0 1 2.5c1.8.5 1.8 3 0 3.4a1.7 1.7 0 0 0-1 2.6c.9 1.5-.9 3.3-2.4 2.4a1.7 1.7 0 0 0-2.6 1c-.5 1.8-3 1.8-3.4 0a1.7 1.7 0 0 0-2.5-1c-1.6.9-3.3-.9-2.4-2.4a1.7 1.7 0 0 0-1.1-2.6c-1.8-.4-1.8-2.9 0-3.4a1.7 1.7 0 0 0 1.1-2.5c-.9-1.6.8-3.3 2.4-2.4 1 .6 2.3.1 2.5-1.1z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -106,6 +106,6 @@
 </dialog>
 
 <div class="jeu-toast" id="toast" role="status" hidden></div>
-<script type="module" src="js/main.js?v=0.1.0"></script>
+<script type="module" src="js/main.js?v=0.1.1"></script>
 </body>
 </html>

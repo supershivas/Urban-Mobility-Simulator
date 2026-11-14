@@ -2,17 +2,17 @@
 // sauvegarde de la vue, mise à jour, debug. La carte lit les données locales
 // de data/ (aucun service distant). Le style est dans carte/style.js,
 // l'inspecteur dans inspecteur.js (purs, testés).
-import * as maplibregl from '../vendor/maplibre-gl/maplibre-gl.mjs?v=0.1.0';
-import { createKeys, stopTypeahead } from './lib/keys.js?v=0.1.0';
-import { lockBrowserGestures } from './lib/pointer.js?v=0.1.0';
-import { createStore, autosave, pickJSONFile } from './lib/save.js?v=0.1.0';
-import { createI18n } from './lib/i18n.js?v=0.1.0';
-import { startUpdateCheck, loadVersion, loadChangelog, downloadJSON } from './lib/app-update.js?v=0.1.0';
-import { PALETTE, ROLES } from './palette.js?v=0.1.0';
-import { TEXTES } from './data/textes.js?v=0.1.0';
-import { styleCarte, COUCHES, COUCHES_ACTIVES, COUCHES_SELECTIONNABLES } from './carte/style.js?v=0.1.0';
-import { lignesInspecteur } from './inspecteur.js?v=0.1.0';
-import { chargerContenu } from './design-store.js?v=0.1.0';
+import * as maplibregl from '../vendor/maplibre-gl/maplibre-gl.mjs?v=0.1.1';
+import { createKeys, stopTypeahead } from './lib/keys.js?v=0.1.1';
+import { lockBrowserGestures } from './lib/pointer.js?v=0.1.1';
+import { createStore, autosave, pickJSONFile } from './lib/save.js?v=0.1.1';
+import { createI18n } from './lib/i18n.js?v=0.1.1';
+import { startUpdateCheck, loadVersion, loadChangelog, downloadJSON } from './lib/app-update.js?v=0.1.1';
+import { PALETTE, ROLES } from './palette.js?v=0.1.1';
+import { TEXTES } from './data/textes.js?v=0.1.1';
+import { styleCarte, COUCHES, COUCHES_ACTIVES, COUCHES_SELECTIONNABLES } from './carte/style.js?v=0.1.1';
+import { lignesInspecteur } from './inspecteur.js?v=0.1.1';
+import { chargerContenu } from './design-store.js?v=0.1.1';
 
 const JEU = 'urban-mobility-simulator';
 const $ = id => document.getElementById(id);
@@ -199,6 +199,10 @@ function afficherInspecteur(s) {
 
 // ─── Écrans ────────────────────────────────────────────────────────────────
 function montrerTitre() {
+  // Désactivés dans le HTML tant que les données ne sont pas chargées : un clic
+  // trop tôt ne faisait rien (vu en ligne, ~2 Mo de network.json).
+  $('continuer').disabled = false;
+  $('nouvelle').disabled = false;
   $('titre').hidden = false;
   $('continuer').hidden = !store.has('partie');
   ($('continuer').hidden ? $('nouvelle') : $('continuer')).focus();
@@ -323,7 +327,7 @@ startUpdateCheck({ beforeReload: sauvegarder, onUpdated: v => toast(t('toast.maj
 
 // ─── Mode debug (section 18) : chargé seulement avec ?debug=1 ──────────────
 if (DEBUG) {
-  const { installDebug } = await import('./lib/debug.js?v=0.1.0');
+  const { installDebug } = await import('./lib/debug.js?v=0.1.1');
   const stations = Object.fromEntries((await lireJSON('data/processed/mobility-infrastructure.geojson')).features
     .filter(f => f.properties.famille === 'station').map(f => [f.properties.nom.toLowerCase(), { x: f.geometry.coordinates[0], y: f.geometry.coordinates[1] }]));
   installDebug({

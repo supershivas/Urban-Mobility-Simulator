@@ -39,8 +39,8 @@ Jeu de conception urbaine inspiré des city builders, limité à l'espace public
 | Critère v0.1 | Données traçables et justes : 0 doublon d'identifiant, 100 % des from/toNode, 20 tronçons au hasard → bon inspecteur, carte prête < 3 s (Jérôme, v0.1.0) |
 | Onglet caché | Rien ne tourne (pas de simulation en v0.1) ; la vue est sauvegardée |
 
-- **Production** : https://supershivas.github.io/urban-mobility-simulator/
-- **Aperçu** : https://supershivas.github.io/urban-mobility-simulator/apercu.html (le jeu dans un cadre de téléphone)
+- **Production** : https://supershivas.github.io/Urban-Mobility-Simulator/
+- **Aperçu** : https://supershivas.github.io/Urban-Mobility-Simulator/apercu.html (le jeu dans un cadre de téléphone)
 - Jeu : pas de sous-titre (section 3 des conventions).
 
 ### Palette « Plan d'urbaniste » (Jérôme, v0.1.0)
