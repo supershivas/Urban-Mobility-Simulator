@@ -54,7 +54,8 @@
 .inspecteur .nom-troncon { font-size: var(--t-titre); font-weight: 700; margin: var(--pas) 0 0; }
 
 .statut { grid-area: statut; display: flex; flex-wrap: wrap; align-items: center; gap: 0 calc(var(--pas) * 3); min-height: var(--statut); padding: 0 calc(var(--pas) * 2); border-top: var(--trait) solid var(--jeu-ombre); font-size: var(--t-petit); background: var(--jeu-surface); }
-.statut a { color: var(--jeu-lien); display: flex; align-items: center; min-height: var(--statut); }
+/* Le lien est une cible : 44 px de haut (conventions §7), la barre grandit avec lui */
+.statut a { color: var(--jeu-lien); display: flex; align-items: center; min-width: var(--jeu-cible); min-height: var(--jeu-cible); }
 .statut span { padding: 8px 0; }
 
 /* Fenêtre étroite : la carte d'abord, les panneaux dessous (on fait défiler) */

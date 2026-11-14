@@ -2,18 +2,18 @@
 // sauvegarde de la vue, mise à jour, debug. La carte lit les données locales
 // de data/ (aucun service distant). Le style est dans carte/style.js,
 // l'inspecteur dans inspecteur.js (purs, testés).
-import * as maplibregl from '../vendor/maplibre-gl/maplibre-gl.mjs?v=0.1.3';
-import { createKeys, stopTypeahead } from './lib/keys.js?v=0.1.3';
-import { lockBrowserGestures } from './lib/pointer.js?v=0.1.3';
-import { createStore, autosave, pickJSONFile } from './lib/save.js?v=0.1.3';
-import { createI18n } from './lib/i18n.js?v=0.1.3';
-import { startUpdateCheck, loadVersion, loadChangelog, downloadJSON } from './lib/app-update.js?v=0.1.3';
-import { PALETTE, ROLES } from './palette.js?v=0.1.3';
-import { TEXTES } from './data/textes.js?v=0.1.3';
-import { COMMANDES_AIDE } from './data/aide.js?v=0.1.3';
-import { styleCarte, COUCHES, COUCHES_ACTIVES, COUCHES_SELECTIONNABLES } from './carte/style.js?v=0.1.3';
-import { lignesInspecteur } from './inspecteur.js?v=0.1.3';
-import { chargerContenu } from './design-store.js?v=0.1.3';
+import * as maplibregl from '../vendor/maplibre-gl/maplibre-gl.mjs?v=0.1.4';
+import { createKeys, stopTypeahead } from './lib/keys.js?v=0.1.4';
+import { lockBrowserGestures } from './lib/pointer.js?v=0.1.4';
+import { createStore, autosave, pickJSONFile } from './lib/save.js?v=0.1.4';
+import { createI18n } from './lib/i18n.js?v=0.1.4';
+import { startUpdateCheck, loadVersion, loadChangelog, downloadJSON } from './lib/app-update.js?v=0.1.4';
+import { PALETTE, ROLES } from './palette.js?v=0.1.4';
+import { TEXTES } from './data/textes.js?v=0.1.4';
+import { COMMANDES_AIDE } from './data/aide.js?v=0.1.4';
+import { styleCarte, COUCHES, COUCHES_ACTIVES, COUCHES_SELECTIONNABLES } from './carte/style.js?v=0.1.4';
+import { lignesInspecteur } from './inspecteur.js?v=0.1.4';
+import { chargerContenu } from './design-store.js?v=0.1.4';
 
 const JEU = 'urban-mobility-simulator';
 const $ = id => document.getElementById(id);
@@ -361,7 +361,7 @@ startUpdateCheck({ beforeReload: sauvegarder, onUpdated: v => toast(t('toast.maj
 
 // ─── Mode debug (section 18) : chargé seulement avec ?debug=1 ──────────────
 if (DEBUG) {
-  const { installDebug } = await import('./lib/debug.js?v=0.1.3');
+  const { installDebug } = await import('./lib/debug.js?v=0.1.4');
   const stations = Object.fromEntries((await lireJSON('data/processed/mobility-infrastructure.geojson')).features
     .filter(f => f.properties.famille === 'station').map(f => [f.properties.nom.toLowerCase(), { x: f.geometry.coordinates[0], y: f.geometry.coordinates[1] }]));
   installDebug({

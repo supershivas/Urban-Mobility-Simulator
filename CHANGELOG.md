@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.4 — 2026-11-14
+- Le lien des anomalies de la barre d'état est plus facile à toucher (44 px de haut)
+
 ## 0.1.3 — 2026-11-14
 - Un bouton « Copier » à côté des identifiants du tronçon choisi
 - Le nombre d'anomalies de la barre d'état ouvre le rapport de qualité
