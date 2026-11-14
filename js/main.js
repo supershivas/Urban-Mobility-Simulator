@@ -68,8 +68,10 @@ function majStatut() {
   $('statut-emprise').textContent = t('statut.emprise', { n: meta.emprise.tamponMetres });
   const anomalies = Object.values(meta.topologie.anomalies).reduce((a, b) => a + b, 0);
   $('statut-donnees').textContent = t('statut.donnees', {
-    segments: meta.comptes.streetSegments, noeuds: meta.comptes.intersections, batiments: meta.comptes.buildings, anomalies,
+    segments: meta.comptes.streetSegments, noeuds: meta.comptes.intersections, batiments: meta.comptes.buildings,
   });
+  $('statut-anomalies').textContent = t('statut.anomalies', { anomalies });
+  $('statut-anomalies').title = t('statut.rapport');
 }
 majStatut();
 
