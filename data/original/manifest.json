@@ -1,0 +1,113 @@
+{
+  "fichiers": {
+    "data/original/urbis/stations.wfs.json": {
+      "source": "urbis",
+      "couche": "PointsOfInterest",
+      "filtre": "TYPE='TS'",
+      "url": "https://geoservices-urbis.irisnet.be/geoserver/urbisvector/ows?service=WFS&version=2.0.0&request=GetFeature&typeNames=urbisvector%3APointsOfInterest&outputFormat=application%2Fjson&CQL_FILTER=TYPE%3D%27TS%27",
+      "objets": 69,
+      "crs": "EPSG:31370",
+      "recupereLe": "2026-11-14T10:01:18.765Z",
+      "sha256": "8c67c40406b106762bfa4569b6993d7a1a19d4a3b8acc33f6856e79280738061",
+      "octets": 30653
+    },
+    "data/original/urbis/axes.wfs.json": {
+      "source": "urbis",
+      "couche": "StreetAxes",
+      "filtre": "INTERSECTS(GEOM, emprise du corridor)",
+      "url": "https://geoservices-urbis.irisnet.be/geoserver/urbisvector/ows",
+      "objets": 1489,
+      "crs": "EPSG:31370",
+      "recupereLe": "2026-11-14T10:01:19.919Z",
+      "sha256": "ca4b308fbf917d74dea32bf36a6c28857dd601a4b2bf473d735e34c5b0d3b766",
+      "octets": 1000610
+    },
+    "data/original/urbis/noeuds.wfs.json": {
+      "source": "urbis",
+      "couche": "StreetNodes",
+      "filtre": "INTERSECTS(GEOM, emprise du corridor)",
+      "url": "https://geoservices-urbis.irisnet.be/geoserver/urbisvector/ows",
+      "objets": 918,
+      "crs": "EPSG:31370",
+      "recupereLe": "2026-11-14T10:01:20.501Z",
+      "sha256": "46a4b9f46b31cce2fdb4e9875c024dc46351a95f37adfb5e3b4d4e7ed6e994a4",
+      "octets": 336651
+    },
+    "data/original/urbis/surfaces.wfs.json": {
+      "source": "urbis",
+      "couche": "StreetSurfaces",
+      "filtre": "INTERSECTS(GEOM, emprise du corridor)",
+      "url": "https://geoservices-urbis.irisnet.be/geoserver/urbisvector/ows",
+      "objets": 6100,
+      "crs": "EPSG:31370",
+      "recupereLe": "2026-11-14T10:01:21.885Z",
+      "sha256": "28c168e8f770610e2cf0b5c418df2ed350ede878b25efb1bc98815386d7f6d14",
+      "octets": 8451966
+    },
+    "data/original/urbis/batiments.wfs.json": {
+      "source": "urbis",
+      "couche": "Buildings",
+      "filtre": "INTERSECTS(GEOM, emprise du corridor)",
+      "url": "https://geoservices-urbis.irisnet.be/geoserver/urbisvector/ows",
+      "objets": 14478,
+      "crs": "EPSG:31370",
+      "recupereLe": "2026-11-14T10:01:26.096Z",
+      "sha256": "f1fd98d8a80b07e28d3f8ce273fefcba6ceaee2dc40c5cba412207b4ad319dc7",
+      "octets": 8658691
+    },
+    "data/original/urbis/ponts.wfs.json": {
+      "source": "urbis",
+      "couche": "Bridges",
+      "filtre": "INTERSECTS(GEOM, emprise du corridor)",
+      "url": "https://geoservices-urbis.irisnet.be/geoserver/urbisvector/ows",
+      "objets": 2,
+      "crs": "EPSG:31370",
+      "recupereLe": "2026-11-14T10:01:26.417Z",
+      "sha256": "eac8387ce88e14ac51094bd2286c3fa0815c28cd986011d591293bd110f6a5ec",
+      "octets": 1455
+    },
+    "data/original/urbis/tunnels.wfs.json": {
+      "source": "urbis",
+      "couche": "Tunnels",
+      "filtre": "INTERSECTS(GEOM, emprise du corridor)",
+      "url": "https://geoservices-urbis.irisnet.be/geoserver/urbisvector/ows",
+      "objets": 37,
+      "crs": "EPSG:31370",
+      "recupereLe": "2026-11-14T10:01:26.756Z",
+      "sha256": "14a61d2ba6cd128bb521e4fc59149e6bfde37e926d6d4a8b429e9c57fad5386b",
+      "octets": 65650
+    },
+    "data/original/urbis/tram.wfs.json": {
+      "source": "urbis",
+      "couche": "TramNetwork",
+      "filtre": "INTERSECTS(GEOM, emprise du corridor)",
+      "url": "https://geoservices-urbis.irisnet.be/geoserver/urbisvector/ows",
+      "objets": 168,
+      "crs": "EPSG:31370",
+      "recupereLe": "2026-11-14T10:01:28.011Z",
+      "sha256": "62af3ad4a78bfc70a75aab36dd1c7fc313cde12cc197f3b969b116d78089cb98",
+      "octets": 293415
+    },
+    "data/original/urbis/noeuds-bord.wfs.json": {
+      "source": "urbis",
+      "couche": "StreetNodes",
+      "filtre": "INSPIRE_ID cités par un axe de l'emprise",
+      "url": "https://geoservices-urbis.irisnet.be/geoserver/urbisvector/ows",
+      "objets": 100,
+      "crs": "EPSG:31370",
+      "recupereLe": "2026-11-14T10:01:28.346Z",
+      "sha256": "88c9e244cf50b67b2e0e3bec25e17d481922cefa765f3bfa466142a3c68c5d12",
+      "octets": 36332
+    },
+    "data/original/osm/highways.json": {
+      "source": "osm",
+      "url": "https://api.openstreetmap.org/api/0.6/map",
+      "objets": 12597,
+      "crs": "EPSG:4326",
+      "filtre": "highway=*",
+      "recupereLe": "2026-11-14T10:03:01.328Z",
+      "sha256": "dd7ffa912470adbb224e538f1322cd4b684e387dd947bc72c44a58fa6c29838a",
+      "octets": 4706332
+    }
+  }
+}

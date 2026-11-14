@@ -1,0 +1,19 @@
+{
+  "name": "urban-mobility-simulator",
+  "private": true,
+  "type": "module",
+  "description": "npm sert uniquement à récupérer les dépendances (copiées dans vendor/) et à lancer Vitest. Pas de bundler.",
+  "scripts": {
+    "vendor": "node outils/vendor.mjs",
+    "donnees": "node outils/donnees/construire.mjs",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "maplibre-gl": "6.16.0",
+    "proj4": "2.22.0"
+  },
+  "devDependencies": {
+    "@turf/buffer": "7.4.0",
+    "vitest": "5.0.5"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "brussels-schuman-roodebeek",
+  "description": "Emprise de chargement des données : tampon autour de la ligne de métro 1 (stations dans l'ordre), plus la station Georges Henri qui porte le secteur « Georges Henri – Gribaumont » du pitch. Les stations sont lues dans UrbIS (Points d'intérêt, TYPE = TS) : aucune coordonnée n'est saisie à la main.",
+  "decision": "Bande de 600 m le long du métro 1 (Jérôme, v0.1.0)",
+  "tamponMetres": 600,
+  "ligne": ["STATION SCHUMAN", "STATION MERODE", "STATION MONTGOMERY", "STATION JOSEPHINE-CHARLOTTE", "STATION GRIBAUMONT", "STATION TOMBERG", "STATION ROODEBEEK"],
+  "ancresSupplementaires": ["STATION GEORGES HENRI"],
+  "secteurs": [
+    { "id": "schuman", "nom": { "fr": "Schuman", "en": "Schuman" }, "stations": ["STATION SCHUMAN"] },
+    { "id": "merode-montgomery", "nom": { "fr": "Mérode – Montgomery", "en": "Mérode – Montgomery" }, "stations": ["STATION MERODE", "STATION MONTGOMERY"] },
+    { "id": "georges-henri-gribaumont", "nom": { "fr": "Georges Henri – Gribaumont", "en": "Georges Henri – Gribaumont" }, "stations": ["STATION GEORGES HENRI", "STATION JOSEPHINE-CHARLOTTE", "STATION GRIBAUMONT"] },
+    { "id": "roodebeek", "nom": { "fr": "Roodebeek", "en": "Roodebeek" }, "stations": ["STATION TOMBERG", "STATION ROODEBEEK"] }
+  ]
+}
