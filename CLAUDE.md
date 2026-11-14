@@ -130,7 +130,7 @@ Modification des voies, édition de carrefours, simulation, véhicules animés, 
 
 ## Structure
 
-- `index.html`, `css/style.css` — en-tête, outils | carte | inspecteur, barre d'état ; écran titre, menu, réglages.
+- `index.html`, `css/style.css` — écran de chargement (`.jeu-chargement` de `game.css`, masqué quand les données sont lues et la carte dessinée), en-tête, outils | carte | inspecteur, barre d'état ; écran titre, menu, réglages.
 - `js/main.js` — cycle de vie, carte MapLibre, sélection, clavier, sauvegarde, debug.
 - `js/carte/style.js` — style MapLibre et couches activables (pur, testé).
 - `js/inspecteur.js` — lignes de l'inspecteur (pur, testé) ; `js/data/textes.js` — tous les textes FR/EN.
@@ -192,4 +192,5 @@ Mode debug : `?debug=1` → `window.__jeu` : `state()` (sélection, inspecteur, 
 - `querySourceFeatures` rend des morceaux de géométrie découpés par tuile : pour viser un tronçon, projeter sa vraie géométrie (`versEcran`).
 - Deux clics au même endroit à moins de ~500 ms passent pour un double-clic (zoom) : l'outil de critère attend 600 ms.
 - `npm install` échouait (bogue d'arborist) tant que `vite` n'était pas déclaré : il l'est, en version fixée.
+- Un bouton visible avant la fin du chargement ne faisait rien en ligne (~2 Mo de données) : écran de chargement obligatoire (conventions §3, Jérôme, v0.1.2), boutons du titre aussi désactivés jusqu'à `montrerTitre()`.
 - Une ligne de grille `minmax(0, 62dvh)` s'effondre à 0 dans une page qui défile (téléphone) : hauteur fixe `62dvh`.

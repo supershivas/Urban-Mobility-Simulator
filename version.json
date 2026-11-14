@@ -1,5 +1,5 @@
 {
-  "version": "0.1.1",
+  "version": "0.1.2",
   "date": "2026-11-14",
-  "changes": ["« Nouvelle partie » attend que la carte soit chargée au lieu de ne rien faire"]
+  "changes": ["Un écran de chargement s'affiche jusqu'à ce que la carte soit prête"]
 }

@@ -2,17 +2,17 @@
 // sauvegarde de la vue, mise à jour, debug. La carte lit les données locales
 // de data/ (aucun service distant). Le style est dans carte/style.js,
 // l'inspecteur dans inspecteur.js (purs, testés).
-import * as maplibregl from '../vendor/maplibre-gl/maplibre-gl.mjs?v=0.1.1';
-import { createKeys, stopTypeahead } from './lib/keys.js?v=0.1.1';
-import { lockBrowserGestures } from './lib/pointer.js?v=0.1.1';
-import { createStore, autosave, pickJSONFile } from './lib/save.js?v=0.1.1';
-import { createI18n } from './lib/i18n.js?v=0.1.1';
-import { startUpdateCheck, loadVersion, loadChangelog, downloadJSON } from './lib/app-update.js?v=0.1.1';
-import { PALETTE, ROLES } from './palette.js?v=0.1.1';
-import { TEXTES } from './data/textes.js?v=0.1.1';
-import { styleCarte, COUCHES, COUCHES_ACTIVES, COUCHES_SELECTIONNABLES } from './carte/style.js?v=0.1.1';
-import { lignesInspecteur } from './inspecteur.js?v=0.1.1';
-import { chargerContenu } from './design-store.js?v=0.1.1';
+import * as maplibregl from '../vendor/maplibre-gl/maplibre-gl.mjs?v=0.1.2';
+import { createKeys, stopTypeahead } from './lib/keys.js?v=0.1.2';
+import { lockBrowserGestures } from './lib/pointer.js?v=0.1.2';
+import { createStore, autosave, pickJSONFile } from './lib/save.js?v=0.1.2';
+import { createI18n } from './lib/i18n.js?v=0.1.2';
+import { startUpdateCheck, loadVersion, loadChangelog, downloadJSON } from './lib/app-update.js?v=0.1.2';
+import { PALETTE, ROLES } from './palette.js?v=0.1.2';
+import { TEXTES } from './data/textes.js?v=0.1.2';
+import { styleCarte, COUCHES, COUCHES_ACTIVES, COUCHES_SELECTIONNABLES } from './carte/style.js?v=0.1.2';
+import { lignesInspecteur } from './inspecteur.js?v=0.1.2';
+import { chargerContenu } from './design-store.js?v=0.1.2';
 
 const JEU = 'urban-mobility-simulator';
 const $ = id => document.getElementById(id);
@@ -54,7 +54,8 @@ try {
     lireJSON('data/processed/metadata.json'), lireJSON('data/metadata/corridor.geojson'),
   ]);
 } catch (e) {
-  $('chargement').textContent = t('chargement.erreur', { raison: e.message });
+  document.querySelector('#chargement .jeu-chargement-barre').hidden = true;
+  $('chargement-texte').textContent = t('chargement.erreur', { raison: e.message });
   throw e;
 }
 const segments = new Map(reseau.streetSegments.map(s => [s.id, s]));
@@ -93,7 +94,6 @@ carte.touchZoomRotate.disableRotation();
 carte.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-left');
 const pret = new Promise(res => carte.once('idle', res));
 pret.then(() => {
-  $('chargement').hidden = true;
   window.__jeu?.log('carte-prete', { ms: Math.round(performance.now() - t0) });
 });
 
@@ -327,7 +327,7 @@ startUpdateCheck({ beforeReload: sauvegarder, onUpdated: v => toast(t('toast.maj
 
 // ─── Mode debug (section 18) : chargé seulement avec ?debug=1 ──────────────
 if (DEBUG) {
-  const { installDebug } = await import('./lib/debug.js?v=0.1.1');
+  const { installDebug } = await import('./lib/debug.js?v=0.1.2');
   const stations = Object.fromEntries((await lireJSON('data/processed/mobility-infrastructure.geojson')).features
     .filter(f => f.properties.famille === 'station').map(f => [f.properties.nom.toLowerCase(), { x: f.geometry.coordinates[0], y: f.geometry.coordinates[1] }]));
   installDebug({
@@ -354,4 +354,7 @@ if (DEBUG) {
 }
 
 if (contenu.aPublier) toast(t('toast.atelier', { n: contenu.aPublier }));
+// L'écran de chargement couvre tout jusqu'à ce que la carte soit dessinée (section 3)
+await pret;
+$('chargement').hidden = true;
 montrerTitre();

@@ -10,9 +10,9 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta property="og:title" content="Urban Mobility Simulator">
 <meta property="og:image" content="og.png">
-<link rel="stylesheet" href="vendor/maplibre-gl/maplibre-gl.css?v=0.1.1">
-<link rel="stylesheet" href="js/lib/game.css?v=0.1.1">
-<link rel="stylesheet" href="css/style.css?v=0.1.1">
+<link rel="stylesheet" href="vendor/maplibre-gl/maplibre-gl.css?v=0.1.2">
+<link rel="stylesheet" href="js/lib/game.css?v=0.1.2">
+<link rel="stylesheet" href="css/style.css?v=0.1.2">
 </head>
 <body>
 <div class="jeu-ecran app" id="ecran">
@@ -34,7 +34,6 @@
 
   <main class="carte-zone">
     <div class="carte" id="carte" role="application" data-i18n-aria="carte.libelle"></div>
-    <p class="chargement" id="chargement" data-i18n="chargement"></p>
   </main>
 
   <aside class="inspecteur" id="inspecteur" aria-live="polite">
@@ -54,6 +53,13 @@
     <span id="statut-donnees"></span>
     <a href="data/metadata/quality-report.md" data-i18n="statut.rapport"></a>
   </footer>
+
+  <!-- Écran de chargement (section 3) : affiché d'emblée, masqué quand les données
+       sont lues et la carte dessinée ; le texte est remplacé par l'erreur si le chargement échoue -->
+  <div class="jeu-chargement" id="chargement" role="status" aria-live="polite">
+    <span class="jeu-chargement-barre" aria-hidden="true"></span>
+    <p id="chargement-texte" data-i18n="chargement">Chargement des données du corridor…</p>
+  </div>
 
   <!-- Écran titre : pas de sous-titre (section 3) -->
   <section class="titre" id="titre">
@@ -106,6 +112,6 @@
 </dialog>
 
 <div class="jeu-toast" id="toast" role="status" hidden></div>
-<script type="module" src="js/main.js?v=0.1.1"></script>
+<script type="module" src="js/main.js?v=0.1.2"></script>
 </body>
 </html>
