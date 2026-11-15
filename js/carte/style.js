@@ -1,6 +1,7 @@
 // Le style MapLibre de la carte, construit depuis la palette et les réglages.
 // Pur (aucun DOM) : testé dans Node. Aucune source distante : pas de fond de
 // carte en ligne, pas de glyphes (les noms passent par le DOM, pas par MapLibre).
+import { BANDES } from '../data/bandes.js?v=0.3.0';
 
 export const COUCHES = {
   // id de couche activable → couches MapLibre qu'elle commande
@@ -12,8 +13,9 @@ export const COUCHES = {
   ouvrages: ['tunnels', 'ponts'],
   stations: ['stations'],
   emprise: ['emprise'],
+  sections: ['sections', 'sections-motif', 'sections-contour', 'sections-sens', 'sections-choisie-cerne', 'sections-choisie'],
 };
-export const COUCHES_ACTIVES = { batiments: true, surfaces: true, rues: true, intersections: true, rails: true, ouvrages: false, stations: true, emprise: true };
+export const COUCHES_ACTIVES = { batiments: true, surfaces: true, rues: true, intersections: true, rails: true, ouvrages: false, stations: true, emprise: true, sections: true };
 export const COUCHES_SELECTIONNABLES = ['rues', 'rues-tunnel'];
 
 // Partagés avec la scène 3D (js/scene/scene3d.js) : mêmes filtres, mêmes teintes dans les deux vues
@@ -41,6 +43,8 @@ export function styleCarte(P, reglages, base = 'data/') {
       noeuds: source('processed/intersections.geojson'),
       infra: source('processed/mobility-infrastructure.geojson'),
       emprise: source('metadata/corridor.geojson'),
+      // Les sections modifiées (et celle qu'on édite) : remplies par le jeu, jamais lues sur le réseau
+      sections: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
     },
     layers: [
       { id: 'fond', type: 'background', paint: { 'background-color': P.papier } },
@@ -72,6 +76,19 @@ export function styleCarte(P, reglages, base = 'data/') {
         id: 'rails-tram', type: 'line', source: 'infra', filter: ['all', ['==', ['get', 'famille'], 'rail'], ['==', ['get', 'type'], 'TW']],
         paint: { 'line-color': P.noeud, 'line-width': 1.2 },
       },
+      // Sections transversales : une teinte par type de bande, doublée d'un motif (images faites par carte/motifs.js)
+      {
+        id: 'sections', type: 'fill', source: 'sections', filter: ['==', ['geometry-type'], 'Polygon'],
+        paint: { 'fill-color': ['match', ['get', 'type'], ...Object.entries(BANDES).flatMap(([type, b]) => [type, P[b.couleur]]), P.voirie] },
+      },
+      {
+        id: 'sections-motif', type: 'fill', source: 'sections', filter: ['all', ['==', ['geometry-type'], 'Polygon'], ['!=', ['get', 'motif'], '']],
+        paint: { 'fill-pattern': ['concat', 'motif-', ['get', 'motif']] },
+      },
+      {
+        id: 'sections-contour', type: 'line', source: 'sections', filter: ['==', ['geometry-type'], 'Polygon'],
+        paint: { 'line-color': P.encre, 'line-width': ['interpolate', ['linear'], ['zoom'], 15, 0.3, 19, 1] },
+      },
       {
         id: 'rues-tunnel', type: 'line', source: 'rues', filter: ['<', ['get', 'niveau'], 0],
         layout: { 'line-cap': 'butt' },
@@ -84,6 +101,24 @@ export function styleCarte(P, reglages, base = 'data/') {
           'line-color': ['case', ['in', ['get', 'hierarchie'], ['literal', HIERARCHIE_PRINCIPALE]], P.encre, P.bord],
           'line-width': largeurSelon(['in', ['get', 'hierarchie'], ['literal', HIERARCHIE_PRINCIPALE]], t.axePrincipalPx, t.axeSecondairePx),
         },
+      },
+      // Le sens des bandes de circulation : des flèches (images, pas de glyphes) le long de la ligne médiane
+      {
+        id: 'sections-sens', type: 'symbol', source: 'sections', minzoom: 16, filter: ['==', ['geometry-type'], 'LineString'],
+        layout: {
+          'symbol-placement': 'line', 'symbol-spacing': 80, 'icon-rotation-alignment': 'map', 'icon-allow-overlap': true, 'icon-ignore-placement': true,
+          'icon-image': ['case', ['==', ['get', 'sens'], 'double'], 'fleche-double', 'fleche'],
+          'icon-size': ['interpolate', ['exponential', 2], ['zoom'], 16, 0.35, 20, 1],
+        },
+      },
+      // Bande choisie : trait de sélection sur un cerne d'encre (la sélection seule ne ressort pas sur la piste ni le bus)
+      {
+        id: 'sections-choisie-cerne', type: 'line', source: 'sections', filter: ['==', ['get', 'id'], ''],
+        paint: { 'line-color': P.encre, 'line-width': 5 },
+      },
+      {
+        id: 'sections-choisie', type: 'line', source: 'sections', filter: ['==', ['get', 'id'], ''],
+        paint: { 'line-color': P.selection, 'line-width': 2.5 },
       },
       {
         id: 'noeuds', type: 'circle', source: 'noeuds', minzoom: 14,

@@ -4,14 +4,16 @@
 // Ce module dessine et vise : il ne modifie jamais l'état du jeu (main.js décide).
 // Rien ne s'anime tout seul : une image n'est calculée que sur demande, et jamais
 // quand la vue est inactive ou l'onglet caché.
-import * as THREE from '../../vendor/three/three.module.js?v=0.2.0';
-import { versScene, depuisScene } from '../geo/repere.js?v=0.2.0';
-import { distancePointLigne, boite } from '../geo/geometrie.js?v=0.2.0';
-import { pose, contraindre, deplacer, tourner, zoomer, cadrer, metresParPixel, interpoler } from './camera.js?v=0.2.0';
+import * as THREE from '../../vendor/three/three.module.js?v=0.3.0';
+import { versScene, depuisScene } from '../geo/repere.js?v=0.3.0';
+import { distancePointLigne, boite } from '../geo/geometrie.js?v=0.3.0';
+import { decalerLigne } from '../geo/decalage.js?v=0.3.0';
+import { pose, contraindre, deplacer, tourner, zoomer, cadrer, metresParPixel, interpoler } from './camera.js?v=0.3.0';
 import {
-  maillerSurfaces, maillerBatiments, maillerAxes, maillerRuban, segmentsDeLignes, lignesLocales, rangDuTriangle,
-} from './geometrie3d.js?v=0.2.0';
-import { HIERARCHIE_PRINCIPALE, SURFACE_PIETONNE, SURFACE_SOUTERRAINE } from '../carte/style.js?v=0.2.0';
+  maillerSurfaces, maillerBatiments, maillerAxes, maillerRuban, maillerSections, segmentsDeLignes, lignesLocales, rangDuTriangle,
+} from './geometrie3d.js?v=0.3.0';
+import { BANDES } from '../data/bandes.js?v=0.3.0';
+import { HIERARCHIE_PRINCIPALE, SURFACE_PIETONNE, SURFACE_SOUTERRAINE } from '../carte/style.js?v=0.3.0';
 
 const rad = deg => (deg * Math.PI) / 180;
 
@@ -109,6 +111,35 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
   contour.computeLineDistances();
   groupe('emprise', contour);
 
+  // ─── Sections transversales (v0.3) : refaites quand le scénario change ──
+  // Posées sur les surfaces, sous les axes ; mêmes bords que sur la carte.
+  const groupeSections = scene.add(new THREE.Group()).children.at(-1);
+  groupes.sections = groupeSections;
+  let mSections = { ids: [], bandes: new Map(), indices: [] }, bandeChoisie = null;
+  function dessinerSections(entrees) {
+    vider(groupeSections);
+    mSections = maillerSections(entrees.map(e => ({ ligne: mAxes.lignes.get(e.section.troncon), section: e.section })).filter(e => e.ligne),
+      type => rvb(P[BANDES[type]?.couleur ?? 'voirie']));
+    if (!mSections.ids.length) return;
+    groupeSections.add(new THREE.Mesh(geometrie(mSections), aplat(0, { vertexColors: true })));
+    // Les bords de chaque bande, en encre : lisibles sans la couleur
+    const bords = [];
+    for (const e of entrees) {
+      const ligne = mAxes.lignes.get(e.section.troncon);
+      if (!ligne) continue;
+      const choisie = bandeChoisie?.startsWith(`${e.section.troncon}:`) ? bandeChoisie.split(':')[1] : null;
+      for (const b of e.decalages) for (const d of [b.gauche, b.droite]) bords.push({ l: decalerLigne(ligne, d), choisie: b.id === choisie });
+    }
+    // (une géométrie vide ferait calculer à three.js une sphère englobante NaN : rien n'est ajouté sans bord)
+    const ordinaires = segmentsDeLignes(bords.filter(b => !b.choisie).map(b => b.l), S.hauteurLignesM / 3);
+    if (ordinaires.length) groupeSections.add(lignes(ordinaires, P.encre));
+    // Bande choisie : ses deux bords en rubans, sélection sur un cerne d'encre (comme sur la carte)
+    for (const b of bords.filter(x => x.choisie)) {
+      groupeSections.add(new THREE.Mesh(geometrie(maillerRuban(b.l, S.bandeChoisieM * 2.5, 0)), aplat(-3, { color: P.encre })));
+      groupeSections.add(new THREE.Mesh(geometrie(maillerRuban(b.l, S.bandeChoisieM, 0)), aplat(-4, { color: P.selection })));
+    }
+  }
+
   // ─── Surbrillance de la sélection (même objet que sur la carte) ──────────
   const surbrillance = scene.add(new THREE.Group()).children.at(-1);
   let choisi = null, largeurRuban = 0; // { type, id, noeuds }
@@ -143,7 +174,9 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
     }
   }
   // Le trait de sélection garde une épaisseur lisible à l'écran, quelle que soit la distance
-  const largeurSelection = () => Math.max(S.selectionM, mpp() * S.selectionPx);
+  // Affiné quand la section du tronçon est dessinée : le trait ne doit pas cacher ses bandes
+  let fin = false;
+  const largeurSelection = () => (fin ? Math.max(S.selectionFinM, mpp() * S.selectionFinPx) : Math.max(S.selectionM, mpp() * S.selectionPx));
 
   // ─── Caméra orbitale ─────────────────────────────────────────────────────
   let largeur = 1, hauteur = 1, actif = false, image = 0, vol = null, prete = false;
@@ -266,6 +299,8 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
     /** Met en évidence { type: 'troncon' | 'batiment', id, noeuds? } ou rien (null). */
     selectionner(objet) { choisi = objet; dessinerSelection(); demander(); },
     surbrillance: () => choisi?.id ?? null,
+    /** Trait de sélection fin (la section du tronçon choisi est dessinée) ou normal. */
+    affinerSelection(v) { if (fin !== v) { fin = v; dessinerSelection(); demander(); } },
     definirCouches(couches) { for (const [c, g] of Object.entries(groupes)) g.visible = couches[c] !== false; demander(); },
     viser,
     tronconAuCentre: () => (groupes.rues.visible ? tronconPres(etat.cible) : null),
@@ -283,6 +318,10 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
       return { local: [c[0], -c[1]], hauteur: mBatiments.hauteurs[r] };
     },
     niveauAxe: id => niveauAxe.get(id) ?? null,
+    /** Les sections à dessiner : [{ section, decalages }] (js/section.js) ; bande : "troncon:bande" mise en évidence. */
+    definirSections(entrees, bande = null) { bandeChoisie = bande; dessinerSections(entrees); demander(); },
+    /** Ce que la scène dessine des sections : { "troncon:bande": { gauche, droite, type } }. */
+    sections: () => Object.fromEntries(mSections.bandes),
     comptes: { batiments: mBatiments.ids.length, surfaces: mSurfaces.ids.length, troncons: mAxes.ids.length, triangles: (mBatiments.indices.length + mSurfaces.indices.length + mAxes.indices.length) / 3 },
     /** Dessine tout de suite (sans attendre l'image suivante) : sert à mesurer la première image. */
     dessinerMaintenant() { cancelAnimationFrame(image); image = 0; dessiner(); return prete; },

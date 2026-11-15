@@ -3,22 +3,28 @@
 // lisent les mêmes données locales de data/ (aucun service distant) et partagent
 // la sélection et l'inspecteur. Le style est dans carte/style.js, la scène dans
 // scene/scene3d.js (chargée à la première bascule), l'inspecteur dans inspecteur.js.
-import * as maplibregl from '../vendor/maplibre-gl/maplibre-gl.mjs?v=0.2.0';
-import { createKeys, stopTypeahead } from './lib/keys.js?v=0.2.0';
-import { lockBrowserGestures } from './lib/pointer.js?v=0.2.0';
-import { createStore, autosave, pickJSONFile } from './lib/save.js?v=0.2.0';
-import { createI18n } from './lib/i18n.js?v=0.2.0';
-import { startUpdateCheck, loadVersion, loadChangelog, downloadJSON } from './lib/app-update.js?v=0.2.0';
-import { PALETTE, ROLES } from './palette.js?v=0.2.0';
-import { TEXTES } from './data/textes.js?v=0.2.0';
-import { COMMANDES_AIDE } from './data/aide.js?v=0.2.0';
-import { styleCarte, COUCHES, COUCHES_ACTIVES, COUCHES_SELECTIONNABLES } from './carte/style.js?v=0.2.0';
-import { lignesInspecteur, lignesInspecteurBatiment } from './inspecteur.js?v=0.2.0';
-import { creerRepere } from './geo/repere.js?v=0.2.0';
-import { boite } from './geo/geometrie.js?v=0.2.0';
-import { distancePourZoom, zoomPourDistance } from './scene/camera.js?v=0.2.0';
-import { lireJSON, couche, couchesScene } from './donnees.js?v=0.2.0';
-import { chargerContenu } from './design-store.js?v=0.2.0';
+import * as maplibregl from '../vendor/maplibre-gl/maplibre-gl.mjs?v=0.3.0';
+import { createKeys, stopTypeahead } from './lib/keys.js?v=0.3.0';
+import { lockBrowserGestures } from './lib/pointer.js?v=0.3.0';
+import { createStore, autosave, pickJSONFile } from './lib/save.js?v=0.3.0';
+import { createI18n } from './lib/i18n.js?v=0.3.0';
+import { startUpdateCheck, loadVersion, loadChangelog, downloadJSON } from './lib/app-update.js?v=0.3.0';
+import { PALETTE, ROLES } from './palette.js?v=0.3.0';
+import { TEXTES } from './data/textes.js?v=0.3.0';
+import { COMMANDES_AIDE } from './data/aide.js?v=0.3.0';
+import { styleCarte, COUCHES, COUCHES_ACTIVES, COUCHES_SELECTIONNABLES } from './carte/style.js?v=0.3.0';
+import { lignesInspecteur, lignesInspecteurBatiment } from './inspecteur.js?v=0.3.0';
+import { creerRepere } from './geo/repere.js?v=0.3.0';
+import { boite } from './geo/geometrie.js?v=0.3.0';
+import { distancePourZoom, zoomPourDistance } from './scene/camera.js?v=0.3.0';
+import { lireJSON, couche, couchesScene } from './donnees.js?v=0.3.0';
+import { chargerContenu } from './design-store.js?v=0.3.0';
+import { sectionMesuree, OPERATIONS, memeSection, decalages, verifier } from './section.js?v=0.3.0';
+import { creerHistorique } from './historique.js?v=0.3.0';
+import { featuresSections } from './carte/sections.js?v=0.3.0';
+import { ajouterImages } from './carte/motifs.js?v=0.3.0';
+import { wgs84VersLambert, lambertVersWgs84 } from './geo/coordonnees.js?v=0.3.0';
+import { creerEditeur } from './editeur.js?v=0.3.0';
 
 const JEU = 'urban-mobility-simulator';
 const $ = id => document.getElementById(id);
@@ -33,7 +39,7 @@ const store = createStore({
   game: JEU,
   debug: DEBUG,
   entries: {
-    partie: { version: 1 }, // { vue: { centre, zoom, cap }, selection, couches }
+    partie: { version: 1 }, // { vue, vue3d, mode, selection, couches, scenario: { sections: { [tronçon]: section } } }
     prefs: { version: 1, debugWrites: false, defaults: { langue: (navigator.language || 'fr').startsWith('fr') ? 'fr' : 'en' } },
   },
   secret: ['gh-token'],
@@ -82,8 +88,9 @@ function majStatut() {
 majStatut();
 
 // ─── La partie : la vue, la sélection et les couches (sauvegardées) ───────
-// { vue: { centre, zoom }, vue3d: { cible, distance, azimut, inclinaison }, mode: '2d' | '3d', selection, couches }
-const nouvellePartie = () => ({ vue: null, vue3d: null, mode: '2d', selection: null, couches: { ...COUCHES_ACTIVES } });
+// { vue: { centre, zoom }, vue3d: { cible, distance, azimut, inclinaison }, mode: '2d' | '3d', selection, couches,
+//   scenario: { sections } } — le scénario ne garde que les sections modifiées (les autres restent l'état mesuré)
+const nouvellePartie = () => ({ vue: null, vue3d: null, mode: '2d', selection: null, couches: { ...COUCHES_ACTIVES }, scenario: { sections: {} } });
 let etat = null;
 
 // ─── Carte ─────────────────────────────────────────────────────────────────
@@ -100,6 +107,8 @@ const carte = new maplibregl.Map({
   dragRotate: false,
 });
 carte.touchZoomRotate.disableRotation();
+let largeurSelection2d = null; // l'épaisseur du style, rendue quand la section n'est plus dessinée
+carte.on('load', () => { ajouterImages(carte, PALETTE); largeurSelection2d = carte.getPaintProperty('rues-selection', 'line-width'); }); // motifs des bandes et flèches de sens, dessinés depuis la palette
 carte.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-left');
 const pret = new Promise(res => carte.once('idle', res));
 pret.then(() => {
@@ -170,6 +179,8 @@ function selectionner(id, { centrer = false, batiment = null } = {}) {
     afficherInspecteur(null, t('inspecteur.lecture'));
     chargerBatiments().then(m => { if (etat?.selection === id) selectionner(m.has(id) ? id : null); }, e => toast(e.message));
   } else afficherInspecteur(s ?? (b && { id: idBatiment, hauteur: b.hauteur ?? null, solides: b.solides ?? 0 }));
+  // L'éditeur suit la sélection : il passe à l'autre tronçon s'il est éditable, sinon il se ferme
+  if (edite && edite !== etat.selection) { if (s?.emprise) ouvrirEditeur(s.id); else fermerEditeur(); }
   if (s && centrer) {
     const n = [s.fromNode, s.toNode].map(x => noeuds.get(x)).filter(Boolean);
     const f = carte.querySourceFeatures('rues', { filter: ['==', ['get', 'id'], s.id] })[0];
@@ -178,6 +189,7 @@ function selectionner(id, { centrer = false, batiment = null } = {}) {
       carte.easeTo({ center: c[Math.floor(c.length / 2)], duration: duree() });
     } else if (n.length) window.__jeu?.log('centrage-impossible', { id });
   }
+  majSections();
   sauvegarder();
   window.__jeu?.log('selection', { id: etat.selection });
 }
@@ -217,10 +229,12 @@ function afficherInspecteur(s, vide = t('inspecteur.vide')) {
   if (!s) { delete $('inspecteur-corps').dataset.segment; $('inspecteur-corps').replaceChildren(el('p', { className: 'vide', textContent: vide })); return; }
   const batiment = estBatiment(s.id);
   const sections = batiment ? lignesInspecteurBatiment(s, { t, lang: i18n.lang, infos: meta.batiments })
-    : lignesInspecteur(s, { t, lang: i18n.lang, codes, noeuds, rues });
+    : lignesInspecteur(s, { t, lang: i18n.lang, codes, noeuds, rues, section: etat?.scenario.sections[s.id] ?? null });
   const nom = batiment ? t('inspecteur.batiment') : [s.nom.fr, s.nom.nl].filter(Boolean)[0];
   $('inspecteur-corps').replaceChildren(
     el('p', { className: `nom-troncon${nom ? '' : ' inconnu'}`, textContent: nom ?? t('valeur.inconnu') }),
+    ...(!batiment && s.emprise ? [el('button', { className: 'bouton inspecteur-editer', id: 'editer-section', type: 'button', onclick: () => ouvrirEditeur(s.id) },
+      t('inspecteur.editer'), ' ', el('kbd', { textContent: 'M' }))] : []),
     ...sections.flatMap(sec => [
       el('h3', { textContent: sec.titre }),
       el('dl', {}, ...sec.lignes.flatMap(l => [
@@ -245,12 +259,13 @@ function chargerScene() {
   return (chargementScene ??= (async () => {
     $('scene-attente').hidden = false;
     await new Promise(res => setTimeout(res, 30)); // laisse le message s'afficher : la construction occupe le fil
-    const [{ creerScene }, couches] = await Promise.all([import('./scene/scene3d.js?v=0.2.0'), couchesScene(), chargerBatiments()]);
+    const [{ creerScene }, couches] = await Promise.all([import('./scene/scene3d.js?v=0.3.0'), couchesScene(), chargerBatiments()]);
     scene = creerScene({
       conteneur: $('scene'), repere, P: PALETTE, R, donnees: { ...couches, emprise }, mouvementReduit: reduit,
       surChoix: c => { if (enCarte()) selectionner(c?.id ?? null); },
       surRendu: habillerScene,
     });
+    majSections();
     for (const s of scene.stations) etiquettes3d.push($('scene-etiquettes').appendChild(el('div', { className: 'etiquette-station', textContent: s.nom })));
     $('scene-attente').hidden = true;
   })().catch(e => {
@@ -350,6 +365,10 @@ function montrerTitre() {
 }
 async function jouer(partie) {
   etat = { ...nouvellePartie(), ...partie };
+  etat.couches = { ...COUCHES_ACTIVES, ...etat.couches }; // une couche ajoutée depuis la sauvegarde prend sa valeur par défaut
+  etat.scenario = { sections: {}, ...etat.scenario };
+  historique.reinitialiser(etat.scenario);
+  fermerEditeur();
   // Toujours repartir de la carte : la vue 3D se rouvre ensuite si la partie y était
   mode = '2d'; scene?.activer(false); $('scene').hidden = true; $('carte').inert = false; majBascule();
   $('titre').hidden = true;
@@ -359,6 +378,7 @@ async function jouer(partie) {
   if (etat.vue) carte.jumpTo({ center: etat.vue.centre, zoom: etat.vue.zoom });
   else recentrer();
   selectionner(etat.selection);
+  majSections();
   if (partie.mode === '3d') await definirMode('3d', { reprise: true });
 }
 function sauvegarder() {
@@ -405,6 +425,113 @@ $('ouvrir-reglages').onclick = () => $('dialogue-reglages').showModal();
 $('recentrer').onclick = recentrer;
 $('deselectionner').onclick = () => selectionner(null);
 
+// ─── Éditeur de section transversale (v0.3) ────────────────────────────────
+// currentScenario = etat.scenario : seules les sections modifiées y sont ; les données sources ne changent jamais.
+const historique = creerHistorique({ sections: {} });
+let edite = null, apercu = null; // tronçon édité ; section affichée pendant un glisser (pas encore dans l'historique)
+const sectionDe = id => etat?.scenario.sections[id] ?? sectionMesuree(segments.get(id));
+const nomDe = s => [s.nom.fr, s.nom.nl].filter(Boolean)[0] ?? null;
+const editeur = creerEditeur({
+  racine: $('editeur'), P: PALETTE, t, lang: i18n.lang,
+  rappels: {
+    surOperation: (nom, args, opts) => operer(nom, args, opts),
+    surAnnuler: () => annuler(), surRetablir: () => retablir(),
+    surMesure: () => revenirMesure(), surFermer: () => fermerEditeur(),
+    surChoixBande: () => majSections(),
+  },
+});
+function infoEditeur(id) {
+  const s = segments.get(id), e = s.emprise;
+  return {
+    nom: nomDe(s), modifiee: !!etat.scenario.sections[id], peutAnnuler: historique.peutAnnuler, peutRetablir: historique.peutRetablir,
+    source: t('valeur.emprise-source', { coupes: e.coupes, ecart: e.ecart, confiance: t(`valeur.confiance.${e.confiance}`) }),
+  };
+}
+function ouvrirEditeur(id) {
+  const s = segments.get(id);
+  if (!s?.emprise) { toast(t(s ? 'editeur.non-editable' : 'editeur.choisir')); return false; }
+  edite = id; apercu = null;
+  editeur.afficher(sectionDe(id), infoEditeur(id));
+  carte.resize();
+  majSections();
+  window.__jeu?.log('editeur', { troncon: id });
+  return true;
+}
+function fermerEditeur() {
+  if (!edite) return;
+  edite = null; apercu = null;
+  editeur.masquer();
+  carte.resize();
+  majSections();
+}
+const basculerEditeur = () => (edite ? fermerEditeur() : etat?.selection && !estBatiment(etat.selection) ? ouvrirEditeur(etat.selection) : toast(t('editeur.choisir')));
+
+/** Une opération de js/section.js sur la section éditée. apercu : montrée sans entrer dans l'historique (glisser). */
+function operer(nom, args, { apercu: provisoire = false, annulerApercu = false } = {}) {
+  if (!edite) return null;
+  if (annulerApercu || !nom) { apercu = null; editeur.apercu(sectionDe(edite)); majSections(); return null; }
+  const r = OPERATIONS[nom](sectionDe(edite), ...args);
+  if (r.refus) { editeur.message(t(`refus.${r.refus}`, r.valeurs), true); window.__jeu?.log('refus', { operation: nom, refus: r.refus }); return r; }
+  if (verifier(r.section).length) throw new Error(`Section invalide après ${nom}`); // ne doit jamais arriver : les règles l'empêchent
+  if (provisoire) { apercu = r.section; editeur.apercu(r.section); majSections(); return r; }
+  apercu = null;
+  const sections = { ...etat.scenario.sections };
+  if (memeSection(r.section, sectionMesuree(segments.get(edite)))) delete sections[edite]; // revenue à la mesure : rien à garder
+  else sections[edite] = r.section;
+  etat.scenario = historique.faire({ sections });
+  apresChangement();
+  window.__jeu?.log('section', { troncon: edite, operation: nom });
+  return r;
+}
+function apresChangement() {
+  if (edite) editeur.afficher(sectionDe(edite), infoEditeur(edite));
+  majSections();
+  if (etat.selection && !estBatiment(etat.selection)) afficherInspecteur(segments.get(etat.selection));
+  sauvegarder();
+}
+function annuler() {
+  const e = historique.annuler();
+  if (!e) { editeur.message(t('editeur.rien-annuler')); return; }
+  etat.scenario = e; apresChangement(); editeur.message(t('editeur.annule'));
+}
+function retablir() {
+  const e = historique.retablir();
+  if (!e) { editeur.message(t('editeur.rien-retablir')); return; }
+  etat.scenario = e; apresChangement(); editeur.message(t('editeur.retabli'));
+}
+function revenirMesure() {
+  if (!edite || !etat.scenario.sections[edite]) return;
+  const sections = { ...etat.scenario.sections };
+  delete sections[edite];
+  etat.scenario = historique.faire({ sections });
+  apresChangement();
+  editeur.message(t('editeur.remis'));
+}
+
+// Les sections dessinées : toutes celles du scénario, plus celle qu'on édite (même inchangée)
+let lignesRues = null; // Map(id → ligne WGS84), une fois streets.geojson lu
+couche('rues').then(g => { lignesRues = new Map(g.features.map(f => [f.properties.id, f.geometry.coordinates])); majSections(); });
+function sectionsDessinees() {
+  if (!etat) return [];
+  const ids = new Set(Object.keys(etat.scenario.sections));
+  if (edite) ids.add(edite);
+  return [...ids].map(id => (id === edite && apercu ? apercu : sectionDe(id))).filter(Boolean);
+}
+function majSections() {
+  const liste = sectionsDessinees();
+  const bande = edite && editeur.bandeChoisie ? `${edite}:${editeur.bandeChoisie}` : '';
+  if (lignesRues && carte.getSource('sections')) {
+    carte.getSource('sections').setData(featuresSections(
+      liste.filter(s => lignesRues.has(s.troncon)).map(section => ({ ligne: lignesRues.get(section.troncon), section })), wgs84VersLambert, lambertVersWgs84));
+    for (const l of ['sections-choisie-cerne', 'sections-choisie']) carte.setFilter(l, ['==', ['get', 'id'], bande]);
+  }
+  scene?.definirSections(liste.map(section => ({ section, decalages: decalages(section) })), bande || null);
+  // Le tronçon choisi dont la section est dessinée : un filet de sélection, qui laisse voir les bandes
+  const fin = !!etat?.selection && liste.some(x => x.troncon === etat.selection);
+  if (carte.getLayer('rues-selection')) carte.setPaintProperty('rues-selection', 'line-width', fin ? R.traits.selectionFinPx : largeurSelection2d);
+  scene?.affinerSelection(fin);
+}
+
 // ─── Réglages ──────────────────────────────────────────────────────────────
 $('langue').value = i18n.lang;
 $('langue').onchange = e => {
@@ -412,7 +539,8 @@ $('langue').onchange = e => {
   store.save('prefs', prefs);
   i18n.setLang(prefs.langue);
   majStatut();
-  if (etat) { construireCouches(); afficherInspecteur(objetChoisi()); majBascule(); }
+  editeur.langue(t, i18n.lang);
+  if (etat) { construireCouches(); afficherInspecteur(objetChoisi()); majBascule(); if (edite) editeur.afficher(sectionDe(edite), infoEditeur(edite)); }
 };
 $('exporter').onclick = () => { sauvegarder(); downloadJSON(store.exportAll(), `${JEU}-sauvegarde.json`); };
 $('importer').onclick = async () => {
@@ -458,7 +586,7 @@ function toast(texte) {
 const enCarte = () => !!etat && $('titre').hidden && !document.querySelector('dialog[open]');
 createKeys({
   actions: {
-    recentrer: 'r', troncon: 't', batiment: 'b', vue: 'v', aide: 'i', zoomPlus: ['+', '='], zoomMoins: ['-', '_'],
+    recentrer: 'r', troncon: 't', batiment: 'b', vue: 'v', aide: 'i', editer: 'm', zoomPlus: ['+', '='], zoomMoins: ['-', '_'],
     ...Object.fromEntries(TOUCHES_COUCHES.map(([c, touche]) => [`couche:${c}`, touche])),
   },
   onAction: nom => {
@@ -467,6 +595,7 @@ createKeys({
     if (!enCarte()) return;
     if (nom === 'recentrer') recentrer();
     else if (nom === 'vue') definirMode(mode === '3d' ? '2d' : '3d');
+    else if (nom === 'editer') basculerEditeur();
     else if (nom === 'batiment') choisirBatimentProche();
     else if (nom === 'troncon') selectionner(mode === '3d' ? scene?.tronconAuCentre() ?? null : tronconPlusProche(carte.project(carte.getCenter())));
     else if (mode === '3d') { if (nom === 'zoomPlus') scene?.zoomer(1 / R.scene.facteurZoom); else if (nom === 'zoomMoins') scene?.zoomer(R.scene.facteurZoom); }
@@ -480,13 +609,19 @@ createKeys({
 window.addEventListener('keydown', e => {
   if (e.key !== 'Escape' || e.repeat || !enCarte()) return;
   e.preventDefault();
-  if (etat.selection) selectionner(null); else $('dialogue-pause').showModal();
+  if (edite) fermerEditeur(); else if (etat.selection) selectionner(null); else $('dialogue-pause').showModal();
+});
+// Annuler / rétablir : Ctrl+Z, Ctrl+Y ou Ctrl+Maj+Z (Cmd sur Mac) ; dans un champ, le champ garde son propre annuler
+window.addEventListener('keydown', e => {
+  if (!(e.ctrlKey || e.metaKey) || e.altKey || !enCarte() || e.target.closest?.('input, textarea')) return;
+  const k = e.key.toLowerCase();
+  if (k === 'z' && !e.shiftKey) { e.preventDefault(); annuler(); } else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); retablir(); }
 });
 // Déplacement : touche physique (ZQSD en AZERTY, WASD en QWERTY, flèches), répétition admise
 const PAN = { ArrowLeft: [-1, 0], KeyA: [-1, 0], ArrowRight: [1, 0], KeyD: [1, 0], ArrowUp: [0, -1], KeyW: [0, -1], ArrowDown: [0, 1], KeyS: [0, 1] };
 window.addEventListener('keydown', e => {
   const d = PAN[e.code];
-  if (!d || !enCarte() || e.ctrlKey || e.metaKey || e.altKey || e.target.closest?.('input, select, textarea')) return;
+  if (!d || !enCarte() || e.ctrlKey || e.metaKey || e.altKey || e.target.closest?.('input, select, textarea, .editeur-limite')) return;
   e.preventDefault();
   if (mode === '3d') scene?.deplacerPx(-d[0] * R.carte.pasDeplacementPx, -d[1] * R.carte.pasDeplacementPx); // la vue avance : le sol recule
   else carte.panBy([d[0] * R.carte.pasDeplacementPx, d[1] * R.carte.pasDeplacementPx], { duration: reduit ? 0 : 150 });
@@ -539,12 +674,12 @@ startUpdateCheck({ beforeReload: sauvegarder, onUpdated: v => toast(t('toast.maj
 
 // ─── Mode debug (section 18) : chargé seulement avec ?debug=1 ──────────────
 if (DEBUG) {
-  const { installDebug } = await import('./lib/debug.js?v=0.2.0');
+  const { installDebug } = await import('./lib/debug.js?v=0.3.0');
   const stations = Object.fromEntries((await couche('infra')).features
     .filter(f => f.properties.famille === 'station').map(f => [f.properties.nom.toLowerCase(), { x: f.geometry.coordinates[0], y: f.geometry.coordinates[1] }]));
   installDebug({
     state: () => ({
-      enCarte: enCarte(), selection: etat?.selection ?? null, zoom: carte.getZoom(),
+      enCarte: enCarte(), selection: etat?.selection ?? null, edite, bandeChoisie: editeur.bandeChoisie, zoom: carte.getZoom(),
       centre: carte.getCenter().toArray(), couches: etat?.couches, inspecteur: $('inspecteur-corps').dataset.segment ?? null,
       mode,
       // Ce que chaque vue met en évidence : doit toujours valoir la sélection
@@ -581,6 +716,20 @@ if (DEBUG) {
       allerA: (lonlat, zoom = 18) => new Promise(res => { carte.once('idle', res); carte.jumpTo({ center: lonlat, zoom }); }),
       pret: () => pret.then(() => Math.round(performance.now() - t0)),
       ids: () => [...segments.keys()],
+      // Éditeur (v0.3) : les tronçons éditables, ouvrir l'éditeur, appliquer une opération de js/section.js
+      editables: () => [...segments.values()].filter(s => s.emprise).map(s => s.id),
+      editer: id => ouvrirEditeur(id),
+      fermerEditeur: () => fermerEditeur(),
+      section: id => sectionDe(id),
+      operation: (nom, ...args) => { const r = operer(nom, args); return r?.refus ? { refus: r.refus } : r?.section ?? null; },
+      choisirBande: id => editeur.choisir(id),
+      annuler: () => annuler(), retablir: () => retablir(),
+      scenario: () => JSON.parse(JSON.stringify(etat.scenario)),
+      // Ce que dessine chaque vue : { "troncon:bande": { gauche, droite, type } }
+      sections2d: () => Object.fromEntries(carte.querySourceFeatures('sections').filter(f => f.properties.gauche !== undefined)
+        .map(f => [f.properties.id, { gauche: f.properties.gauche, droite: f.properties.droite, type: f.properties.type }])),
+      sections3d: () => scene?.sections() ?? null,
+      editeurOuvert: () => edite,
     },
   });
 }

@@ -13,8 +13,10 @@ au trottoir, à la piste cyclable ou au bus est pris à quelqu'un d'autre. Le je
 compromis visible, puis mesurable : on compte les personnes qui passent, pas les
 voitures. On y revient pour essayer un autre partage de la même rue.
 
-En v0.1, le joueur n'édite encore rien : il lit le corridor réel, tronçon par tronçon,
-et voit ce que l'on sait — et surtout ce que l'on ne sait pas — de chaque rue.
+En v0.3, le joueur ouvre la section transversale d'un tronçon : la largeur de l'espace public,
+mesurée sur les surfaces UrbIS, est fixe ; il la redistribue entre trottoirs, pistes, bus, voies,
+stationnement et plantations. Le découpage réel de la chaussée en voies est inconnu : il le reste
+tant que le joueur ne le dessine pas.
 
 ## Piliers
 
@@ -38,7 +40,7 @@ de mécanique seulement : *Traffic City* (réorganiser un réseau pour le fluidi
 - **Partie** : un scénario pour tout le corridor, comparé à l'état réel.
 - **Entre deux parties** : le scénario est sauvegardé ; on en ouvre un autre sur la même rue.
 
-En v0.1 la boucle est : **explorer → choisir un tronçon → lire ce qu'on en sait**.
+En v0.3 la boucle est : **choisir un tronçon → ouvrir sa section (M) → répartir sa largeur mesurée entre les usages → voir le résultat sur la carte et en 3D**. Rien n'est encore compté (personnes / heure : v0.5).
 
 ## Le lot minimal (v0.1)
 
@@ -50,6 +52,14 @@ En v0.1 la boucle est : **explorer → choisir un tronçon → lire ce qu'on en 
 en double, 100 % des `fromNode` / `toNode` renseignés existants, 20 tronçons tirés au sort
 ouvrent le bon inspecteur, carte prête en moins de 3 s en local.
 Mesuré par `npm test` (`test/donnees.test.mjs`) et `node outils/critere-v01.mjs`.
+
+## L'éditeur de section (v0.3)
+
+- **Emprise** (Jérôme, v0.3.0) : la largeur publique bord à bord des trottoirs, mesurée par coupes perpendiculaires sur les surfaces UrbIS, avec sa méthode et sa confiance. Sans coupe valable (place, carrefour), le tronçon n'est pas éditable : « Non renseigné ».
+- **Départ** (Jérôme, v0.3.0) : les bandes mesurées (trottoir, chaussée, terre-plein…) ; la chaussée reste « voies non renseignées ».
+- **Bandeau sous la carte** (Jérôme, v0.3.0) : coupe à l'échelle, limites à glisser, outils de la bande choisie, refus écrits.
+- **Règle** : la somme des bandes ne dépasse jamais l'emprise ; le reste est de l'espace libre. Un ordre impossible est refusé avec sa raison.
+- **Couleurs des bandes** (Jérôme, v0.3.0 : teintes douces + motifs) : valeurs proposées [À VALIDER] ; chaque type porte aussi un sigle (éditeur) et un motif (carte).
 
 ## Le monde
 

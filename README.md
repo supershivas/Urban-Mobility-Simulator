@@ -24,7 +24,7 @@ Inspirations de mécanique : *Traffic City*, *Junxions*.
 |---|---|
 | 0.1 | Carte 2D réelle et navigable, rues, intersections, bâtiments, sélection d'un tronçon, inspecteur |
 | 0.2 | Vue 3D (three.js), bâtiments à leur hauteur réelle, caméra orbitale, sélection synchronisée — livrée |
-| 0.3 | Éditeur de section de rue sous contrainte de largeur |
+| 0.3 | Éditeur de section de rue sous contrainte de largeur (emprise mesurée sur les surfaces UrbIS), annuler / rétablir — livrée |
 | 0.4 | Éditeur de carrefours |
 | 0.5 | Simulation simplifiée et indicateurs |
 | 0.6 | Scénarios, comparaison, sauvegarde |

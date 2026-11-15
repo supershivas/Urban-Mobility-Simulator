@@ -39,7 +39,11 @@ test('le style de la carte n\'utilise que la palette', () => {
 test('aucune source distante dans le style', () => {
   const style = styleCarte(PALETTE, REGLAGES);
   assert.ok(!style.glyphs && !style.sprite);
-  for (const s of Object.values(style.sources)) assert.match(s.data, /^data\//);
+  // Une source est un fichier de data/, ou des données posées par le jeu (sections du scénario)
+  for (const s of Object.values(style.sources)) {
+    if (typeof s.data === 'string') assert.match(s.data, /^data\//);
+    else assert.equal(s.data.type, 'FeatureCollection');
+  }
 });
 test('chaque couche activable commande des couches qui existent', () => {
   const ids = new Set(styleCarte(PALETTE, REGLAGES).layers.map(l => l.id));
@@ -74,7 +78,17 @@ test('les valeurs absentes restent « Non renseigné »', () => {
     assert.match(l.valeur, /^Non renseigné/);
   }
   assert.equal(valeur(s, 'champ.depart').valeur, 'Non renseigné (absent de la source)');
-  assert.ok(valeur(s, 'champ.largeur').inconnu, 'la largeur n\'est jamais connue en v0.1');
+  assert.ok(valeur(s, 'champ.emprise').inconnu, 'sans mesure, l\'emprise reste « Non renseigné »');
+});
+test('une emprise mesurée montre sa source, ses coupes et sa confiance ; le scénario dit si la section a changé', () => {
+  const emprise = { largeur: 12, bandes: [{ type: 'SW', largeur: 2.3 }, { type: 'S', largeur: 7.4 }, { type: 'SW', largeur: 2.3 }], axeDepuisGauche: 6, coupes: 4, ecart: 0.2, confiance: 'moyenne' };
+  const s = lignesInspecteur(segment({ emprise, niveau: 0 }), ctx);
+  assert.match(valeur(s, 'champ.emprise').valeur, /^12 m/);
+  assert.match(valeur(s, 'champ.emprise').source, /Surfaces UrbIS · 4 coupe\(s\).*confiance moyenne/);
+  assert.match(valeur(s, 'champ.section-mesuree').valeur, /Trottoir.*2,3 m/);
+  assert.equal(valeur(s, 'champ.scenario').valeur, 'Inchangée (état mesuré)');
+  const modifiee = { bandes: [{ type: 'trottoir', largeur: 2.3, sens: null }, { type: 'cyclable', largeur: 1.8, sens: 'aller' }] };
+  assert.match(valeur(lignesInspecteur(segment({ emprise, niveau: 0 }), { ...ctx, section: modifiee }), 'champ.scenario').valeur, /^Modifiée : Trottoir 2,3 m · Piste cyclable → 1,8 m/);
 });
 test('un code hors spécification est montré tel quel', () => {
   assert.equal(valeur(lignesInspecteur(segment(), ctx), 'champ.hierarchie').valeur, 'Code « T » (hors spécification)');

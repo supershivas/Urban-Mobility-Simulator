@@ -28,23 +28,37 @@ Statuts : **à l'étude** · **validé** (Jérôme a tranché) · **en cours** �
 - [x] Caméra orbitale, bascule 2D / 3D (V), sélection et inspecteur partagés, bâtiments sélectionnables
 - [x] Critère mesuré : `node outils/critere-v02.mjs` (scène prête en ~0,9 s dans le conteneur, 12/12 tronçons, 12/12 bâtiments)
 
+### Éditeur de section transversale — v0.3
+
+**Statut** : à mesurer (livré en 0.3.0, attend la validation de Jérôme)
+
+- [x] Emprise publique par tronçon mesurée sur les surfaces UrbIS (coupes perpendiculaires, méthode et confiance) : 1008 tronçons sur 1183
+- [x] Section de départ = bandes mesurées ; la chaussée reste « voies non renseignées » jusqu'à ce que le joueur la découpe
+- [x] Bandeau d'édition sous la carte : glisser les limites, ajouter / retirer / déplacer / diviser, type, largeur, sens ; refus motivés
+- [x] Annuler / rétablir, retour à la mesure, scénario sauvegardé
+- [x] Mêmes bandes en 2D et en 3D ; critère mesuré : `node outils/critere-v03.mjs`
+- [ ] Couleurs des bandes (cyclable, bus, stationnement, planté) : [À VALIDER]
+
 ## Validé (pitch, dans l'ordre)
 
 | Version | Contenu |
 |---|---|
-| 0.3 | Éditeur de section transversale, contraintes de largeur, undo/redo |
 | 0.4 | Éditeur d'intersections et raccordements |
 | 0.5 | Simulation simplifiée et indicateurs |
 | 0.6 | Scénarios, comparaison, sauvegarde, finition |
 
 ## À l'étude
 
-### Largeur disponible par tronçon
+### Largeur mesurée contre le terrain
 
-**Statut** : à l'étude (bloque la v0.3)
-**Constat** : UrbIS n'a aucune largeur sur les axes ; les surfaces (`StreetSurfaces` : chaussée S/SC, trottoir SW, terre-plein M, site propre C…) existent.
-**Proposition** : mesurer des coupes perpendiculaires à l'axe sur les surfaces, avec méthode et confiance.
-**Mesure** : comparaison avec quelques largeurs relevées sur le terrain.
+**Statut** : à l'étude
+**Constat** : l'emprise vient des surfaces UrbIS (confiance « moyenne » au mieux) ; 175 tronçons de rue n'ont pas de coupe valable (places, carrefours, surfaces interrompues).
+**Mesure** : comparer quelques largeurs relevées sur le terrain ; décider du sort des tronçons sans mesure.
+
+### Repères de largeur minimale par usage
+
+**Statut** : à l'étude
+Seul un minimum de dessin (0,3 m) est imposé. Des repères (trottoir, piste, voie bus) demandent une source citée (vademecums de Bruxelles Mobilité) avant d'être affichés.
 
 ### Sources complémentaires
 

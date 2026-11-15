@@ -15,6 +15,7 @@ import { indexer, apparier, HIGHWAY_CHAUSSEE } from '../../js/geo/appariement.js
 import { calculerEmprise } from './emprise.mjs';
 import { boite } from '../../js/geo/geometrie.js';
 import { hauteurDepuisSolides, METHODE_HAUTEUR } from './urbis3d.mjs';
+import { indexerSurfaces, mesurerTroncon, anneaux, METHODE_COUPE, TYPES_EMPRISE } from '../../js/geo/coupe.js';
 
 const O = 'data/original', P = 'data/processed', M = 'data/metadata';
 mkdirSync(P, { recursive: true });
@@ -122,6 +123,22 @@ if (existsSync(`${O}/osm/highways.json`)) {
   osmInfo = { extraitLe: osm.extraitLe, chemins: osm.chemins.length, cheminsChaussee: chemins.length, bilan };
 }
 
+// ─── Largeur d'emprise publique : coupes perpendiculaires sur les surfaces UrbIS ─
+const indexSurfaces = indexerSurfaces(features('surfaces')
+  .filter(f => (f.properties.LVL ?? 0) === 0)
+  .map(f => { const rings = anneaux(f.geometry); return { type: f.properties.TYPE, rings, boite: boite(rings.flat()) }; }));
+const M_ = METHODE_COUPE;
+const TEXTE_METHODE_EMPRISE = `Coupes perpendiculaires à l'axe UrbIS en ${M_.fractions.length} points (${M_.fractions.map(f => f * 100 + ' %').join(', ')} de la longueur, à plus de ${M_.margeCarrefour} m des extrémités), découpées par les surfaces UrbIS de niveau 0 de types ${[...TYPES_EMPRISE].join(', ')}. De chaque côté de l'axe, on suit les surfaces contiguës (vide toléré : ${M_.trouMax} m) jusqu'à la première interruption ; une coupe sans bord à ${M_.demiPortee} m (place, carrefour) ou de moins de ${M_.largeurMin} m est écartée. On retient la coupe de largeur médiane ; les bandes de moins de ${M_.bandeMin} m rejoignent leur voisine la plus large ; arrondi au décimètre. Confiance « moyenne » si au moins deux coupes s'accordent à ${M_.ecartConfiance} m près, « faible » sinon ; jamais « vérifiée » (aucun relevé de terrain).`;
+const bilanCoupes = { mesures: 0, moyenne: 0, faible: 0, sansMesure: 0, nonConcernes: 0 };
+for (const s of segments) {
+  s.emprise = null;
+  if (s.niveau !== 0 || !['S', 'SC'].includes(s.typeCode)) { bilanCoupes.nonConcernes++; continue; }
+  const r = mesurerTroncon(s.ligne, indexSurfaces);
+  if (!r) { bilanCoupes.sansMesure++; continue; }
+  bilanCoupes.mesures++; bilanCoupes[r.confiance]++;
+  s.emprise = { ...r, source: 'urbis-surfaces' };
+  s.editable = true;
+}
 // ─── Rues : une référence par nom, jamais une fusion de tronçons ─────────
 const rues = new Map();
 for (const s of segments) {
@@ -214,6 +231,7 @@ const metadonnees = {
   construitLe: manifeste.fichiers['data/original/urbis/axes.wfs.json']?.recupereLe ?? null,
   emprise: { tamponMetres: corridor.tamponMetres, stations: emprise.stations.map(f => f.properties.NAMEFRE) },
   repereLocal: { crs: 'EPSG:31370', origine: origineLocale, methode: 'Centre de la boîte de l\'emprise, arrondi à 100 m ; x local = Est − origine, y local = Nord − origine (mètres).' },
+  emprisePublique: { source: 'urbis-surfaces', methode: TEXTE_METHODE_EMPRISE, bilan: bilanCoupes },
   batiments: { prefixeUrbis: 'https://databrussels.be/id/building/', hauteurs: infoHauteurs },
   comptes: {
     streetSegments: segments.length, intersections: noeuds.size, streets: rues.size,
@@ -258,7 +276,7 @@ ${tableau(metadonnees.comptes)}
 | hiérarchie (UrbIS) | ${segments.filter(s => s.hierarchieCode).length} | ${segments.filter(s => !s.hierarchieCode).length} |
 | pente (UrbIS) | ${segments.filter(s => s.penteDegres !== null).length} | ${segments.filter(s => s.penteDegres === null).length} |
 ${champsAbsents}
-| largeur de chaussée | 0 | ${segments.length} |
+| emprise publique (mesurée sur les surfaces) | ${bilanCoupes.mesures} | ${segments.length - bilanCoupes.mesures} |
 | gestionnaire (axe) | 0 | ${segments.length} |
 
 ## Hauteur des bâtiments
@@ -277,8 +295,7 @@ ${urbis3d.bilan.solidesSansBatiment} solides des tuiles lues n'ont pas d'identif
 ## Attributs des axes : ce qui manque
 
 UrbIS ne donne ni largeur, ni nombre de voies, ni sens, ni vitesse sur les axes. Sens, voies et vitesse viennent seulement
-d'OSM, par appariement géométrique (confiance « moyenne », jamais « vérifiée »). La largeur reste inconnue : les surfaces de
-voirie (chaussée, trottoir, terre-plein…) existent dans UrbIS, mais aucune largeur n'en est encore tirée.
+d'OSM, par appariement géométrique (confiance « moyenne », jamais « vérifiée »).
 
 Codes hors spécification rencontrés (affichés tels quels, sans libellé inventé) :
 hiérarchie ${JSON.stringify(Object.keys(compte(segments, 'hierarchieCode')).filter(k => !['H', 'MER', 'MAR', 'IDR', 'DC', 'DR', 'UN', 'null'].includes(k)))},
@@ -291,6 +308,19 @@ Répartition par type d'axe :
 ${tableau(compte(segments, 'typeCode'))}
 
 Répartition par niveau (LVL) : ${JSON.stringify(compte(segments, 'niveau'))}.
+
+## Emprise publique des tronçons (largeur disponible)
+
+${TEXTE_METHODE_EMPRISE}
+
+| Tronçons | Nombre |
+|---|---|
+| mesurés, confiance moyenne | ${bilanCoupes.moyenne} |
+| mesurés, confiance faible | ${bilanCoupes.faible} |
+| tronçon de rue (S, SC) sans coupe valable : non éditables, « Non renseigné » | ${bilanCoupes.sansMesure} |
+| non concernés (carrefours, tunnels, ponts, autres types d'axe) | ${bilanCoupes.nonConcernes} |
+
+${(() => { const l = segments.filter(s => s.emprise).map(s => s.emprise.largeur).sort((a, b) => a - b); return l.length ? `Largeurs mesurées : de ${l[0]} m à ${l.at(-1)} m, médiane ${l[Math.floor(l.length / 2)]} m. Le découpage de la chaussée en voies n'est pas dans les surfaces : il reste « non renseigné ».` : ''; })()}
 
 ## Complément OpenStreetMap
 

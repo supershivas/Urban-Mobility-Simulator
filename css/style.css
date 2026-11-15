@@ -20,8 +20,8 @@
 .app {
   display: grid;
   grid-template-columns: var(--largeur-outils) minmax(0, 1fr) var(--largeur-inspecteur);
-  grid-template-rows: var(--entete) minmax(0, 1fr) auto;
-  grid-template-areas: 'entete entete entete' 'outils carte inspecteur' 'statut statut statut';
+  grid-template-rows: var(--entete) minmax(0, 1fr) auto auto;
+  grid-template-areas: 'entete entete entete' 'outils carte inspecteur' 'editeur editeur editeur' 'statut statut statut';
   font-size: var(--t-texte);
 }
 .entete { grid-area: entete; display: flex; align-items: center; gap: calc(var(--pas) * 2); padding: 0 var(--pas) 0 calc(var(--pas) * 2); border-bottom: var(--trait) solid var(--jeu-ombre); background: var(--jeu-surface); }
@@ -62,8 +62,8 @@
 @media (max-width: 960px) {
   .app {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: var(--entete) 62dvh auto auto auto;
-    grid-template-areas: 'entete' 'carte' 'inspecteur' 'outils' 'statut';
+    grid-template-rows: var(--entete) 62dvh auto auto auto auto;
+    grid-template-areas: 'entete' 'carte' 'editeur' 'inspecteur' 'outils' 'statut';
     overflow-y: auto; touch-action: pan-y;
   }
   .outils, .inspecteur { border: 0; border-top: var(--trait) solid var(--jeu-ombre); overflow: visible; }
@@ -132,3 +132,39 @@ dialog form { margin-top: calc(var(--pas) * 2); }
 .scene-legende { position: absolute; right: 10px; bottom: 10px; display: flex; align-items: center; gap: var(--pas); margin: 0; padding: 2px var(--pas); background: var(--jeu-surface); font-size: var(--t-petit); pointer-events: none; }
 .scene-legende-signe { width: 18px; height: 10px; border: 2px solid var(--jeu-inconnu); background: var(--jeu-bati); }
 .scene-attente { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0; padding: var(--pas) calc(var(--pas) * 2); background: var(--jeu-encre); color: var(--jeu-fond); }
+
+/* ─── Éditeur de section transversale (v0.3) : bandeau sous la carte ─────── */
+.editeur { grid-area: editeur; display: grid; gap: 4px; padding: var(--pas) calc(var(--pas) * 2); border-top: 2px solid var(--jeu-encre); background: var(--jeu-surface); min-width: 0; }
+.editeur-tete { display: flex; align-items: center; gap: var(--pas) calc(var(--pas) * 2); flex-wrap: wrap; min-width: 0; }
+.editeur-tete h2 { margin: 0; font-size: var(--t-titre); }
+.editeur-nom { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 20em; }
+.editeur-nom.inconnu { color: var(--jeu-inconnu); font-style: italic; font-weight: 400; }
+.editeur-emprise, .editeur-reste { font-variant-numeric: tabular-nums; }
+.editeur-reste.libre { font-weight: 700; }
+.editeur-espace { flex: 1; }
+.editeur-bouton { padding: 0 calc(var(--pas) * 1.5); }
+.editeur-cotes { display: flex; justify-content: space-between; gap: var(--pas); font-size: var(--t-petit); }
+.editeur-cotes .editeur-message { flex: 1; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.editeur-ruban { display: flex; height: 64px; border: 2px solid var(--jeu-encre); min-width: 0; }
+.editeur-bande, .editeur-libre { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; font-size: var(--t-petit); line-height: 1.3; cursor: pointer; white-space: nowrap; }
+.editeur-bande span { background: var(--fond-texte); padding: 0 3px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.editeur-bande .editeur-sigle { font-weight: 700; letter-spacing: .04em; }
+.editeur-bande .editeur-mesure, .editeur-libre { font-variant-numeric: tabular-nums; }
+/* Bande choisie : sélection posée sur un cerne d'encre (la sélection seule ne ressort pas sur la piste ni le bus) */
+.editeur-bande.choisie { box-shadow: inset 0 0 0 2px var(--jeu-encre), inset 0 0 0 5px var(--jeu-accent), inset 0 0 0 7px var(--jeu-encre); }
+.editeur-bande:focus-visible { outline: 3px solid var(--jeu-encre); outline-offset: -3px; }
+.editeur-libre { cursor: default; color: var(--jeu-encre); }
+/* Une limite : un trait d'encre, une poignée plus large que le trait, qui empiète sur les deux bandes */
+.editeur-limite { position: relative; flex: 0 0 2px; background: var(--jeu-encre); cursor: ew-resize; touch-action: none; z-index: 1; }
+.editeur-limite::before { content: ''; position: absolute; inset: 0 -9px; }
+.editeur-limite:focus-visible { background: var(--jeu-accent); outline: none; flex-basis: 4px; }
+@media (hover: hover) { .editeur-limite:hover { background: var(--jeu-accent); flex-basis: 4px; } }
+.editeur-outils { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: var(--pas) calc(var(--pas) * 3); }
+.editeur-tete .icone { margin-right: calc(var(--pas) * -1); }
+.editeur-groupe { display: flex; flex-wrap: wrap; align-items: end; gap: var(--pas); }
+.editeur-champ { display: grid; gap: 2px; font-size: var(--t-petit); }
+.editeur-choix, .editeur-largeur { min-height: var(--jeu-cible); font: inherit; font-size: var(--t-texte); box-sizing: border-box; }
+.editeur-largeur { width: 6em; }
+.editeur-message { margin: 0; font-size: var(--t-petit); }
+.editeur-message.refus { font-weight: 700; text-decoration: underline 2px var(--jeu-accent); text-underline-offset: 3px; }
+.inspecteur-editer { margin-top: var(--pas); width: 100%; }

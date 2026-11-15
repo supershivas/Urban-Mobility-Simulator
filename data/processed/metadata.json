@@ -21,6 +21,17 @@
     ],
     "methode": "Centre de la boîte de l'emprise, arrondi à 100 m ; x local = Est − origine, y local = Nord − origine (mètres)."
   },
+  "emprisePublique": {
+    "source": "urbis-surfaces",
+    "methode": "Coupes perpendiculaires à l'axe UrbIS en 5 points (20 %, 35 %, 50 %, 65 %, 80 % de la longueur, à plus de 12 m des extrémités), découpées par les surfaces UrbIS de niveau 0 de types S, SC, SW, M, C, K, A, AC. De chaque côté de l'axe, on suit les surfaces contiguës (vide toléré : 0.6 m) jusqu'à la première interruption ; une coupe sans bord à 40 m (place, carrefour) ou de moins de 3 m est écartée. On retient la coupe de largeur médiane ; les bandes de moins de 0.5 m rejoignent leur voisine la plus large ; arrondi au décimètre. Confiance « moyenne » si au moins deux coupes s'accordent à 1.5 m près, « faible » sinon ; jamais « vérifiée » (aucun relevé de terrain).",
+    "bilan": {
+      "mesures": 1008,
+      "moyenne": 716,
+      "faible": 292,
+      "sansMesure": 175,
+      "nonConcernes": 306
+    }
+  },
   "batiments": {
     "prefixeUrbis": "https://databrussels.be/id/building/",
     "hauteurs": {
@@ -69,6 +80,6 @@
     "surfaces": 4247286,
     "buildings": 4995838,
     "infrastructure": 237934,
-    "network": 1778383
+    "network": 2018694
   }
 }

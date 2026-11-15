@@ -3,8 +3,10 @@
 // Pur : des tableaux typés et des tables d'identifiants, aucun objet three.js
 // (seule la triangulation des polygones vient de three : ShapeUtils, earcut).
 // Testé dans Node (test/scene.test.mjs).
-import { ShapeUtils, Vector2 } from '../../vendor/three/three.module.js?v=0.2.0';
-import { versScene } from '../geo/repere.js?v=0.2.0';
+import { ShapeUtils, Vector2 } from '../../vendor/three/three.module.js?v=0.3.0';
+import { versScene } from '../geo/repere.js?v=0.3.0';
+import { decalerLigne } from '../geo/decalage.js?v=0.3.0';
+import { decalages } from '../section.js?v=0.3.0';
 
 /** Les polygones d'une géométrie GeoJSON, en local : [[anneauExtérieur, ...trous]], sans point de fermeture répété. */
 export function polygonesLocaux(geometrie, repere) {
@@ -171,4 +173,29 @@ export function segmentsDeLignes(lignes, y = 0) {
   const pos = tampon();
   for (const l of lignes) for (let i = 1; i < l.length; i++) pos.pousser(...versScene(l[i - 1], y), ...versScene(l[i], y));
   return pos.fin();
+}
+
+/**
+ * Les bandes des sections transversales, à plat (y), entre leurs bords décalés de l'axe :
+ * les mêmes bords que sur la carte (js/geo/decalage.js), donc sans chevauchement.
+ * entrees : [{ ligne (locale), section }] ; couleurDe(type) → [r, g, b] linéaire.
+ * → { positions, couleurs, indices, ids ("troncon:bande"), bandes: Map(id → { gauche, droite, type }) }
+ */
+export function maillerSections(entrees, couleurDe, y = 0) {
+  const pos = tampon(), col = tampon(), ind = tampon(Uint32Array), ids = [], bandes = new Map();
+  for (const { ligne, section } of entrees) {
+    for (const b of decalages(section)) {
+      const g = decalerLigne(ligne, b.gauche), d = decalerLigne(ligne, b.droite), c = couleurDe(b.type);
+      const base = pos.taille / 3;
+      for (let i = 0; i < g.length; i++) {
+        pos.pousser(...versScene(g[i], y), ...versScene(d[i], y));
+        col.pousser(...c, ...c);
+        if (i > 0) { const k = base + 2 * i; ind.pousser(k - 2, k - 1, k, k - 1, k + 1, k); }
+      }
+      const id = `${section.troncon}:${b.id}`;
+      ids.push(id);
+      bandes.set(id, { gauche: b.gauche, droite: b.droite, type: b.type });
+    }
+  }
+  return { positions: pos.fin(), couleurs: col.fin(), indices: ind.fin(), ids, bandes };
 }

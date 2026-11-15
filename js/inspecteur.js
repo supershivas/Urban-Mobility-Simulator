@@ -4,10 +4,11 @@
 
 /**
  * segment : entrée de network.json (streetSegments)
- * ctx : { t (i18n), lang, codes (data/urbis-codes.json), noeuds: Map(id → intersection), rues: Map(id → street) }
+ * ctx : { t (i18n), lang, codes (data/urbis-codes.json), noeuds: Map(id → intersection), rues: Map(id → street),
+ *         section : la section du scénario quand le joueur l'a modifiée (js/section.js), sinon null }
  * → [{ titre, lignes: [{ champ, valeur, inconnu, source?, copiable? }] }]  (copiable : identifiants, bouton « Copier »)
  */
-export function lignesInspecteur(segment, { t, lang, codes, noeuds, rues }) {
+export function lignesInspecteur(segment, { t, lang, codes, noeuds, rues, section = null }) {
   const inconnu = (champ, cle = 'valeur.inconnu') => ({ champ: t(champ), valeur: t(cle), inconnu: true });
   const ligne = (champ, valeur, source, copiable = false) => ({ champ: t(champ), valeur: String(valeur), inconnu: false, ...(source ? { source } : {}), ...(copiable ? { copiable: true } : {}) });
   const libelle = (table, code) => {
@@ -57,12 +58,23 @@ export function lignesInspecteur(segment, { t, lang, codes, noeuds, rues }) {
     a.lanes === null ? inconnu('champ.voies') : ligne('champ.voies', a.lanes, sourceOsm),
     a.speedLimit === null ? inconnu('champ.vitesse')
       : ligne('champ.vitesse', typeof a.speedLimit === 'number' ? t('valeur.kmh', { n: a.speedLimit }) : a.speedLimit, sourceOsm),
-    inconnu('champ.largeur', 'valeur.largeur-absente'),
     a.roadManager === null ? inconnu('champ.gestionnaire') : ligne('champ.gestionnaire', a.roadManager),
   ];
 
+  // Emprise publique : mesurée sur les surfaces UrbIS (méthode et confiance), jamais supposée
+  const e = segment.emprise;
+  const metres = n => t('valeur.metres', { n: nombre(n) });
+  const bandes = (liste, nom) => liste.map(b => t('valeur.bande', { nom: nom(b), n: nombre(b.largeur) })).join(' · ');
+  const emprise = e ? [
+    ligne('champ.emprise', metres(e.largeur), t('valeur.emprise-source', { coupes: e.coupes, ecart: nombre(e.ecart), confiance: t(`valeur.confiance.${e.confiance}`) })),
+    ligne('champ.section-mesuree', bandes(e.bandes, b => libelle('surfaceType', b.type))),
+    section ? ligne('champ.scenario', `${t('valeur.scenario.modifiee')} : ${bandes(section.bandes, b => t(`bande.${b.type}`) + (b.sens ? ` ${t(`sens.${b.sens}.signe`)}` : ''))}`)
+      : ligne('champ.scenario', t('valeur.scenario.mesure')),
+  ] : [segment.niveau === 0 && ['S', 'SC'].includes(segment.typeCode) ? inconnu('champ.emprise', 'valeur.emprise-absente') : inconnu('champ.emprise', 'valeur.emprise-sans-objet')];
+
   const sections = [
     { titre: t('inspecteur.section.identite'), lignes: identite },
+    { titre: t('inspecteur.section.emprise'), lignes: emprise },
     { titre: t('inspecteur.section.geometrie'), lignes: geometrie },
     { titre: t('inspecteur.section.circulation'), lignes: circulation },
   ];

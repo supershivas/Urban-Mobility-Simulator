@@ -27,6 +27,19 @@ export default {
     { avant: 'inconnu', fond: 'papier', role: 'signe', ou: 'contour d\'un bâtiment de hauteur non renseignée (3D)' },
     { avant: 'inconnu', fond: 'bati', role: 'signe', ou: 'contour d\'un bâtiment à plat sur son emprise (3D)' },
     { avant: 'encre', fond: 'voirie', role: 'texte', ou: 'légende et barre d\'échelle de la vue 3D' },
+    // v0.3 : sigles et largeurs écrits sur les bandes de l'éditeur (fond uni sous le texte)
+    { avant: 'encre', fond: 'cyclable', role: 'texte', ou: 'sigle d\'une piste cyclable (éditeur)' },
+    { avant: 'encre', fond: 'bus', role: 'texte', ou: 'sigle d\'une voie bus (éditeur)' },
+    { avant: 'encre', fond: 'stationnement', role: 'texte', ou: 'sigle du stationnement (éditeur)' },
+    { avant: 'encre', fond: 'plante', role: 'texte', ou: 'sigle d\'un espace planté (éditeur)' },
+    { avant: 'encre', fond: 'trottoir', role: 'texte', ou: 'sigle d\'un trottoir, d\'un terre-plein (éditeur)' },
+    { avant: 'voirie', fond: 'encre', role: 'texte', ou: 'sigle d\'une séparation (éditeur)' },
+    // Bords des bandes sur la carte et en 3D (encre), bande choisie (sélection)
+    { avant: 'encre', fond: 'cyclable', role: 'signe', ou: 'bord, flèche de sens sur une piste' },
+    { avant: 'encre', fond: 'bus', role: 'signe', ou: 'bord, flèche de sens sur une voie bus' },
+    // « selection sur bus » 1,94 et « selection sur cyclable » 1,41 (mesuré, v0.3.0) : la bande choisie
+    // est donc cernée d'encre (carte, 3D, éditeur), et le trait de sélection est posé sur l'encre.
+    { avant: 'selection', fond: 'encre', role: 'signe', ou: 'bande choisie : trait de sélection sur son cerne d\'encre' },
   ],
   groupes: {},
   poses: [],

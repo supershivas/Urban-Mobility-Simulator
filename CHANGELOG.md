@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0 — 2026-11-15
+- Éditeur de section transversale (M) : trottoirs, pistes, bus, voies, stationnement, plantations dans la largeur réelle de chaque rue, mesurée sur les surfaces UrbIS
+- La largeur ne se dépasse jamais : un ordre impossible est refusé avec sa raison ; Ctrl+Z / Ctrl+Y annulent et rétablissent
+- Les sections modifiées se voient sur la carte et en 3D, et sont sauvegardées avec la partie
+
 ## 0.2.0 — 2026-11-14
 - Une vue 3D du corridor : bâtiments à leur hauteur réelle (UrbIS 3D), caméra orbitale, bascule 2D / 3D avec V
 - Les bâtiments se choisissent aussi : hauteur de la source ou « Non renseigné », même sélection dans les deux vues

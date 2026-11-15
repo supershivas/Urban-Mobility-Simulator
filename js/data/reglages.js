@@ -32,6 +32,9 @@ export const REGLAGES = {
     axeTunnelM: 1,
     selectionM: 5,          // trait du tronçon choisi, au plus près
     selectionPx: 6,         // … et jamais plus fin que cela à l'écran
+    selectionFinM: 0.6,     // trait du tronçon choisi quand sa section est dessinée (il ne cache pas les bandes)
+    selectionFinPx: 2,
+    bandeChoisieM: 0.25,    // bords de la bande choisie (3D) : trait de sélection, cerne d'encre 2,5 fois plus large
     noeudRayonM: 1.5,
     stationRayonM: 7,
     hauteurLignesM: 0.3,    // rails, ouvrages, emprise : juste au-dessus du sol pour rester visibles
@@ -50,6 +53,7 @@ export const REGLAGES = {
     axePrincipalPx: 2.5,    // épaisseur des axes MER, MAR, H à zoom 15
     axeSecondairePx: 1.5,
     selectionPx: 6,
+    selectionFinPx: 2,      // tronçon choisi dont la section est dessinée : un filet, pas un trait plein
     noeudRayonPx: 2.5,
   },
 };

@@ -29,7 +29,7 @@ Les objets qui touchent l'emprise sont gardés entiers (pas de découpe au bord)
 | sens (oneway) | 710 | 779 |
 | nombre de voies (lanes) | 318 | 1171 |
 | vitesse (maxspeed) | 1203 | 286 |
-| largeur de chaussée | 0 | 1489 |
+| emprise publique (mesurée sur les surfaces) | 1008 | 481 |
 | gestionnaire (axe) | 0 | 1489 |
 
 ## Hauteur des bâtiments
@@ -48,8 +48,7 @@ Hauteurs renseignées : de 1.2 m à 105.4 m, médiane 14.9 m. Une hauteur absent
 ## Attributs des axes : ce qui manque
 
 UrbIS ne donne ni largeur, ni nombre de voies, ni sens, ni vitesse sur les axes. Sens, voies et vitesse viennent seulement
-d'OSM, par appariement géométrique (confiance « moyenne », jamais « vérifiée »). La largeur reste inconnue : les surfaces de
-voirie (chaussée, trottoir, terre-plein…) existent dans UrbIS, mais aucune largeur n'en est encore tirée.
+d'OSM, par appariement géométrique (confiance « moyenne », jamais « vérifiée »).
 
 Codes hors spécification rencontrés (affichés tels quels, sans libellé inventé) :
 hiérarchie ["T"],
@@ -71,6 +70,19 @@ Répartition par type d'axe :
 | `SC` | 5 |
 
 Répartition par niveau (LVL) : {"0":1467,"1":1,"-1":21}.
+
+## Emprise publique des tronçons (largeur disponible)
+
+Coupes perpendiculaires à l'axe UrbIS en 5 points (20 %, 35 %, 50 %, 65 %, 80 % de la longueur, à plus de 12 m des extrémités), découpées par les surfaces UrbIS de niveau 0 de types S, SC, SW, M, C, K, A, AC. De chaque côté de l'axe, on suit les surfaces contiguës (vide toléré : 0.6 m) jusqu'à la première interruption ; une coupe sans bord à 40 m (place, carrefour) ou de moins de 3 m est écartée. On retient la coupe de largeur médiane ; les bandes de moins de 0.5 m rejoignent leur voisine la plus large ; arrondi au décimètre. Confiance « moyenne » si au moins deux coupes s'accordent à 1.5 m près, « faible » sinon ; jamais « vérifiée » (aucun relevé de terrain).
+
+| Tronçons | Nombre |
+|---|---|
+| mesurés, confiance moyenne | 716 |
+| mesurés, confiance faible | 292 |
+| tronçon de rue (S, SC) sans coupe valable : non éditables, « Non renseigné » | 175 |
+| non concernés (carrefours, tunnels, ponts, autres types d'axe) | 306 |
+
+Largeurs mesurées : de 3.7 m à 70 m, médiane 15.3 m. Le découpage de la chaussée en voies n'est pas dans les surfaces : il reste « non renseigné ».
 
 ## Complément OpenStreetMap
 
@@ -103,4 +115,4 @@ Les nœuds hors emprise sont ceux d'axes à cheval sur le bord ; un nœud « iso
 | `surfaces` | 4247286 |
 | `buildings` | 4995838 |
 | `infrastructure` | 237934 |
-| `network` | 1778383 |
+| `network` | 2018694 |
