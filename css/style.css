@@ -33,7 +33,7 @@
 .outils h2, .inspecteur h2 { margin: 0; font-size: var(--t-titre); }
 .couches { display: grid; }
 .couche { display: flex; align-items: center; gap: var(--pas); min-height: var(--jeu-cible); cursor: pointer; }
-.couche input { width: 18px; height: 18px; margin: 0; accent-color: var(--jeu-encre); }
+.couche input { flex: none; width: 18px; height: 18px; margin: 0; accent-color: var(--jeu-encre); }
 .couche kbd { margin-left: auto; font: inherit; font-size: var(--t-petit); padding: 0 6px; border: var(--trait) solid var(--jeu-ombre); }
 .aide { margin: 0; font-size: var(--t-petit); line-height: 1.5; }
 
@@ -168,3 +168,31 @@ dialog form { margin-top: calc(var(--pas) * 2); }
 .editeur-message { margin: 0; font-size: var(--t-petit); }
 .editeur-message.refus { font-weight: 700; text-decoration: underline 2px var(--jeu-accent); text-underline-offset: 3px; }
 .inspecteur-editer { margin-top: var(--pas); width: 100%; }
+
+/* ─── Éditeur de carrefour (v0.4) : même bandeau que l'éditeur de section ─── */
+.etiquette-branche { display: grid; place-items: center; width: 22px; height: 22px; border: 2px solid var(--jeu-encre); border-radius: 50%; background: var(--jeu-surface); color: var(--jeu-encre); font-size: var(--t-petit); font-weight: 700; pointer-events: none; }
+.scene-etiquettes .etiquette-branche { position: absolute; left: 0; top: 0; }
+.inspecteur .genre-objet { margin: var(--pas) 0 0; font-size: var(--t-petit); letter-spacing: .08em; text-transform: uppercase; }
+.carrefour-compte { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+.carrefour-regulation { display: flex; align-items: center; gap: var(--pas); font-size: var(--t-petit); }
+.carrefour-ligne { display: flex; align-items: baseline; gap: calc(var(--pas) * 2); min-width: 0; font-size: var(--t-petit); }
+.carrefour-ligne .carrefour-message { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.carrefour-traversees .carrefour-traversee { flex: 1 1 0; min-width: 0; font-size: var(--t-petit); }
+.carrefour-branches { display: flex; gap: var(--pas); overflow-x: auto; min-width: 0; padding-bottom: 2px; }
+.carrefour-branche { flex: 1 0 200px; max-width: 320px; display: grid; gap: 4px; align-content: start; padding: 4px var(--pas) var(--pas); border: var(--trait) solid var(--jeu-encre); background: var(--jeu-surface); }
+.carrefour-branche-tete { display: flex; align-items: center; gap: var(--pas); min-width: 0; }
+.carrefour-lettre { display: grid; place-items: center; flex: 0 0 22px; height: 22px; border: 2px solid var(--jeu-encre); border-radius: 50%; font-size: var(--t-petit); font-weight: 700; }
+.carrefour-branche-nom { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.carrefour-branche-nom.inconnu { color: var(--jeu-inconnu); font-style: italic; font-weight: 400; }
+.carrefour-dir { font-size: var(--t-petit); white-space: nowrap; }
+.carrefour-voies { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.carrefour-sens { flex: 0 0 4.5em; font-size: var(--t-petit); }
+.carrefour-aucune { color: var(--jeu-inconnu); }
+.carrefour-voie { min-width: var(--jeu-cible); min-height: var(--jeu-cible); padding: 0 6px; border: var(--trait) solid var(--jeu-encre); background: var(--jeu-surface); color: var(--jeu-encre); font: inherit; font-size: var(--t-petit); cursor: pointer; white-space: nowrap; }
+.carrefour-voie:focus-visible { outline: 2px solid var(--jeu-accent); outline-offset: 2px; }
+.carrefour-voie.choisie { background: var(--jeu-encre); color: var(--jeu-surface); box-shadow: 0 0 0 2px var(--jeu-accent); }
+.carrefour-voie.joueur { background: var(--jeu-encre); color: var(--jeu-surface); }
+.carrefour-voie.propose { border-style: dashed; border-width: 2px; }
+.carrefour-voie.libre { color: var(--jeu-inconnu); }
+.carrefour-voie.alerte { text-decoration: underline 2px var(--jeu-accent); text-underline-offset: 3px; }
+.carrefour-traversees { display: flex; gap: 4px; min-width: 0; }

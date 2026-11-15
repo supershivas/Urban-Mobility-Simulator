@@ -1,7 +1,7 @@
 // Les images de la carte, dessinées au lancement depuis la palette (aucune
 // ressource distante, aucun sprite) : motifs des bandes et flèches de sens.
 // Un motif double la teinte d'une bande : on ne lit jamais un type par la couleur seule.
-import { BANDES } from '../data/bandes.js?v=0.3.0';
+import { BANDES } from '../data/bandes.js?v=0.4.0';
 
 const PX = 2; // images en double densité (écrans à forte densité)
 
@@ -43,6 +43,9 @@ export function ajouterImages(carte, P) {
     else { g.moveTo(3, 10); g.lineTo(13, 10); g.lineTo(13, 5); g.lineTo(21, 12); g.lineTo(13, 19); g.lineTo(13, 14); g.lineTo(3, 14); }
     g.closePath(); g.stroke(); g.fill();
   });
+  // Traversées (v0.4) : bandes blanches sur encre pour le passage piéton, carrés en damier pour la traversée cyclable
+  carte.addImage('motif-traversee-pieton', image(16, g => { g.fillStyle = P.encre; g.fillRect(0, 0, 16, 16); g.fillStyle = P.voirie; g.fillRect(0, 0, 8, 16); }), { pixelRatio: PX });
+  carte.addImage('motif-traversee-velo', image(16, g => { g.fillStyle = P.cyclable; g.fillRect(0, 0, 16, 16); g.fillStyle = P.voirie; g.fillRect(0, 0, 8, 8); g.fillRect(8, 8, 8, 8); }), { pixelRatio: PX });
   carte.addImage('fleche', fleche(false), { pixelRatio: PX });
   carte.addImage('fleche-double', fleche(true), { pixelRatio: PX });
 }

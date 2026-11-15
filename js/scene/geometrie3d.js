@@ -3,10 +3,10 @@
 // Pur : des tableaux typés et des tables d'identifiants, aucun objet three.js
 // (seule la triangulation des polygones vient de three : ShapeUtils, earcut).
 // Testé dans Node (test/scene.test.mjs).
-import { ShapeUtils, Vector2 } from '../../vendor/three/three.module.js?v=0.3.0';
-import { versScene } from '../geo/repere.js?v=0.3.0';
-import { decalerLigne } from '../geo/decalage.js?v=0.3.0';
-import { decalages } from '../section.js?v=0.3.0';
+import { ShapeUtils, Vector2 } from '../../vendor/three/three.module.js?v=0.4.0';
+import { versScene } from '../geo/repere.js?v=0.4.0';
+import { decalerLigne } from '../geo/decalage.js?v=0.4.0';
+import { decalages } from '../section.js?v=0.4.0';
 
 /** Les polygones d'une géométrie GeoJSON, en local : [[anneauExtérieur, ...trous]], sans point de fermeture répété. */
 export function polygonesLocaux(geometrie, repere) {
@@ -198,4 +198,22 @@ export function maillerSections(entrees, couleurDe, y = 0) {
     }
   }
   return { positions: pos.fin(), couleurs: col.fin(), indices: ind.fin(), ids, bandes };
+}
+
+/**
+ * Des polygones à plat (y), une couleur chacun : zones de carrefour et traversées (v0.4).
+ * entrees : [{ anneau (local, fermé ou non), couleur: [r, g, b] }] → { positions, couleurs, indices }
+ */
+export function maillerPolygones(entrees, y = 0) {
+  const pos = tampon(), col = tampon(), ind = tampon(Uint32Array);
+  for (const { anneau, couleur } of entrees) {
+    const a = anneau.slice();
+    const [d, f] = [a[0], a.at(-1)];
+    if (a.length > 1 && d[0] === f[0] && d[1] === f[1]) a.pop();
+    if (a.length < 3) continue;
+    const base = pos.taille / 3;
+    for (const p of a) { pos.pousser(...versScene(p, y)); col.pousser(...couleur); }
+    for (const [i, j, k] of triangles([a])) ind.pousser(base + i, base + j, base + k);
+  }
+  return { positions: pos.fin(), couleurs: col.fin(), indices: ind.fin() };
 }

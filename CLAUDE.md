@@ -35,15 +35,17 @@ Jeu de conception urbaine inspiré des city builders, limité à l'espace public
 | Emprise | Tampon de **600 m** le long du métro 1 + station Georges Henri (`data/corridor.json`, Jérôme, v0.1.0) |
 | Labo | Plus tard (Jérôme, v0.1.0) |
 | Atelier | Réglages chiffrés seulement (`atelier.html`, Jérôme, v0.1.0) |
-| Vérification | Tests (Vitest + `outils/test-run.mjs`), captures et audit sur **bureau et bureau_125** (plus de téléphone, Jérôme, v0.2.0), lisibilité, `critere-v01.mjs`, `critere-v02.mjs` ; pas de harnais de playtest |
+| Vérification | Tests, captures et audit sur **bureau et bureau_125** (plus de téléphone, Jérôme, v0.2.0), lisibilité, `critere-v01` à `-v04` ; pas de harnais de playtest |
 | Critère v0.1 | Données traçables et justes : 0 doublon d'identifiant, 100 % des from/toNode, 20 tronçons au hasard → bon inspecteur, carte prête < 3 s (Jérôme, v0.1.0) |
-| Critère v0.2 | Scène 3D prête < 5 s (1280 × 800, nouvelle partie, bascule ; ~0,9 s mesuré), mêmes comptes que les données, 12 tronçons et 12 bâtiments au hasard : même sélection, inspecteur et surbrillance en 2D et 3D ; barre d'état sur une ligne à 1280 px |
+| Critère v0.2 | Scène 3D prête < 5 s (~0,9 s), mêmes comptes que les données, 12 tronçons et 12 bâtiments : même sélection, inspecteur, surbrillance en 2D et 3D ; barre d'état sur une ligne à 1280 px |
 | Hauteurs | **UrbIS 3D** seulement : Zmax − Zmin des solides associés par `BU_ID` (Jérôme, v0.2.0) ; sans solide : `null`, bâtiment à plat cerné de `inconnu`, « Non renseigné » |
 | Bâtiments | Sélectionnables dans les deux vues, même inspecteur ; au clic 2D les tronçons gardent la priorité (Jérôme, v0.2.0) |
 | Emprise (v0.3) | Largeur publique bord à bord des trottoirs, **coupes perpendiculaires sur les surfaces UrbIS** (`js/geo/coupe.js`, méthode dans `metadata.json → emprisePublique`) ; sans coupe valable : non éditable, « Non renseigné » (Jérôme, v0.3.0) |
 | Section de départ | Les bandes mesurées ; la chaussée reste `chaussee` « voies non renseignées » (Jérôme, v0.3.0) |
 | Éditeur | Bandeau sous la carte (`js/editeur.js`), ouvert par M ou le bouton de l'inspecteur ; somme ≤ emprise, reste = espace libre ; refus écrits ; minimum de dessin 0,3 m seulement (Jérôme, v0.3.0) |
 | Critère v0.3 | Pitch : une modification en 2D se retrouve en 3D sans chevauchement ni dépassement (`critere-v03.mjs`) |
+| Carrefours | Raccords **proposés, à revoir** (méthode affichée, confiance faible) ; raccords + traversées + régulation (`null` au départ) ; même bandeau sous la carte (Jérôme, v0.4.0). Détail : `docs/domaines/carrefours.md` |
+| Critère v0.4 | Pitch : les voies créées dans les tronçons restent connectées aux intersections (`critere-v04.mjs`) |
 | Onglet caché | Rien ne tourne (pas de simulation ; la 3D ne dessine que sur demande, jamais onglet caché ni en vue 2D) ; la vue est sauvegardée |
 
 - **Production** : https://supershivas.github.io/Urban-Mobility-Simulator/
@@ -77,7 +79,9 @@ Police : police système (aucune police distante). Les aplats (bâti, trottoir) 
 |---|---|---|
 | Choisir un tronçon | T (le plus proche du centre) | clic sur l'axe (tolérance 8 px) |
 | Choisir un bâtiment | B (le plus proche du centre) | clic sur le bâtiment |
-| Modifier la section | M (ouvrir / fermer) | bouton de l'inspecteur |
+| Choisir un carrefour | N (le plus proche du centre) | clic sur le nœud (tolérance 7 px, avant l'axe) |
+| Modifier la section ou le carrefour | M (ouvrir / fermer) ; C : carrefour, aussi depuis un tronçon | bouton de l'inspecteur |
+| Raccorder / détacher | Tab jusqu'à la voie qui entre, Entrée, puis la voie qui sort | clic sur l'une, puis sur l'autre |
 | Limite entre deux bandes | ← → sur la limite (Maj : 0,5 m) | glisser la limite |
 | Annuler / rétablir | Ctrl+Z / Ctrl+Y (ou Ctrl+Maj+Z) | boutons de l'éditeur |
 | Vue 2D / 3D | V | bouton « Passer en 3D / en 2D » |
@@ -126,37 +130,38 @@ Police : police système (aucune police distante). Les aplats (bâti, trottoir) 
 | 0.1 | Carte 2D réelle : rues, intersections, bâtiments, couches, sélection d'un tronçon, inspecteur, retour à l'emprise | livrée en 0.1.0, à valider |
 | 0.2 | Rendu 3D three.js, bâtiments à leur hauteur, caméra orbitale, sélection synchronisée, bâtiments sélectionnables | livrée en 0.2.0, à valider |
 | 0.3 | Éditeur de section transversale, contraintes de largeur, undo/redo | livrée en 0.3.0, à valider |
-| 0.4 | Éditeur d'intersections et raccordements | — |
+| 0.4 | Éditeur de carrefours : raccords voie à voie, traversées, régulation | livrée en 0.4.0, à valider |
 | 0.5 | Simulation simplifiée et indicateurs | — |
 | 0.6 | Scénarios, comparaison, sauvegarde, finition | — |
 
-Les carrefours (v0.4) ne sont pas raccordés aux sections : une bande s'arrête au bout de son axe.
+Une bande s'arrête toujours au bout de son axe : la zone de carrefour est dessinée par-dessus, les raccords partent du recul.
 
 ## Exclu jusqu'ici
 
-Édition de carrefours, raccordement des bandes d'un tronçon à l'autre, repères de largeur par usage (sans source citée), simulation, véhicules animés, relief (le sol est plat, les altitudes d'UrbIS 3D ne servent qu'à la hauteur), formes de toiture, son, comptes ou serveur distant.
+Forme des carrefours (oreilles, îlots), raccords hors des carrefours, conflits entre raccords (v0.5), repères de largeur par usage (sans source citée), simulation, véhicules animés, relief (le sol est plat, les altitudes d'UrbIS 3D ne servent qu'à la hauteur), formes de toiture, son, comptes ou serveur distant.
 
 ## Stack
 
 - Modules ES sans build ; GitHub Pages par `.github/workflows/pages.yml` (tests `node outils/test-run.mjs` avant publication, dépôt servi tel quel).
 - Modules de game-system dans `js/lib/` (app-update, debug, game.css, gh-publish, i18n, keys, pointer, save), outils dans `outils/`, synchronisés par `scripts/sync-game-system.sh`.
-- Stockage : `localStorage`, clés `urban-mobility-simulator:partie` (vue, vue3d, mode, sélection, couches, `scenario.sections` — seules les sections modifiées ; toujours `v: 1`, champs ajoutés avec valeur par défaut), `:prefs` (langue), `:atelier`, `:gh-token` (jamais exporté).
+- Stockage : `localStorage`, clés `urban-mobility-simulator:partie` (vue, vue3d, mode, sélection, couches, `scenario.sections` et `scenario.carrefours` — seuls les choix du joueur ; toujours `v: 1`, champs ajoutés avec valeur par défaut), `:prefs` (langue), `:atelier`, `:gh-token` (jamais exporté).
 
 ## Structure
 
-- `index.html`, `css/style.css` — écran de chargement (`.jeu-chargement` de `game.css`, masqué quand les données sont lues et la carte dessinée), en-tête, outils | carte | inspecteur, barre d'état ; écran titre, menu, réglages.
-- `js/main.js` — cycle de vie, carte MapLibre, bascule 2D / 3D, sélection unique (tronçon ou bâtiment), clavier, sauvegarde, debug.
-- `js/scene/` — `scene3d.js` (three.js : maillages, caméra, visée ; chargé à la première bascule, ne modifie jamais l'état), `camera.js` (orbite, pur), `geometrie3d.js` (maillages en tableaux typés + tables d'identifiants, pur).
+- `index.html`, `css/style.css` — chargement, en-tête, outils | carte | inspecteur, bandeau d'édition, barre d'état ; titre, menu, réglages.
+- `js/main.js` — cycle de vie, carte, bascule 2D / 3D, sélection unique (tronçon, nœud ou bâtiment), éditeurs, clavier, sauvegarde, debug.
+- `js/scene/` — `scene3d.js` (three.js, chargé à la première bascule, ne modifie jamais l'état), `camera.js` (orbite), `geometrie3d.js` (maillages en tableaux typés) : purs sauf la scène.
 - `js/donnees.js` — lecture paresseuse et mémorisée des GeoJSON (3D, inspecteur des bâtiments).
 - `js/carte/style.js` — style MapLibre et couches activables (pur, testé).
 - `js/section.js` — section transversale (bandes, opérations qui rendent `{ section }` ou `{ refus }`, `decalages`), `js/historique.js` — annuler / rétablir ; `js/data/bandes.js` — types de bande (contenu). Purs, testés (`test/section.test.mjs`).
 - `js/editeur.js` — le bandeau (DOM) ; ne modifie rien, demande à `main.js` (`operer`), qui applique et tient l'historique.
+- `js/carrefour.js` — branches, voies, raccords proposés, opérations (`{ carrefour }` ou `{ refus }`) ; `js/geo/raccords.js` — recul, ancres, raccords, zone, traversées (partagés 2D / 3D) ; `js/data/carrefours.js` (contenu) ; `js/editeur-carrefour.js` (le bandeau) ; `js/carte/carrefours.js` (GeoJSON). Purs sauf le bandeau, testés (`test/carrefour.test.mjs`).
 - `js/carte/sections.js` (GeoJSON des bandes, pur), `js/carte/motifs.js` (motifs et flèches dessinés depuis la palette), `js/geo/decalage.js` (bords décalés, partagés 2D / 3D), `js/geo/coupe.js` (mesure de l'emprise, pipeline).
-- `js/inspecteur.js` — lignes de l'inspecteur, tronçon et bâtiment (pur, testé) ; `js/data/textes.js` — tous les textes FR/EN.
+- `js/inspecteur.js` — lignes de l'inspecteur : tronçon, nœud, bâtiment (pur, testé) ; `js/data/textes.js` — tous les textes FR/EN.
 - `js/geo/` — `coordonnees.js` (proj4), `repere.js` (repère local de la 3D), `geometrie.js`, `topologie.js`, `appariement.js` (OSM) : purs, partagés par le jeu, le pipeline et les tests.
 - `js/palette.js`, `js/data/reglages.js` (réglables par l'atelier, publiés dans `assets/design/reglages.json`).
 - `data/corridor.json` (emprise), `data/urbis-codes.json` (libellés des codes, d'après les spécifications UrbIS), `data/metadata/sources.json`.
-- `outils/critere-v01.mjs`, `-v02`, `-v03` — les critères de validation dans le vrai jeu.
+- `outils/critere-v01.mjs` à `-v04` — les critères de validation dans le vrai jeu.
 
 ## Où lire quoi
 
@@ -164,6 +169,7 @@ Les carrefours (v0.4) ne sont pas raccordés aux sections : une bande s'arrête 
 |---|---|
 | `data/`, `outils/donnees/` | `docs/domaines/donnees.md`, `data/metadata/sources.json`, `data/metadata/quality-report.md`, pitch §7–10 |
 | éditeur de section (`section`, `historique`, `editeur`, `carte/sections`, `geo/decalage`, `geo/coupe`) | en-têtes des modules, `test/section.test.mjs`, pitch §15 |
+| carrefours (`carrefour`, `geo/raccords`, `editeur-carrefour`, `carte/carrefours`) | `docs/domaines/carrefours.md`, `test/carrefour.test.mjs`, pitch §13 sprint 4 |
 | `js/geo/` | pitch §8–9, tests `test/coordonnees|repere|topologie|appariement.test.mjs` |
 | `js/scene/` | `docs/domaines/scene3d.md`, en-têtes des trois modules, `test/scene|camera.test.mjs`, réglages `scene` |
 | interface, CSS | conventions §3, §5, §7, §8 (`.claude/conventions-detail.md`) |
@@ -179,16 +185,15 @@ node outils/captures.mjs --cibles bureau,bureau_125 --clic "#nouvelle" --attendr
 node outils/captures.mjs --cibles bureau,bureau_125 --clic "#nouvelle" --clic "#bascule-vue" --attendre 6000   # vue 3D
 node outils/audit-ecran.mjs --clic "#nouvelle" --ecrans bureau,bureau_125        # + --clic "#bascule-vue" pour la 3D
 node outils/lisibilite.mjs
-node outils/critere-v01.mjs                      # critère v0.1 (20 tronçons, < 3 s)
-node outils/critere-v02.mjs                      # critère v0.2 (scène < 5 s, sélection 2D/3D, barre d'état)
-node outils/critere-v03.mjs                      # critère v0.3 (éditions, emprise, mêmes bandes 2D/3D, undo, relecture)
-node outils/capture-editeur.mjs --sortie <dossier hors captures/>   # l'éditeur ouvert, en 2D et en 3D
+node outils/critere-v01.mjs                      # puis -v02, -v03, -v04 : les critères (en-têtes des fichiers)
+node outils/capture-editeur.mjs --sortie <dossier hors captures/>     # éditeur de section, 2D et 3D
+node outils/capture-carrefour.mjs --sortie <dossier hors captures/>   # éditeur de carrefour, 2D et 3D
 node outils/stamp-version.mjs
 ```
 
 Données : `node outils/donnees/telecharger.mjs` (réseau : `geoservices-urbis.irisnet.be`, `api.openstreetmap.org`, `urbisdownload.datastore.brussels`), puis `npm run donnees`. Ne jamais éditer `data/original/` ni `data/processed/` à la main.
 
-Mode debug : `?debug=1` → `window.__jeu` : `state()` (sélection, inspecteur, zoom, centre, couches), `teleport('montgomery')` (les stations), `jouer()`, `selectionner(id)`, `versEcran([lon, lat])`, `allerA([lon, lat], zoom)`, `pret()` (ms jusqu'à la carte prête), `ids()`. Vue 3D : `state()` donne aussi `mode`, `camera` (cible, distance, azimut, inclinaison, position), `surbrillance2d`, `surbrillance3d`, `scenePreteMs` ; `vue('3d' | '2d')` (rend les ms de la première ouverture), `camera({ cibleLonLat, distance, azimut, inclinaison })`, `versEcran3d([lon, lat], hauteur)`, `pointSurBatiment(id)`, `batiments()`, `sceneComptes()`. Éditeur : `editables()`, `editer(id)`, `section(id)`, `operation(nom, …args)`, `choisirBande(id)`, `annuler()`, `retablir()`, `scenario()`, `sections2d()`, `sections3d()`, `editeurOuvert()`.
+Mode debug : `?debug=1` → `window.__jeu` (sélection, vue 3D, éditeurs de section et de carrefour) : liste dans `docs/domaines/outillage.md`.
 
 ## Exceptions aux conventions
 
@@ -213,8 +218,6 @@ Mode debug : `?debug=1` → `window.__jeu` : `state()` (sélection, inspecteur, 
 
 ## Pièges connus
 
-- MapLibre n'admet qu'une interpolation sur le zoom par expression : la condition va **dans** les paliers (`largeurSelon` dans `style.js`).
-- `querySourceFeatures` rend des morceaux de géométrie découpés par tuile : pour viser un tronçon, projeter sa vraie géométrie (`versEcran`).
+- MapLibre : une seule interpolation sur le zoom par expression (condition **dans** les paliers, `largeurSelon`) ; `querySourceFeatures` rend des morceaux découpés par tuile (viser par la vraie géométrie, `versEcran`).
 - Deux clics au même endroit à moins de ~500 ms passent pour un double-clic (zoom) : l'outil de critère attend 600 ms.
 - Un bouton visible avant la fin du chargement ne faisait rien en ligne (~2 Mo de données) : écran de chargement obligatoire (conventions §3, Jérôme, v0.1.2), boutons du titre aussi désactivés jusqu'à `montrerTitre()`.
-- Une ligne de grille `minmax(0, 62dvh)` s'effondre à 0 dans une page qui défile (téléphone) : hauteur fixe `62dvh`.

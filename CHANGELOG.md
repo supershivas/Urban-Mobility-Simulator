@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0 — 2026-11-15
+- Éditeur de carrefour (N pour choisir un nœud, M ou C pour l'ouvrir) : chaque voie qui entre se raccorde aux voies qui sortent ; le jeu propose, vous validez ou changez
+- Passages piétons, traversées cyclables et régulation (feux, priorités) par carrefour, « Non renseigné » tant que vous ne les posez pas
+- Les voies créées dans une rue restent raccordées à ses carrefours, sur la carte comme en 3D
+
 ## 0.3.0 — 2026-11-15
 - Éditeur de section transversale (M) : trottoirs, pistes, bus, voies, stationnement, plantations dans la largeur réelle de chaque rue, mesurée sur les surfaces UrbIS
 - La largeur ne se dépasse jamais : un ordre impossible est refusé avec sa raison ; Ctrl+Z / Ctrl+Y annulent et rétablissent

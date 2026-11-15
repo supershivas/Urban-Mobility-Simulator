@@ -4,16 +4,16 @@
 // Ce module dessine et vise : il ne modifie jamais l'état du jeu (main.js décide).
 // Rien ne s'anime tout seul : une image n'est calculée que sur demande, et jamais
 // quand la vue est inactive ou l'onglet caché.
-import * as THREE from '../../vendor/three/three.module.js?v=0.3.0';
-import { versScene, depuisScene } from '../geo/repere.js?v=0.3.0';
-import { distancePointLigne, boite } from '../geo/geometrie.js?v=0.3.0';
-import { decalerLigne } from '../geo/decalage.js?v=0.3.0';
-import { pose, contraindre, deplacer, tourner, zoomer, cadrer, metresParPixel, interpoler } from './camera.js?v=0.3.0';
+import * as THREE from '../../vendor/three/three.module.js?v=0.4.0';
+import { versScene, depuisScene } from '../geo/repere.js?v=0.4.0';
+import { distancePointLigne, boite } from '../geo/geometrie.js?v=0.4.0';
+import { decalerLigne } from '../geo/decalage.js?v=0.4.0';
+import { pose, contraindre, deplacer, tourner, zoomer, cadrer, metresParPixel, interpoler } from './camera.js?v=0.4.0';
 import {
-  maillerSurfaces, maillerBatiments, maillerAxes, maillerRuban, maillerSections, segmentsDeLignes, lignesLocales, rangDuTriangle,
-} from './geometrie3d.js?v=0.3.0';
-import { BANDES } from '../data/bandes.js?v=0.3.0';
-import { HIERARCHIE_PRINCIPALE, SURFACE_PIETONNE, SURFACE_SOUTERRAINE } from '../carte/style.js?v=0.3.0';
+  maillerSurfaces, maillerBatiments, maillerAxes, maillerRuban, maillerSections, maillerPolygones, segmentsDeLignes, lignesLocales, rangDuTriangle,
+} from './geometrie3d.js?v=0.4.0';
+import { BANDES } from '../data/bandes.js?v=0.4.0';
+import { HIERARCHIE_PRINCIPALE, SURFACE_PIETONNE, SURFACE_SOUTERRAINE } from '../carte/style.js?v=0.4.0';
 
 const rad = deg => (deg * Math.PI) / 180;
 
@@ -140,6 +140,41 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
     }
   }
 
+  // ─── Carrefours (v0.4) : zone, traversées, raccords — la géométrie de la carte ─
+  // Posés sur les sections ; raccords proposés en tirets, choisis en trait plein, ceux de la voie choisie en sélection cernée.
+  const groupeCarrefours = scene.add(new THREE.Group()).children.at(-1);
+  let carrefoursDessines = [];
+  function dessinerCarrefours(entrees, voie) {
+    vider(groupeCarrefours);
+    carrefoursDessines = entrees;
+    const polys = [];
+    for (const e of entrees) {
+      if (e.complet && e.zone) polys.push({ anneau: e.zone, couleur: rvb(P.voirie) });
+      for (const tr of e.traversees) polys.push({ anneau: tr.anneau, couleur: rvb(tr.type === 'velo' ? P.cyclable : P.encre) });
+    }
+    const m = maillerPolygones(polys);
+    if (m.indices.length) groupeCarrefours.add(new THREE.Mesh(geometrie(m), aplat(-1, { vertexColors: true })));
+    // Passage piéton : bandes de papier sur l'encre, perpendiculaires à la marche (lisible sans la couleur)
+    const zebres = [];
+    for (const e of entrees) for (const tr of e.traversees.filter(x => x.type === 'pieton')) zebres.push(...tr.bandes ?? []);
+    if (zebres.length) groupeCarrefours.add(new THREE.Mesh(geometrie(maillerPolygones(zebres.map(a => ({ anneau: a, couleur: rvb(P.voirie) })))), aplat(-2, { vertexColors: true })));
+    const contours = entrees.filter(e => e.complet && e.zone).map(e => e.zone);
+    if (contours.length) groupeCarrefours.add(lignes(segmentsDeLignes(contours, S.hauteurLignesM / 3), P.encre));
+    const raccords = entrees.filter(e => e.complet).flatMap(e => e.raccords);
+    for (const [origine, tirets] of [['propose', true], ['joueur', false]]) {
+      const ls = raccords.filter(r => r.origine === origine && r.de !== voie).map(r => r.ligne);
+      if (!ls.length) continue;
+      const seg = new THREE.LineSegments(geometrie({ positions: segmentsDeLignes(ls, S.hauteurLignesM) }),
+        tirets ? new THREE.LineDashedMaterial({ color: P.noeud, dashSize: 0.8, gapSize: 0.6 }) : new THREE.LineBasicMaterial({ color: P.noeud }));
+      if (tirets) seg.computeLineDistances();
+      groupeCarrefours.add(seg);
+    }
+    for (const r of raccords.filter(x => x.de === voie)) {
+      groupeCarrefours.add(new THREE.Mesh(geometrie(maillerRuban(r.ligne, S.bandeChoisieM * 2.5, 0)), aplat(-3, { color: P.encre })));
+      groupeCarrefours.add(new THREE.Mesh(geometrie(maillerRuban(r.ligne, S.bandeChoisieM, 0)), aplat(-4, { color: P.selection })));
+    }
+  }
+
   // ─── Surbrillance de la sélection (même objet que sur la carte) ──────────
   const surbrillance = scene.add(new THREE.Group()).children.at(-1);
   let choisi = null, largeurRuban = 0; // { type, id, noeuds }
@@ -156,6 +191,17 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
       const plein = new THREE.Mesh(geometrie(m), aplat(-5, { vertexColors: true }));
       // mêmes sommets que le bâtiment : le décalage de profondeur le fait passer devant
       surbrillance.add(plein, lignes(m.contours.length ? m.contours : m.contoursPlats, P.encre));
+    } else if (choisi.type === 'noeud') {
+      const p = positionNoeud.get(choisi.id);
+      if (!p) return;
+      largeurRuban = largeurSelection();
+      // Un anneau autour du nœud, cerné d'encre : il ne cache pas les raccords du carrefour
+      for (const [rayon, couleur, decalage] of [[largeurRuban * 1.25, P.encre, -6], [largeurRuban, P.selection, -7], [largeurRuban * 0.55, P.voirie, -8]]) {
+        const d = new THREE.Mesh(disque, aplat(decalage, { color: couleur }));
+        d.scale.set(rayon, 1, rayon);
+        d.position.set(...versScene(p, 0));
+        surbrillance.add(d);
+      }
     } else {
       const ligne = mAxes.lignes.get(choisi.id);
       if (!ligne) return;
@@ -176,7 +222,8 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
   // Le trait de sélection garde une épaisseur lisible à l'écran, quelle que soit la distance
   // Affiné quand la section du tronçon est dessinée : le trait ne doit pas cacher ses bandes
   let fin = false;
-  const largeurSelection = () => (fin ? Math.max(S.selectionFinM, mpp() * S.selectionFinPx) : Math.max(S.selectionM, mpp() * S.selectionPx));
+  const largeurSelection = () => (choisi?.type === 'noeud' ? Math.max(S.noeudRayonM * 1.5, mpp() * S.noeudChoisiPx)
+    : fin ? Math.max(S.selectionFinM, mpp() * S.selectionFinPx) : Math.max(S.selectionM, mpp() * S.selectionPx));
 
   // ─── Caméra orbitale ─────────────────────────────────────────────────────
   let largeur = 1, hauteur = 1, actif = false, image = 0, vol = null, prete = false;
@@ -199,7 +246,7 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
     camera.near = Math.max(1, etat.distance * S.planProche);
     camera.far = Math.max(S.planLointainMinM, etat.distance * S.planLointain);
     camera.updateProjectionMatrix();
-    if (choisi?.type === 'troncon' && Math.abs(largeurSelection() - largeurRuban) > largeurRuban * 0.2) dessinerSelection();
+    if ((choisi?.type === 'troncon' || choisi?.type === 'noeud') && Math.abs(largeurSelection() - largeurRuban) > largeurRuban * 0.2) dessinerSelection();
     rendu.render(scene, camera);
     prete = true;
     surRendu?.();
@@ -239,16 +286,26 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
     const touche = groupes.batiments.visible ? rayon.intersectObject(batiments, false)[0] : null;
     const rang = touche ? rangDuTriangle(mBatiments.debuts, touche.faceIndex) : -1;
     if (rang >= 0 && mBatiments.hauteurs[rang] !== null) return { type: 'batiment', id: mBatiments.ids[rang] };
-    // 2. Sinon l'axe le plus proche du point du sol visé, dans la tolérance de clic (en pixels, comme sur la carte)
+    // 2. Sinon un nœud, puis l'axe le plus proche du point du sol visé, dans la tolérance de clic (en pixels, comme sur la carte)
     const sol3 = rayon.ray.intersectPlane(planSol, v3);
-    if (sol3 && groupes.rues.visible) {
+    if (sol3) {
       const p = depuisScene(sol3.toArray());
-      const tolerance = ((2 * camera.position.distanceTo(sol3) * Math.tan(rad(S.fovDegres) / 2)) / hauteur) * R.selection.toleranceClicPx;
-      const id = tronconPres(p, tolerance);
+      const mppIci = (2 * camera.position.distanceTo(sol3) * Math.tan(rad(S.fovDegres) / 2)) / hauteur;
+      const n = groupes.intersections.visible ? noeudPres(p, Math.max(S.noeudRayonM * 1.5, mppIci * R.selection.toleranceNoeudPx)) : null;
+      if (n) return { type: 'noeud', id: n };
+      const id = groupes.rues.visible ? tronconPres(p, mppIci * R.selection.toleranceClicPx) : null;
       if (id) return { type: 'troncon', id };
     }
     // 3. Sinon un bâtiment à plat (hauteur non renseignée)
     return rang >= 0 ? { type: 'batiment', id: mBatiments.ids[rang] } : null;
+  }
+  function noeudPres(p, tolerance = Infinity) {
+    let meilleur = null, dMin = tolerance;
+    for (const [id, q] of positionNoeud) {
+      const d = Math.hypot(q[0] - p[0], q[1] - p[1]);
+      if (d <= dMin) { dMin = d; meilleur = id; }
+    }
+    return meilleur;
   }
   function tronconPres(p, tolerance = Infinity) {
     let meilleur = null, dMin = tolerance;
@@ -296,12 +353,12 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
     deplacerPx: (dx, dy) => definirEtat(deplacer(etat, dx, dy, mpp()), { anime: true }),
     tourner: (dAzimut, dInclinaison) => definirEtat(tourner(etat, dAzimut, dInclinaison), { anime: true }),
     zoomer: f => definirEtat(zoomer(etat, f), { anime: true }),
-    /** Met en évidence { type: 'troncon' | 'batiment', id, noeuds? } ou rien (null). */
+    /** Met en évidence { type: 'troncon' | 'batiment' | 'noeud', id, noeuds? } ou rien (null). */
     selectionner(objet) { choisi = objet; dessinerSelection(); demander(); },
     surbrillance: () => choisi?.id ?? null,
     /** Trait de sélection fin (la section du tronçon choisi est dessinée) ou normal. */
     affinerSelection(v) { if (fin !== v) { fin = v; dessinerSelection(); demander(); } },
-    definirCouches(couches) { for (const [c, g] of Object.entries(groupes)) g.visible = couches[c] !== false; demander(); },
+    definirCouches(couches) { for (const [c, g] of Object.entries(groupes)) g.visible = couches[c] !== false; groupeCarrefours.visible = couches.sections !== false; demander(); },
     viser,
     tronconAuCentre: () => (groupes.rues.visible ? tronconPres(etat.cible) : null),
     /** Position à l'écran (dans le conteneur) d'un point local à une hauteur donnée ; visible : devant la caméra. */
@@ -320,6 +377,12 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
     niveauAxe: id => niveauAxe.get(id) ?? null,
     /** Les sections à dessiner : [{ section, decalages }] (js/section.js) ; bande : "troncon:bande" mise en évidence. */
     definirSections(entrees, bande = null) { bandeChoisie = bande; dessinerSections(entrees); demander(); },
+    /** Les carrefours à dessiner (v0.4) : [{ noeud, zone, traversees, raccords, complet }] en local ; voie : la voie entrante choisie. */
+    definirCarrefours(entrees, voie = null) { dessinerCarrefours(entrees, voie); demander(); },
+    /** Ce que la scène dessine des raccords : { "de>vers": { debut, fin, origine } } (local). */
+    raccords: () => Object.fromEntries(carrefoursDessines.filter(e => e.complet).flatMap(e => e.raccords)
+      .map(r => [`${r.de}>${r.vers}`, { debut: r.ligne[0], fin: r.ligne.at(-1), origine: r.origine }])),
+    noeudAuCentre: () => (groupes.intersections.visible ? noeudPres(etat.cible) : null),
     /** Ce que la scène dessine des sections : { "troncon:bande": { gauche, droite, type } }. */
     sections: () => Object.fromEntries(mSections.bandes),
     comptes: { batiments: mBatiments.ids.length, surfaces: mSurfaces.ids.length, troncons: mAxes.ids.length, triangles: (mBatiments.indices.length + mSurfaces.indices.length + mAxes.indices.length) / 3 },

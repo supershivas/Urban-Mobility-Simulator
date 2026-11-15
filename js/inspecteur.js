@@ -135,3 +135,46 @@ export function lignesInspecteurBatiment(batiment, { t, lang, infos }) {
     },
   ];
 }
+
+/**
+ * Un nœud (carrefour, v0.4).
+ * noeud : entrée de network.json (intersections) ; ctx : { t, lang, codes,
+ *   branches : js/carrefour.js (avec nomTexte), raccords, verif, perdus, carrefour : les choix du scénario (ou null) }
+ * La régulation et les traversées viennent du seul scénario : aucune source ne les donne, elles restent « Non renseigné ».
+ */
+export function lignesInspecteurNoeud(noeud, { t, lang, codes, branches, raccords, verif, perdus, carrefour }) {
+  const inconnu = (champ, cle = 'valeur.inconnu') => ({ champ: t(champ), valeur: t(cle), inconnu: true });
+  const ligne = (champ, valeur, source, copiable = false) => ({ champ: t(champ), valeur: String(valeur), inconnu: false, ...(source ? { source } : {}), ...(copiable ? { copiable: true } : {}) });
+  const type = noeud.typeCode === null || noeud.typeCode === undefined ? null : codes.noeudType?.[noeud.typeCode];
+  const niveau = noeud.niveau === null || noeud.niveau === undefined ? null
+    : noeud.niveau === 0 ? t('valeur.niveau.0') : t(noeud.niveau < 0 ? 'valeur.niveau.neg' : 'valeur.niveau.pos', { n: noeud.niveau });
+  const lettre = i => String.fromCharCode(65 + i);
+  const proposes = raccords.filter(r => r.origine === 'propose').length;
+  const poses = Object.entries(carrefour?.traversees ?? {}).flatMap(([id, tr]) => Object.entries(tr).filter(([, v]) => v !== null)
+    .map(([k, v]) => `${lettre(branches.findIndex(b => b.troncon === id))} ${t(`traversee.${k}`)} : ${t(v ? 'traversee.oui' : 'traversee.non')}`));
+  const editable = branches.length >= 2;
+  return [
+    {
+      titre: t('inspecteur.section.identite'),
+      lignes: [
+        ligne('champ.id', noeud.id, null, true),
+        noeud.sourceIds?.urbis ? ligne('champ.id-source', noeud.sourceIds.urbis, null, true) : inconnu('champ.id-source'),
+        type ? ligne('champ.type', `${type[lang] ?? type.fr} (${noeud.typeCode})`) : inconnu('champ.type'),
+        niveau === null ? inconnu('champ.niveau') : ligne('champ.niveau', niveau),
+      ],
+    },
+    {
+      titre: t('inspecteur.section.carrefour'),
+      lignes: [
+        ligne('champ.branches', branches.length ? branches.map((b, i) => `${lettre(i)} ${b.nomTexte ?? t('valeur.inconnu')}`).join(' · ') : t('valeur.aucune')),
+        carrefour?.regulation ? ligne('champ.regulation', t(`regulation.${carrefour.regulation}`), t('valeur.scenario.modifiee')) : inconnu('champ.regulation', 'valeur.regulation-absente'),
+        ...(editable ? [
+          ligne('champ.raccords', t('valeur.raccords', { n: raccords.length, p: proposes, j: raccords.length - proposes }), t('valeur.methode-raccords')),
+          ligne('champ.alertes', verif.impasses.length || verif.inaccessibles.length || perdus.length
+            ? t('valeur.alertes', { i: verif.impasses.length, a: verif.inaccessibles.length, p: perdus.length }) : t('valeur.aucune-alerte')),
+          poses.length ? ligne('champ.traversees', poses.join(' · ')) : inconnu('champ.traversees', 'valeur.traversees-absentes'),
+        ] : [ligne('champ.raccords', t('valeur.pas-carrefour'))]),
+      ],
+    },
+  ];
+}

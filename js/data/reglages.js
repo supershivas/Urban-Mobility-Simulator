@@ -12,6 +12,7 @@ export const REGLAGES = {
   },
   selection: {
     toleranceClicPx: 8,     // un clic à moins de 8 px d'un axe le sélectionne
+    toleranceNoeudPx: 7,    // un clic à moins de 7 px d'un nœud choisit le carrefour (avant l'axe, qui y aboutit)
   },
   scene: {                  // vue 3D (v0.2) : caméra orbitale, épaisseurs de dessin en mètres
     fovDegres: 40,          // champ vertical de la caméra
@@ -36,6 +37,7 @@ export const REGLAGES = {
     selectionFinPx: 2,
     bandeChoisieM: 0.25,    // bords de la bande choisie (3D) : trait de sélection, cerne d'encre 2,5 fois plus large
     noeudRayonM: 1.5,
+    noeudChoisiPx: 9,       // rayon de l'anneau du nœud choisi, à l'écran (au moins 1,5 × noeudRayonM)
     stationRayonM: 7,
     hauteurLignesM: 0.3,    // rails, ouvrages, emprise : juste au-dessus du sol pour rester visibles
     ombreMurMin: 0.2,       // teinte des façades : du bâti vers le bord, selon l'orientation
@@ -48,6 +50,9 @@ export const REGLAGES = {
     planLointain: 8,
     planLointainMinM: 6000,
     echelleMaxPx: 120,      // barre d'échelle, valable au point visé
+  },
+  carrefour: {
+    lettreAuDelaM: 6,       // lettre d'une branche (carte, 3D) : à cette distance au-delà du recul
   },
   traits: {
     axePrincipalPx: 2.5,    // épaisseur des axes MER, MAR, H à zoom 15

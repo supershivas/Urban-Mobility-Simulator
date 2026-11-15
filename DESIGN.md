@@ -40,7 +40,7 @@ de mécanique seulement : *Traffic City* (réorganiser un réseau pour le fluidi
 - **Partie** : un scénario pour tout le corridor, comparé à l'état réel.
 - **Entre deux parties** : le scénario est sauvegardé ; on en ouvre un autre sur la même rue.
 
-En v0.3 la boucle est : **choisir un tronçon → ouvrir sa section (M) → répartir sa largeur mesurée entre les usages → voir le résultat sur la carte et en 3D**. Rien n'est encore compté (personnes / heure : v0.5).
+En v0.3 la boucle est : **choisir un tronçon → ouvrir sa section (M) → répartir sa largeur mesurée entre les usages → voir le résultat sur la carte et en 3D**. En v0.4 s'y ajoute : **choisir un carrefour (N) → raccorder les voies, poser les traversées, la régulation**. Rien n'est encore compté (personnes / heure : v0.5).
 
 ## Le lot minimal (v0.1)
 
@@ -60,6 +60,13 @@ Mesuré par `npm test` (`test/donnees.test.mjs`) et `node outils/critere-v01.mjs
 - **Bandeau sous la carte** (Jérôme, v0.3.0) : coupe à l'échelle, limites à glisser, outils de la bande choisie, refus écrits.
 - **Règle** : la somme des bandes ne dépasse jamais l'emprise ; le reste est de l'espace libre. Un ordre impossible est refusé avec sa raison.
 - **Couleurs des bandes** (Jérôme, v0.3.0 : teintes douces + motifs) : valeurs proposées [À VALIDER] ; chaque type porte aussi un sigle (éditeur) et un motif (carte).
+
+## L'éditeur de carrefour (v0.4)
+
+- **Raccords proposés, à revoir** (Jérôme, v0.4.0) : aucune source ne dit quelle voie mène où. Le jeu propose (chaque voie qui entre vers chaque autre branche, mode compatible, la voie de gauche tourne à gauche) et le dit : tirets, « proposé », méthode et confiance faible. Le joueur détache, rattache, ou valide.
+- **Traversées et régulation** (Jérôme, v0.4.0) : passage piéton (exige un trottoir), traversée cyclable (exige une piste), régulation du carrefour ; tout part de « Non renseigné ».
+- **Même bandeau** que l'éditeur de section (Jérôme, v0.4.0) : une carte par branche, lettrée comme sur la carte et en 3D.
+- **Règle** : une voie créée dans un tronçon est raccordée à ses carrefours ; une voie retirée emporte ses raccords. Un raccord impossible (demi-tour, voiture vers une piste, contresens) est refusé avec sa raison ; une voie sans issue ou jamais atteinte est signalée.
 
 ## Le monde
 

@@ -40,6 +40,12 @@ export default {
     // « selection sur bus » 1,94 et « selection sur cyclable » 1,41 (mesuré, v0.3.0) : la bande choisie
     // est donc cernée d'encre (carte, 3D, éditeur), et le trait de sélection est posé sur l'encre.
     { avant: 'selection', fond: 'encre', role: 'signe', ou: 'bande choisie : trait de sélection sur son cerne d\'encre' },
+    // v0.4 : carrefours — raccords (noeud) sur la zone (voirie) et sur les bandes, traversées, voies de l'éditeur
+    { avant: 'noeud', fond: 'voirie', role: 'signe', ou: 'raccord sur la zone de carrefour' },
+    { avant: 'noeud', fond: 'trottoir', role: 'signe', ou: 'raccord passant sur un trottoir' },
+    { avant: 'voirie', fond: 'encre', role: 'signe', ou: 'bandes d\'un passage piéton' },
+    { avant: 'voirie', fond: 'cyclable', role: 'signe', ou: 'damier d\'une traversée cyclable' },
+    { avant: 'inconnu', fond: 'voirie', role: 'texte', ou: 'voie sortante non raccordée (éditeur de carrefour)' },
   ],
   groupes: {},
   poses: [],

@@ -1,7 +1,7 @@
 // Le style MapLibre de la carte, construit depuis la palette et les réglages.
 // Pur (aucun DOM) : testé dans Node. Aucune source distante : pas de fond de
 // carte en ligne, pas de glyphes (les noms passent par le DOM, pas par MapLibre).
-import { BANDES } from '../data/bandes.js?v=0.3.0';
+import { BANDES } from '../data/bandes.js?v=0.4.0';
 
 export const COUCHES = {
   // id de couche activable → couches MapLibre qu'elle commande
@@ -13,7 +13,9 @@ export const COUCHES = {
   ouvrages: ['tunnels', 'ponts'],
   stations: ['stations'],
   emprise: ['emprise'],
-  sections: ['sections', 'sections-motif', 'sections-contour', 'sections-sens', 'sections-choisie-cerne', 'sections-choisie'],
+  // Sections et carrefours modifiés (v0.3, v0.4) : une seule case, les touches 1 à 9 sont prises
+  sections: ['sections', 'sections-motif', 'sections-contour', 'sections-sens', 'sections-choisie-cerne', 'sections-choisie',
+    'carrefours-zone', 'carrefours-zone-contour', 'carrefours-traversee', 'carrefours-raccord-cerne', 'carrefours-raccord', 'carrefours-raccord-propose', 'carrefours-raccord-sens'],
 };
 export const COUCHES_ACTIVES = { batiments: true, surfaces: true, rues: true, intersections: true, rails: true, ouvrages: false, stations: true, emprise: true, sections: true };
 export const COUCHES_SELECTIONNABLES = ['rues', 'rues-tunnel'];
@@ -45,6 +47,8 @@ export function styleCarte(P, reglages, base = 'data/') {
       emprise: source('metadata/corridor.geojson'),
       // Les sections modifiées (et celle qu'on édite) : remplies par le jeu, jamais lues sur le réseau
       sections: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
+      // Le carrefour choisi (zone, raccords) et les traversées posées (v0.4) : remplis par le jeu
+      carrefours: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
     },
     layers: [
       { id: 'fond', type: 'background', paint: { 'background-color': P.papier } },
@@ -89,6 +93,19 @@ export function styleCarte(P, reglages, base = 'data/') {
         id: 'sections-contour', type: 'line', source: 'sections', filter: ['==', ['geometry-type'], 'Polygon'],
         paint: { 'line-color': P.encre, 'line-width': ['interpolate', ['linear'], ['zoom'], 15, 0.3, 19, 1] },
       },
+      // Carrefour (v0.4) : la zone où les voies se raccordent, les traversées (motif), les raccords
+      {
+        id: 'carrefours-zone', type: 'fill', source: 'carrefours', filter: ['==', ['get', 'genre'], 'zone'],
+        paint: { 'fill-color': P.voirie },
+      },
+      {
+        id: 'carrefours-zone-contour', type: 'line', source: 'carrefours', filter: ['==', ['get', 'genre'], 'zone'],
+        paint: { 'line-color': P.encre, 'line-width': 1, 'line-dasharray': [3, 2] },
+      },
+      {
+        id: 'carrefours-traversee', type: 'fill', source: 'carrefours', filter: ['==', ['get', 'genre'], 'traversee'],
+        paint: { 'fill-pattern': ['concat', 'motif-traversee-', ['get', 'type']] },
+      },
       {
         id: 'rues-tunnel', type: 'line', source: 'rues', filter: ['<', ['get', 'niveau'], 0],
         layout: { 'line-cap': 'butt' },
@@ -119,6 +136,25 @@ export function styleCarte(P, reglages, base = 'data/') {
       {
         id: 'sections-choisie', type: 'line', source: 'sections', filter: ['==', ['get', 'id'], ''],
         paint: { 'line-color': P.selection, 'line-width': 2.5 },
+      },
+      // Raccords : proposés en tirets (à revoir), choisis par le joueur en trait plein ; ceux de la voie choisie en sélection cernée
+      {
+        id: 'carrefours-raccord-cerne', type: 'line', source: 'carrefours', filter: ['all', ['==', ['get', 'genre'], 'raccord'], ['get', 'choisi']],
+        layout: { 'line-cap': 'round' },
+        paint: { 'line-color': P.encre, 'line-width': 6 },
+      },
+      // (deux couches : le tireté ne dépend pas d'une propriété dans toutes les versions de MapLibre)
+      {
+        id: 'carrefours-raccord', type: 'line', source: 'carrefours', filter: ['all', ['==', ['get', 'genre'], 'raccord'], ['!=', ['get', 'origine'], 'propose']],
+        paint: { 'line-color': ['case', ['get', 'choisi'], P.selection, P.noeud], 'line-width': ['case', ['get', 'choisi'], 3, 1.5] },
+      },
+      {
+        id: 'carrefours-raccord-propose', type: 'line', source: 'carrefours', filter: ['all', ['==', ['get', 'genre'], 'raccord'], ['==', ['get', 'origine'], 'propose']],
+        paint: { 'line-color': ['case', ['get', 'choisi'], P.selection, P.noeud], 'line-width': ['case', ['get', 'choisi'], 3, 1.5], 'line-dasharray': [2, 1.5] },
+      },
+      {
+        id: 'carrefours-raccord-sens', type: 'symbol', source: 'carrefours', minzoom: 17, filter: ['all', ['==', ['get', 'genre'], 'raccord'], ['get', 'choisi']],
+        layout: { 'symbol-placement': 'line-center', 'icon-image': 'fleche', 'icon-rotation-alignment': 'map', 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'icon-size': 0.6 },
       },
       {
         id: 'noeuds', type: 'circle', source: 'noeuds', minzoom: 14,

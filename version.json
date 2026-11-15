@@ -1,9 +1,9 @@
 {
-  "version": "0.3.0",
+  "version": "0.4.0",
   "date": "2026-11-15",
   "changes": [
-    "Éditeur de section transversale (M) : trottoirs, pistes, bus, voies, stationnement, plantations dans la largeur réelle de chaque rue, mesurée sur les surfaces UrbIS",
-    "La largeur ne se dépasse jamais : un ordre impossible est refusé avec sa raison ; Ctrl+Z / Ctrl+Y annulent et rétablissent",
-    "Les sections modifiées se voient sur la carte et en 3D, et sont sauvegardées avec la partie"
+    "Éditeur de carrefour (N pour choisir un nœud, M ou C pour l'ouvrir) : chaque voie qui entre se raccorde aux voies qui sortent ; le jeu propose, vous validez ou changez",
+    "Passages piétons, traversées cyclables et régulation (feux, priorités) par carrefour, « Non renseigné » tant que vous ne les posez pas",
+    "Les voies créées dans une rue restent raccordées à ses carrefours, sur la carte comme en 3D"
   ]
 }

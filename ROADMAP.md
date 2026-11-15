@@ -39,11 +39,20 @@ Statuts : **à l'étude** · **validé** (Jérôme a tranché) · **en cours** �
 - [x] Mêmes bandes en 2D et en 3D ; critère mesuré : `node outils/critere-v03.mjs`
 - [ ] Couleurs des bandes (cyclable, bus, stationnement, planté) : [À VALIDER]
 
+### Éditeur de carrefour — v0.4
+
+**Statut** : à mesurer (livré en 0.4.0, attend la validation de Jérôme)
+
+- [x] Branches et voies de chaque nœud depuis les sections ; chaussée non découpée = voies non renseignées (sens OSM)
+- [x] Raccords proposés (méthode, confiance faible), détachés / rattachés / validés par le joueur ; refus motivés ; alertes (sans issue, jamais atteinte)
+- [x] Passages piétons, traversées cyclables, régulation : « Non renseigné » au départ
+- [x] Zone, raccords et traversées dessinés de la même géométrie en 2D et en 3D ; critère mesuré : `node outils/critere-v04.mjs`
+- [ ] Méthode de proposition à confronter au terrain (mouvements interdits, voies d'affectation)
+
 ## Validé (pitch, dans l'ordre)
 
 | Version | Contenu |
 |---|---|
-| 0.4 | Éditeur d'intersections et raccordements |
 | 0.5 | Simulation simplifiée et indicateurs |
 | 0.6 | Scénarios, comparaison, sauvegarde, finition |
 
