@@ -196,3 +196,17 @@ dialog form { margin-top: calc(var(--pas) * 2); }
 .carrefour-voie.libre { color: var(--jeu-inconnu); }
 .carrefour-voie.alerte { text-decoration: underline 2px var(--jeu-accent); text-underline-offset: 3px; }
 .carrefour-traversees { display: flex; gap: 4px; min-width: 0; }
+
+/* ─── Bandeau des flux (v0.5) : même bandeau que les éditeurs ─────────────── */
+.flux-hypothese { display: flex; align-items: center; gap: var(--pas); font-size: var(--t-petit); }
+.flux-hypothese .flux-champ { width: 5em; }
+.flux-table-cadre { overflow-x: auto; min-width: 0; }
+.flux-table { width: 100%; border-collapse: collapse; font-size: var(--t-petit); font-variant-numeric: tabular-nums; }
+.flux-table th, .flux-table td { padding: 2px var(--pas); border-bottom: 1px solid var(--jeu-bord); text-align: left; white-space: nowrap; }
+.flux-table thead th { font-weight: 600; border-bottom: var(--trait) solid var(--jeu-encre); }
+.flux-table tbody th { font-weight: 700; }
+.flux-table td.inconnu, .flux-origine.inconnu { color: var(--jeu-inconnu); font-style: italic; }
+/* Saturation : la ligne d'un mode saturé est soulignée d'encre, proche : d'un trait plus fin (doublé du pourcentage) */
+.flux-table tr[data-niveau="sature"] th { text-decoration: underline 3px var(--jeu-encre); text-underline-offset: 3px; }
+.flux-table tr[data-niveau="proche"] th { text-decoration: underline 1px var(--jeu-encre); text-underline-offset: 3px; }
+.flux-champ { width: 7em; min-height: var(--jeu-cible); font: inherit; font-size: var(--t-texte); box-sizing: border-box; }

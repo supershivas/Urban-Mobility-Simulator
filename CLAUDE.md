@@ -35,18 +35,16 @@ Jeu de conception urbaine inspiré des city builders, limité à l'espace public
 | Emprise | Tampon de **600 m** le long du métro 1 + station Georges Henri (`data/corridor.json`, Jérôme, v0.1.0) |
 | Labo | Plus tard (Jérôme, v0.1.0) |
 | Atelier | Réglages chiffrés seulement (`atelier.html`, Jérôme, v0.1.0) |
-| Vérification | Tests, captures et audit sur **bureau et bureau_125** (plus de téléphone, Jérôme, v0.2.0), lisibilité, `critere-v01` à `-v04` ; pas de harnais de playtest |
-| Critère v0.1 | Données traçables et justes : 0 doublon d'identifiant, 100 % des from/toNode, 20 tronçons au hasard → bon inspecteur, carte prête < 3 s (Jérôme, v0.1.0) |
-| Critère v0.2 | Scène 3D prête < 5 s (~0,9 s), mêmes comptes que les données, 12 tronçons et 12 bâtiments : même sélection, inspecteur, surbrillance en 2D et 3D ; barre d'état sur une ligne à 1280 px |
+| Vérification | Tests, captures et audit sur **bureau et bureau_125** (plus de téléphone, Jérôme, v0.2.0), lisibilité, `critere-v01` à `-v05` ; pas de harnais de playtest |
+| Critères | v0.1 données traçables (0 doublon, 100 % des from/toNode, carte < 3 s, Jérôme, v0.1.0) · v0.2 scène 3D < 5 s, même sélection 2D / 3D, barre d'état sur une ligne à 1280 px · v0.3 une modification en 2D se retrouve en 3D sans chevauchement ni dépassement · v0.4 les voies créées restent connectées aux intersections · v0.5 indicateurs recalculés depuis section et demande, rien d'inventé. Détail : en-tête de `outils/critere-v0N.mjs` |
 | Hauteurs | **UrbIS 3D** seulement : Zmax − Zmin des solides associés par `BU_ID` (Jérôme, v0.2.0) ; sans solide : `null`, bâtiment à plat cerné de `inconnu`, « Non renseigné » |
 | Bâtiments | Sélectionnables dans les deux vues, même inspecteur ; au clic 2D les tronçons gardent la priorité (Jérôme, v0.2.0) |
 | Emprise (v0.3) | Largeur publique bord à bord des trottoirs, **coupes perpendiculaires sur les surfaces UrbIS** (`js/geo/coupe.js`, méthode dans `metadata.json → emprisePublique`) ; sans coupe valable : non éditable, « Non renseigné » (Jérôme, v0.3.0) |
 | Section de départ | Les bandes mesurées ; la chaussée reste `chaussee` « voies non renseignées » (Jérôme, v0.3.0) |
 | Éditeur | Bandeau sous la carte (`js/editeur.js`), ouvert par M ou le bouton de l'inspecteur ; somme ≤ emprise, reste = espace libre ; refus écrits ; minimum de dessin 0,3 m seulement (Jérôme, v0.3.0) |
-| Critère v0.3 | Pitch : une modification en 2D se retrouve en 3D sans chevauchement ni dépassement (`critere-v03.mjs`) |
 | Carrefours | Raccords **proposés, à revoir** (méthode affichée, confiance faible) ; raccords + traversées + régulation (`null` au départ) ; même bandeau sous la carte (Jérôme, v0.4.0). Détail : `docs/domaines/carrefours.md` |
-| Critère v0.4 | Pitch : les voies créées dans les tronçons restent connectées aux intersections (`critere-v04.mjs`) |
-| Onglet caché | Rien ne tourne (pas de simulation ; la 3D ne dessine que sur demande, jamais onglet caché ni en vue 2D) ; la vue est sauvegardée |
+| Simulation | **Comptages + hypothèses**, **par tronçon, statique**, références **citées** (Jérôme, v0.5.0) ; occupation : hypothèse du joueur, `null` au départ. `docs/domaines/simulation.md` |
+| Onglet caché | Rien ne tourne (simulation statique, 3D dessinée sur demande seulement) ; la vue est sauvegardée |
 
 - **Production** : https://supershivas.github.io/Urban-Mobility-Simulator/
 - **Aperçu** : https://supershivas.github.io/Urban-Mobility-Simulator/apercu.html (le jeu dans un cadre de téléphone)
@@ -81,6 +79,7 @@ Police : police système (aucune police distante). Les aplats (bâti, trottoir) 
 | Choisir un bâtiment | B (le plus proche du centre) | clic sur le bâtiment |
 | Choisir un carrefour | N (le plus proche du centre) | clic sur le nœud (tolérance 7 px, avant l'axe) |
 | Modifier la section ou le carrefour | M (ouvrir / fermer) ; C : carrefour, aussi depuis un tronçon | bouton de l'inspecteur |
+| Flux et demande du tronçon | F (ouvrir / fermer) | bouton de l'inspecteur |
 | Raccorder / détacher | Tab jusqu'à la voie qui entre, Entrée, puis la voie qui sort | clic sur l'une, puis sur l'autre |
 | Limite entre deux bandes | ← → sur la limite (Maj : 0,5 m) | glisser la limite |
 | Annuler / rétablir | Ctrl+Z / Ctrl+Y (ou Ctrl+Maj+Z) | boutons de l'éditeur |
@@ -90,7 +89,7 @@ Police : police système (aucune police distante). Les aplats (bâti, trottoir) 
 | Se déplacer | flèches, ZQSD / WASD (touche physique) | glisser |
 | Zoomer | + et − | molette |
 | Retour à l'emprise | R | bouton « Retour à l'emprise » |
-| Couches | 1 à 9 | cases à cocher |
+| Couches | 1 à 9, 0 (Flux) | cases à cocher |
 | Menu | Échap (sans sélection) | roue crantée |
 
 ## Piliers (non négociables)
@@ -115,7 +114,7 @@ Police : police système (aucune police distante). Les aplats (bâti, trottoir) 
 - Three.js : repère local `js/geo/repere.js` — mètres Lambert 72 depuis l'origine `metadata.json → repereLocal` ([152800, 170300], calculée par le pipeline) ; scène X = est, Y = haut, Z = −nord. Jamais de lon/lat brutes.
 - Conversions via proj4js / GDAL, jamais réimplémentées à la main ; testées sur des points de référence.
 - `data/original/` intouché, `data/processed/` reproductible, `data/metadata/sources.json` (organisme, URL, date, format, CRS, licence, attribution, restrictions, champs, qualité).
-- Sources par priorité : UrbIS / Datastore Brussels (dont UrbIS 3D pour les hauteurs) → Brussels Mobility → OpenStreetMap (complément, ODbL : attribution) → STIB GTFS (plus tard).
+- Sources par priorité : UrbIS / Datastore Brussels (dont UrbIS 3D pour les hauteurs) → Brussels Mobility (compteurs vélo, v0.5 ; pas d'historique automobile) → OpenStreetMap (complément, ODbL : attribution) → STIB GTFS (plus tard).
 - Le prototype ne dépend d'**aucun service distant** au démarrage. Si le réseau bloque une source, demander quels hôtes autoriser au lieu de fabriquer des données.
 - Ne pas fusionner des tronçons parce qu'ils portent le même nom ; ponts et tunnels ne se connectent pas au réseau de surface.
 
@@ -131,20 +130,20 @@ Police : police système (aucune police distante). Les aplats (bâti, trottoir) 
 | 0.2 | Rendu 3D three.js, bâtiments à leur hauteur, caméra orbitale, sélection synchronisée, bâtiments sélectionnables | livrée en 0.2.0, à valider |
 | 0.3 | Éditeur de section transversale, contraintes de largeur, undo/redo | livrée en 0.3.0, à valider |
 | 0.4 | Éditeur de carrefours : raccords voie à voie, traversées, régulation | livrée en 0.4.0, à valider |
-| 0.5 | Simulation simplifiée et indicateurs | — |
+| 0.5 | Simulation simplifiée et indicateurs | livrée en 0.5.0, à valider |
 | 0.6 | Scénarios, comparaison, sauvegarde, finition | — |
 
 Une bande s'arrête toujours au bout de son axe : la zone de carrefour est dessinée par-dessus, les raccords partent du recul.
 
 ## Exclu jusqu'ici
 
-Forme des carrefours (oreilles, îlots), raccords hors des carrefours, conflits entre raccords (v0.5), repères de largeur par usage (sans source citée), simulation, véhicules animés, relief (le sol est plat, les altitudes d'UrbIS 3D ne servent qu'à la hauteur), formes de toiture, son, comptes ou serveur distant.
+Forme des carrefours (oreilles, îlots), raccords hors des carrefours, affectation sur le graphe (itinéraires), flux en 3D, repères de largeur par usage (sans source citée), simulation microscopique, véhicules animés, relief (le sol est plat, les altitudes d'UrbIS 3D ne servent qu'à la hauteur), formes de toiture, son, comptes ou serveur distant.
 
 ## Stack
 
 - Modules ES sans build ; GitHub Pages par `.github/workflows/pages.yml` (tests `node outils/test-run.mjs` avant publication, dépôt servi tel quel).
 - Modules de game-system dans `js/lib/` (app-update, debug, game.css, gh-publish, i18n, keys, pointer, save), outils dans `outils/`, synchronisés par `scripts/sync-game-system.sh`.
-- Stockage : `localStorage`, clés `urban-mobility-simulator:partie` (vue, vue3d, mode, sélection, couches, `scenario.sections` et `scenario.carrefours` — seuls les choix du joueur ; toujours `v: 1`, champs ajoutés avec valeur par défaut), `:prefs` (langue), `:atelier`, `:gh-token` (jamais exporté).
+- Stockage : `localStorage`, clés `urban-mobility-simulator:partie` (vue, vue3d, mode, sélection, couches, `scenario.sections`, `.carrefours`, `.demande`, `.hypotheses` — seuls les choix du joueur ; toujours `v: 1`, champs ajoutés avec valeur par défaut), `:prefs` (langue), `:atelier`, `:gh-token` (jamais exporté).
 
 ## Structure
 
@@ -157,11 +156,12 @@ Forme des carrefours (oreilles, îlots), raccords hors des carrefours, conflits 
 - `js/editeur.js` — le bandeau (DOM) ; ne modifie rien, demande à `main.js` (`operer`), qui applique et tient l'historique.
 - `js/carrefour.js` — branches, voies, raccords proposés, opérations (`{ carrefour }` ou `{ refus }`) ; `js/geo/raccords.js` — recul, ancres, raccords, zone, traversées (partagés 2D / 3D) ; `js/data/carrefours.js` (contenu) ; `js/editeur-carrefour.js` (le bandeau) ; `js/carte/carrefours.js` (GeoJSON). Purs sauf le bandeau, testés (`test/carrefour.test.mjs`).
 - `js/carte/sections.js` (GeoJSON des bandes, pur), `js/carte/motifs.js` (motifs et flèches dessinés depuis la palette), `js/geo/decalage.js` (bords décalés, partagés 2D / 3D), `js/geo/coupe.js` (mesure de l'emprise, pipeline).
-- `js/inspecteur.js` — lignes de l'inspecteur : tronçon, nœud, bâtiment (pur, testé) ; `js/data/textes.js` — tous les textes FR/EN.
+- `js/simulation.js` — scénario → état simulé, opérations ; `js/data/simulation.js` (références) ; `js/editeur-flux.js` (bandeau) ; `data/processed/comptages.json`. Purs sauf le bandeau, testés.
+- `js/inspecteur.js` — lignes de l'inspecteur : tronçon (et ses flux), nœud (et ses conflits), bâtiment (pur, testé) ; `js/data/textes.js` — tous les textes FR/EN.
 - `js/geo/` — `coordonnees.js` (proj4), `repere.js` (repère local de la 3D), `geometrie.js`, `topologie.js`, `appariement.js` (OSM) : purs, partagés par le jeu, le pipeline et les tests.
 - `js/palette.js`, `js/data/reglages.js` (réglables par l'atelier, publiés dans `assets/design/reglages.json`).
 - `data/corridor.json` (emprise), `data/urbis-codes.json` (libellés des codes, d'après les spécifications UrbIS), `data/metadata/sources.json`.
-- `outils/critere-v01.mjs` à `-v04` — les critères de validation dans le vrai jeu.
+- `outils/critere-v01.mjs` à `-v05` — les critères de validation dans le vrai jeu.
 
 ## Où lire quoi
 
@@ -170,6 +170,7 @@ Forme des carrefours (oreilles, îlots), raccords hors des carrefours, conflits 
 | `data/`, `outils/donnees/` | `docs/domaines/donnees.md`, `data/metadata/sources.json`, `data/metadata/quality-report.md`, pitch §7–10 |
 | éditeur de section (`section`, `historique`, `editeur`, `carte/sections`, `geo/decalage`, `geo/coupe`) | en-têtes des modules, `test/section.test.mjs`, pitch §15 |
 | carrefours (`carrefour`, `geo/raccords`, `editeur-carrefour`, `carte/carrefours`) | `docs/domaines/carrefours.md`, `test/carrefour.test.mjs`, pitch §13 sprint 4 |
+| flux (`simulation`, `editeur-flux`, comptages) | `docs/domaines/simulation.md`, `test/simulation.test.mjs`, pitch §13 sprint 5, §16 |
 | `js/geo/` | pitch §8–9, tests `test/coordonnees|repere|topologie|appariement.test.mjs` |
 | `js/scene/` | `docs/domaines/scene3d.md`, en-têtes des trois modules, `test/scene|camera.test.mjs`, réglages `scene` |
 | interface, CSS | conventions §3, §5, §7, §8 (`.claude/conventions-detail.md`) |
@@ -185,9 +186,10 @@ node outils/captures.mjs --cibles bureau,bureau_125 --clic "#nouvelle" --attendr
 node outils/captures.mjs --cibles bureau,bureau_125 --clic "#nouvelle" --clic "#bascule-vue" --attendre 6000   # vue 3D
 node outils/audit-ecran.mjs --clic "#nouvelle" --ecrans bureau,bureau_125        # + --clic "#bascule-vue" pour la 3D
 node outils/lisibilite.mjs
-node outils/critere-v01.mjs                      # puis -v02, -v03, -v04 : les critères (en-têtes des fichiers)
+node outils/critere-v01.mjs                      # puis -v02 à -v05 : les critères (en-têtes des fichiers)
 node outils/capture-editeur.mjs --sortie <dossier hors captures/>     # éditeur de section, 2D et 3D
 node outils/capture-carrefour.mjs --sortie <dossier hors captures/>   # éditeur de carrefour, 2D et 3D
+node outils/capture-flux.mjs --sortie <dossier hors captures/>        # bandeau des flux, couche Flux
 node outils/stamp-version.mjs
 ```
 
@@ -200,7 +202,7 @@ Mode debug : `?debug=1` → `window.__jeu` (sélection, vue 3D, éditeurs de sec
 | Règle | Exception | Pourquoi |
 |---|---|---|
 | §21 « jamais de `npm install` » | npm récupère MapLibre et proj4, copiés dans `vendor/` (commité) ; lance Vitest | Option hybride décidée au cadrage ; le joueur ne charge que `vendor/` |
-| §9 boucle à pas fixe, pause | Pas de boucle (`loop.js` retiré) ; le menu remplace la pause ; la 3D dessine sur demande | Rien ne s'anime : pas de simulation avant v0.5 |
+| §9 boucle à pas fixe, pause | Pas de boucle (`loop.js` retiré) ; le menu remplace la pause ; la 3D dessine sur demande | Rien ne s'anime : la simulation (v0.5) est statique |
 | §20 aperçu, §19 deux captures | `apercu.html` reste, mais captures et audit sur bureau et bureau_125 seulement | Jeu pour ordinateur uniquement (Jérôme, v0.1.4) |
 | §8 manette (Steam) | Pas de manette (`gamepad.js` retiré) | Commandes décidées : clavier + souris |
 | §7 cibles 44 px | Les cases à cocher font 18 px, dans un libellé cliquable de 44 px de haut | Toute la ligne est la cible ; l'audit mesure la case seule |
@@ -218,6 +220,4 @@ Mode debug : `?debug=1` → `window.__jeu` (sélection, vue 3D, éditeurs de sec
 
 ## Pièges connus
 
-- MapLibre : une seule interpolation sur le zoom par expression (condition **dans** les paliers, `largeurSelon`) ; `querySourceFeatures` rend des morceaux découpés par tuile (viser par la vraie géométrie, `versEcran`).
-- Deux clics au même endroit à moins de ~500 ms passent pour un double-clic (zoom) : l'outil de critère attend 600 ms.
-- Un bouton visible avant la fin du chargement ne faisait rien en ligne (~2 Mo de données) : écran de chargement obligatoire (conventions §3, Jérôme, v0.1.2), boutons du titre aussi désactivés jusqu'à `montrerTitre()`.
+Dans le fichier du domaine (« Où lire quoi ») ; pièges généraux (MapLibre, double-clic, écran de chargement) : `docs/domaines/outillage.md`.

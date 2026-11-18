@@ -74,12 +74,19 @@
       "aucun": 215
     }
   },
+  "comptages": {
+    "periode": "2026/09/21 – 2026/10/16",
+    "compteurs": 4,
+    "troncons": 3,
+    "methode": "Compteurs vélo automatiques de Bruxelles Mobilité. Débit de référence : moyenne, sur les jours ouvrables de la période, des vélos comptés de 8 h à 9 h (heure de Bruxelles) ; un jour sans aucun comptage est écarté (panne présumée). Chaque compteur est rattaché au tronçon de surface le plus proche à moins de 25 m ; les compteurs d'un même tronçon s'additionnent ; les deux sens sont comptés ensemble."
+  },
   "octets": {
     "streets": 429760,
     "intersections": 151762,
     "surfaces": 4247286,
     "buildings": 4995838,
     "infrastructure": 237934,
+    "comptages": 2231,
     "network": 2018694
   }
 }

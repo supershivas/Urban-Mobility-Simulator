@@ -40,7 +40,7 @@ de mécanique seulement : *Traffic City* (réorganiser un réseau pour le fluidi
 - **Partie** : un scénario pour tout le corridor, comparé à l'état réel.
 - **Entre deux parties** : le scénario est sauvegardé ; on en ouvre un autre sur la même rue.
 
-En v0.3 la boucle est : **choisir un tronçon → ouvrir sa section (M) → répartir sa largeur mesurée entre les usages → voir le résultat sur la carte et en 3D**. En v0.4 s'y ajoute : **choisir un carrefour (N) → raccorder les voies, poser les traversées, la régulation**. Rien n'est encore compté (personnes / heure : v0.5).
+En v0.3 la boucle est : **choisir un tronçon → ouvrir sa section (M) → répartir sa largeur mesurée entre les usages → voir le résultat sur la carte et en 3D**. En v0.4 s'y ajoute : **choisir un carrefour (N) → raccorder les voies, poser les traversées, la régulation**. En v0.5 : **poser la demande d'un tronçon (F) → lire ce qui passe** : capacité, saturation, personnes / heure, temps et délai, conflits des carrefours. La demande vient d'un comptage réel (vélos, Bruxelles Mobilité) ou d'une hypothèse du joueur, jamais d'une valeur inventée ; une coupe qui retire une voie se lit aussitôt en personnes, pas en véhicules.
 
 ## Le lot minimal (v0.1)
 

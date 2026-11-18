@@ -5,6 +5,7 @@
 //   node outils/donnees/telecharger.mjs urbis      → UrbIS seulement
 //   node outils/donnees/telecharger.mjs osm        → OSM seulement (après UrbIS : l'emprise en dépend)
 //   node outils/donnees/telecharger.mjs urbis3d    → hauteurs des bâtiments (après UrbIS : identifiants des bâtiments)
+//   node outils/donnees/telecharger.mjs velos      → compteurs vélo de Bruxelles Mobilité (v0.5)
 //
 // Chaque fichier est consigné dans data/original/manifest.json (URL, date, nombre d'objets, empreinte).
 // Ensuite : node outils/donnees/construire.mjs (sans réseau, reproductible).
@@ -12,7 +13,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { calculerEmprise } from './emprise.mjs';
-import { boite } from '../../js/geo/geometrie.js';
+import { boite, pointDansAnneau } from '../../js/geo/geometrie.js';
 import { solidesDeLaTuile } from './urbis3d.mjs';
 
 const WFS = 'https://geoservices-urbis.irisnet.be/geoserver/urbisvector/ows';
@@ -191,6 +192,39 @@ async function urbis3d() {
   console.log(`UrbIS 3D : ${JSON.stringify(sortie.bilan)}`);
 }
 
+// ─── Brussels Mobility – compteurs vélo (v0.5) ────────────────────────────
+// Seuls les vélos ont un historique : l'API des comptages automobiles ne rend
+// que le direct (vérifié le 2026-11-18), qui n'est pas une référence.
+// Période de référence : 4 semaines de jours ouvrables avant le congé d'automne
+// (FWB 2026 : 19 au 30 octobre), comptes par quart d'heure en UTC, inchangés.
+const VELOS = 'https://data.mobility.brussels/bike/api/counts/';
+export const PERIODE_VELOS = { debut: '20260921', fin: '20261016' };
+async function velos() {
+  const st = JSON.parse(readFileSync('data/original/urbis/stations.wfs.json', 'utf8')).features;
+  const anneau = calculerEmprise(corridor, st).wgs84;
+  const devices = JSON.parse(await lire(`${VELOS}?request=devices`));
+  const retenus = devices.features.filter(f => f.geometry && pointDansAnneau(f.geometry.coordinates, anneau));
+  const compteurs = [];
+  for (const f of retenus) {
+    const nom = f.properties.device_name;
+    const h = JSON.parse(await lire(`${VELOS}?request=history&featureID=${nom}&startDate=${PERIODE_VELOS.debut}&endDate=${PERIODE_VELOS.fin}`));
+    compteurs.push({ ...f, historique: { startDate: h.startDate, endDate: h.endDate, timeGaps: h.timeGaps, data: h.data } });
+    console.log(`Vélos ${nom} : ${h.data?.length ?? 0} quarts d'heure`);
+    await new Promise(r => setTimeout(r, 500));
+  }
+  const sortie = {
+    licence: 'CC0 1.0 — Bruxelles Mobilité (republié par la Ville de Bruxelles sur opendata.brussels.be)',
+    methode: `API bike/api/counts : request=devices, puis request=history du ${PERIODE_VELOS.debut} au ${PERIODE_VELOS.fin} pour chaque compteur situé dans l'emprise ; réponses inchangées (quarts d'heure en UTC).`,
+    extraitLe: new Date().toISOString(),
+    compteurs,
+  };
+  mkdirSync('data/original/brussels-mobility', { recursive: true });
+  const texte = JSON.stringify(sortie);
+  writeFileSync('data/original/brussels-mobility/velos.json', texte);
+  consigner('data/original/brussels-mobility/velos.json', { source: 'brussels-mobility', url: VELOS, objets: compteurs.length, crs: 'EPSG:4326', filtre: `compteurs vélo dans l'emprise, ${PERIODE_VELOS.debut}–${PERIODE_VELOS.fin}` }, texte);
+}
+
 if (quoi === 'tout' || quoi === 'urbis') await urbis();
 if (quoi === 'tout' || quoi === 'osm') await osm();
 if (quoi === 'tout' || quoi === 'urbis3d') await urbis3d();
+if (quoi === 'tout' || quoi === 'velos') await velos();

@@ -178,3 +178,64 @@ export function lignesInspecteurNoeud(noeud, { t, lang, codes, branches, raccord
     },
   ];
 }
+
+/**
+ * Les flux d'un tronçon (v0.5), pour l'heure de référence.
+ * e : js/simulation.js (etatTroncon) ; ctx : { t, lang, comptage (comptages.parTroncon[id] ou null) }
+ * Un mode sans demande ni capacité n'a pas de ligne ; sans aucune demande : une ligne « Non renseigné ».
+ */
+export function lignesSimulation(e, { t, lang }) {
+  const loc = lang === 'en' ? 'en-GB' : 'fr-BE';
+  const n = v => v.toLocaleString(loc, { maximumFractionDigits: 0 });
+  const pc = x => (x === Infinity ? t('sim.sans-voie') : `${Math.round(x * 100).toLocaleString(loc)} %`);
+  const signe = s => (s === 'total' ? t('sim.deux-sens') : t(`sens.${s}.signe`));
+  const parSens = (o, f) => ['aller', 'retour'].filter(s => o[s] !== null && o[s] !== undefined).map(s => `${f(o[s])} ${signe(s)}`).join(' · ');
+  const valeur = (o, f) => (o.total !== null && o.aller === null && o.retour === null ? `${f(o.total)} ${signe('total')}` : parSens(o, f));
+  const lignes = [];
+  for (const [mode, m] of Object.entries(e.modes)) {
+    const d = m.demande, c = m.capacite;
+    if (d.origine === null) continue;
+    const source = d.origine === 'comptage' ? t('sim.source-comptage', { compteurs: d.compteurs.join(', ') }) : t('sim.source-joueur');
+    lignes.push({ champ: t(`sim.mode.${mode}`), valeur: t(`sim.unite.${mode}`, { v: valeur(d, n) }), inconnu: false, source });
+    const cap = c.raison && valeur(c, n) === '' ? null : valeur(c, n);
+    lignes.push(cap
+      ? { champ: t('sim.capacite'), valeur: cap, inconnu: false, source: t(`sim.methode.${c.methode}`, { source: t(`ref.${c.source}`) }) }
+      : { champ: t('sim.capacite'), valeur: t(`sim.raison.${c.raison ?? 'capacite-inconnue'}`), inconnu: true });
+    const x = m.saturation.total !== null ? valeur({ aller: null, retour: null, total: m.saturation.total }, pc) : parSens(m.saturation, pc);
+    if (x) lignes.push({ champ: t('sim.saturation'), valeur: x, inconnu: false });
+    const sec = s => t('sim.secondes', { n: n(s) });
+    const temps = mode === 'pieton' ? (m.temps.total === null ? '' : sec(m.temps.total)) : parSens(m.temps, sec);
+    lignes.push(temps
+      ? { champ: t('sim.temps'), valeur: temps, inconnu: false, source: t(mode === 'pieton' ? 'sim.methode-temps-pieton' : 'sim.methode-temps') }
+      : { champ: t('sim.temps'), valeur: t(`sim.raison.${m.raisonTemps ?? 'vitesse-inconnue'}`), inconnu: true });
+    if (mode !== 'pieton') {
+      const dl = parSens(m.delai, sec);
+      const raison = Object.values(m.raisonDelai).find(Boolean);
+      lignes.push(dl ? { champ: t('sim.delai'), valeur: dl, inconnu: false, source: t('sim.methode-delai') }
+        : { champ: t('sim.delai'), valeur: t(`sim.raison.${raison ?? 'regulation-inconnue'}`), inconnu: true });
+    }
+    lignes.push(m.personnes.transportees !== null
+      ? { champ: t('sim.personnes'), valeur: t('sim.personnes-valeur', { d: n(m.personnes.demande), e: n(m.personnes.transportees) }), inconnu: false }
+      : { champ: t('sim.personnes'), valeur: t(`sim.raison.${m.personnes.raison}`), inconnu: true });
+  }
+  if (!lignes.length) lignes.push({ champ: t('sim.demande'), valeur: t('sim.raison.sans-demande'), inconnu: true });
+  else {
+    const p = e.personnes;
+    lignes.unshift(p.transportees !== null
+      ? { champ: t('sim.personnes-troncon'), valeur: t('sim.personnes-valeur', { d: n(p.demande), e: n(p.transportees) }), inconnu: false, source: t('sim.methode-personnes') }
+      : { champ: t('sim.personnes-troncon'), valeur: t('sim.raison.personnes-incompletes'), inconnu: true });
+  }
+  return [{ titre: t('inspecteur.section.flux'), lignes }];
+}
+
+/**
+ * L'exposition aux conflits d'un carrefour (v0.5) : js/simulation.js (conflits). Jamais une prédiction
+ * d'accidents (pilier 3) ; la régulation n'est pas prise en compte (phases inconnues).
+ */
+export function lignesConflits(c, { t, regulation }) {
+  const lignes = Object.keys(c.paires).length
+    ? Object.entries(c.paires).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => ({ champ: k.split('×').map(x => t(`sim.famille.${x}`)).join(' × '), valeur: String(v), inconnu: false }))
+    : [{ champ: t('sim.conflits'), valeur: t('sim.aucun-conflit'), inconnu: false }];
+  lignes.unshift({ champ: t('sim.conflits'), valeur: t('sim.n-conflits', { n: c.total }), inconnu: false, source: t(regulation === 'feux' ? 'sim.methode-conflits-feux' : 'sim.methode-conflits') });
+  return [{ titre: t('inspecteur.section.conflits'), lignes }];
+}

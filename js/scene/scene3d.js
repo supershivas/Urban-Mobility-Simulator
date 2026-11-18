@@ -4,16 +4,16 @@
 // Ce module dessine et vise : il ne modifie jamais l'état du jeu (main.js décide).
 // Rien ne s'anime tout seul : une image n'est calculée que sur demande, et jamais
 // quand la vue est inactive ou l'onglet caché.
-import * as THREE from '../../vendor/three/three.module.js?v=0.4.0';
-import { versScene, depuisScene } from '../geo/repere.js?v=0.4.0';
-import { distancePointLigne, boite } from '../geo/geometrie.js?v=0.4.0';
-import { decalerLigne } from '../geo/decalage.js?v=0.4.0';
-import { pose, contraindre, deplacer, tourner, zoomer, cadrer, metresParPixel, interpoler } from './camera.js?v=0.4.0';
+import * as THREE from '../../vendor/three/three.module.js?v=0.5.0';
+import { versScene, depuisScene } from '../geo/repere.js?v=0.5.0';
+import { distancePointLigne, boite } from '../geo/geometrie.js?v=0.5.0';
+import { decalerLigne } from '../geo/decalage.js?v=0.5.0';
+import { pose, contraindre, deplacer, tourner, zoomer, cadrer, metresParPixel, interpoler } from './camera.js?v=0.5.0';
 import {
   maillerSurfaces, maillerBatiments, maillerAxes, maillerRuban, maillerSections, maillerPolygones, segmentsDeLignes, lignesLocales, rangDuTriangle,
-} from './geometrie3d.js?v=0.4.0';
-import { BANDES } from '../data/bandes.js?v=0.4.0';
-import { HIERARCHIE_PRINCIPALE, SURFACE_PIETONNE, SURFACE_SOUTERRAINE } from '../carte/style.js?v=0.4.0';
+} from './geometrie3d.js?v=0.5.0';
+import { BANDES } from '../data/bandes.js?v=0.5.0';
+import { HIERARCHIE_PRINCIPALE, SURFACE_PIETONNE, SURFACE_SOUTERRAINE } from '../carte/style.js?v=0.5.0';
 
 const rad = deg => (deg * Math.PI) / 180;
 

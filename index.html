@@ -10,9 +10,9 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta property="og:title" content="Urban Mobility Simulator">
 <meta property="og:image" content="og.png">
-<link rel="stylesheet" href="vendor/maplibre-gl/maplibre-gl.css?v=0.4.0">
-<link rel="stylesheet" href="js/lib/game.css?v=0.4.0">
-<link rel="stylesheet" href="css/style.css?v=0.4.0">
+<link rel="stylesheet" href="vendor/maplibre-gl/maplibre-gl.css?v=0.5.0">
+<link rel="stylesheet" href="js/lib/game.css?v=0.5.0">
+<link rel="stylesheet" href="css/style.css?v=0.5.0">
 </head>
 <body>
 <div class="jeu-ecran app" id="ecran">
@@ -58,10 +58,10 @@
   </aside>
 
   <footer class="statut" id="statut">
-    <span data-i18n="statut.sources"></span>
-    <span data-i18n="statut.projection"></span>
+    <span id="statut-sources" data-i18n="statut.sources"></span>
     <span id="statut-emprise"></span>
     <span id="statut-donnees"></span>
+    <span id="statut-flux"></span>
     <!-- Pages sert le .md en texte brut (tableaux illisibles) : le rapport s'ouvre sur github.com, qui le met en forme -->
     <a id="statut-anomalies" href="https://github.com/supershivas/Urban-Mobility-Simulator/blob/main/data/metadata/quality-report.md" target="_blank" rel="noopener"></a>
   </footer>
@@ -131,6 +131,6 @@
 </dialog>
 
 <div class="jeu-toast" id="toast" role="status" hidden></div>
-<script type="module" src="js/main.js?v=0.4.0"></script>
+<script type="module" src="js/main.js?v=0.5.0"></script>
 </body>
 </html>

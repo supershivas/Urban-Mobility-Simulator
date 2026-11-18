@@ -3,33 +3,37 @@
 // lisent les mêmes données locales de data/ (aucun service distant) et partagent
 // la sélection et l'inspecteur. Le style est dans carte/style.js, la scène dans
 // scene/scene3d.js (chargée à la première bascule), l'inspecteur dans inspecteur.js.
-import * as maplibregl from '../vendor/maplibre-gl/maplibre-gl.mjs?v=0.4.0';
-import { createKeys, stopTypeahead } from './lib/keys.js?v=0.4.0';
-import { lockBrowserGestures } from './lib/pointer.js?v=0.4.0';
-import { createStore, autosave, pickJSONFile } from './lib/save.js?v=0.4.0';
-import { createI18n } from './lib/i18n.js?v=0.4.0';
-import { startUpdateCheck, loadVersion, loadChangelog, downloadJSON } from './lib/app-update.js?v=0.4.0';
-import { PALETTE, ROLES } from './palette.js?v=0.4.0';
-import { TEXTES } from './data/textes.js?v=0.4.0';
-import { COMMANDES_AIDE } from './data/aide.js?v=0.4.0';
-import { styleCarte, COUCHES, COUCHES_ACTIVES, COUCHES_SELECTIONNABLES } from './carte/style.js?v=0.4.0';
-import { lignesInspecteur, lignesInspecteurBatiment, lignesInspecteurNoeud } from './inspecteur.js?v=0.4.0';
-import { creerRepere } from './geo/repere.js?v=0.4.0';
-import { boite } from './geo/geometrie.js?v=0.4.0';
-import { distancePourZoom, zoomPourDistance } from './scene/camera.js?v=0.4.0';
-import { lireJSON, couche, couchesScene } from './donnees.js?v=0.4.0';
-import { chargerContenu } from './design-store.js?v=0.4.0';
-import { sectionMesuree, OPERATIONS, memeSection, decalages, verifier } from './section.js?v=0.4.0';
-import { creerHistorique } from './historique.js?v=0.4.0';
-import { featuresSections } from './carte/sections.js?v=0.4.0';
-import { ajouterImages } from './carte/motifs.js?v=0.4.0';
-import { wgs84VersLambert, lambertVersWgs84 } from './geo/coordonnees.js?v=0.4.0';
-import { creerEditeur } from './editeur.js?v=0.4.0';
-import { creerEditeurCarrefour, lettre } from './editeur-carrefour.js?v=0.4.0';
-import { branchesDe, toutesLesVoies, raccordsDe, verifierCarrefour, traverseesDe, OPERATIONS_CARREFOUR } from './carrefour.js?v=0.4.0';
-import { geometrieCarrefour, pointSurLigne } from './geo/raccords.js?v=0.4.0';
-import { featuresCarrefours } from './carte/carrefours.js?v=0.4.0';
-import { DESSIN_CARREFOUR } from './data/carrefours.js?v=0.4.0';
+import * as maplibregl from '../vendor/maplibre-gl/maplibre-gl.mjs?v=0.5.0';
+import { createKeys, stopTypeahead } from './lib/keys.js?v=0.5.0';
+import { lockBrowserGestures } from './lib/pointer.js?v=0.5.0';
+import { createStore, autosave, pickJSONFile } from './lib/save.js?v=0.5.0';
+import { createI18n } from './lib/i18n.js?v=0.5.0';
+import { startUpdateCheck, loadVersion, loadChangelog, downloadJSON } from './lib/app-update.js?v=0.5.0';
+import { PALETTE, ROLES } from './palette.js?v=0.5.0';
+import { TEXTES } from './data/textes.js?v=0.5.0';
+import { COMMANDES_AIDE } from './data/aide.js?v=0.5.0';
+import { styleCarte, COUCHES, COUCHES_ACTIVES, COUCHES_SELECTIONNABLES } from './carte/style.js?v=0.5.0';
+import { lignesInspecteur, lignesInspecteurBatiment, lignesInspecteurNoeud } from './inspecteur.js?v=0.5.0';
+import { creerRepere } from './geo/repere.js?v=0.5.0';
+import { boite } from './geo/geometrie.js?v=0.5.0';
+import { distancePourZoom, zoomPourDistance } from './scene/camera.js?v=0.5.0';
+import { lireJSON, couche, couchesScene } from './donnees.js?v=0.5.0';
+import { chargerContenu } from './design-store.js?v=0.5.0';
+import { sectionMesuree, OPERATIONS, memeSection, decalages, verifier } from './section.js?v=0.5.0';
+import { creerHistorique } from './historique.js?v=0.5.0';
+import { featuresSections } from './carte/sections.js?v=0.5.0';
+import { ajouterImages } from './carte/motifs.js?v=0.5.0';
+import { wgs84VersLambert, lambertVersWgs84 } from './geo/coordonnees.js?v=0.5.0';
+import { creerEditeur } from './editeur.js?v=0.5.0';
+import { creerEditeurCarrefour, lettre } from './editeur-carrefour.js?v=0.5.0';
+import { branchesDe, toutesLesVoies, raccordsDe, verifierCarrefour, traverseesDe, OPERATIONS_CARREFOUR } from './carrefour.js?v=0.5.0';
+import { geometrieCarrefour, pointSurLigne } from './geo/raccords.js?v=0.5.0';
+import { featuresCarrefours } from './carte/carrefours.js?v=0.5.0';
+import { DESSIN_CARREFOUR } from './data/carrefours.js?v=0.5.0';
+import { etatTroncon, niveau, bilan, conflits, definirDemande, definirHypothese } from './simulation.js?v=0.5.0';
+import { HYPOTHESES } from './data/simulation.js?v=0.5.0';
+import { lignesSimulation, lignesConflits } from './inspecteur.js?v=0.5.0';
+import { creerEditeurFlux } from './editeur-flux.js?v=0.5.0';
 
 const JEU = 'urban-mobility-simulator';
 const $ = id => document.getElementById(id);
@@ -63,11 +67,12 @@ lockBrowserGestures($('ecran'));
 stopTypeahead();
 
 // ─── Données : le modèle (network.json) et les codes UrbIS ─────────────────
-let reseau, codes, meta, emprise;
+let reseau, codes, meta, emprise, comptages;
 try {
-  [reseau, codes, meta, emprise] = await Promise.all([
+  [reseau, codes, meta, emprise, comptages] = await Promise.all([
     lireJSON('data/processed/network.json'), lireJSON('data/urbis-codes.json'),
     lireJSON('data/processed/metadata.json'), lireJSON('data/metadata/corridor.geojson'),
+    lireJSON('data/processed/comptages.json'),
   ]);
 } catch (e) {
   document.querySelector('#chargement .jeu-chargement-barre').hidden = true;
@@ -83,19 +88,29 @@ const limitesEmprise = emprise.features[0].geometry.coordinates[0].reduce(
 
 function majStatut() {
   $('statut-emprise').textContent = t('statut.emprise', { n: meta.emprise.tamponMetres });
+  $('statut-sources').title = t('statut.projection'); // licences et projections : au survol (la barre tient sur une ligne)
   const anomalies = Object.values(meta.topologie.anomalies).reduce((a, b) => a + b, 0);
   $('statut-donnees').textContent = t('statut.donnees', {
     segments: meta.comptes.streetSegments, noeuds: meta.comptes.intersections, batiments: meta.comptes.buildings,
   });
   $('statut-anomalies').textContent = t('statut.anomalies', { anomalies });
   $('statut-anomalies').title = t('statut.rapport');
+  majStatutFlux();
+}
+// Le bilan des flux (v0.5) : tronçons renseignés, saturés (refait à chaque modification)
+let bilanFlux = { renseignes: 0, satures: 0, proches: 0, inconnus: 0 };
+function majStatutFlux() {
+  $('statut-flux').textContent = t('statut.flux', { n: bilanFlux.renseignes, s: bilanFlux.satures });
+  $('statut-flux').title = t('statut.flux-titre', { n: bilanFlux.renseignes, s: bilanFlux.satures, p: bilanFlux.proches, i: bilanFlux.inconnus });
 }
 majStatut();
 
 // ─── La partie : la vue, la sélection et les couches (sauvegardées) ───────
 // { vue: { centre, zoom }, vue3d: { cible, distance, azimut, inclinaison }, mode: '2d' | '3d', selection, couches,
-//   scenario: { sections, carrefours } } — le scénario ne garde que ce que le joueur a modifié (le reste : état mesuré, raccords proposés)
-const nouvellePartie = () => ({ vue: null, vue3d: null, mode: '2d', selection: null, couches: { ...COUCHES_ACTIVES }, scenario: { sections: {}, carrefours: {} } });
+//   scenario: { sections, carrefours, demande, hypotheses } } — le scénario ne garde que ce que le joueur a modifié
+//   (le reste : état mesuré, raccords proposés, comptages)
+const scenarioVide = () => ({ sections: {}, carrefours: {}, demande: {}, hypotheses: { ...HYPOTHESES } });
+const nouvellePartie = () => ({ vue: null, vue3d: null, mode: '2d', selection: null, couches: { ...COUCHES_ACTIVES }, scenario: scenarioVide() });
 let etat = null;
 
 // ─── Carte ─────────────────────────────────────────────────────────────────
@@ -136,7 +151,7 @@ function recentrer() {
 }
 
 // ─── Couches activables ────────────────────────────────────────────────────
-const TOUCHES_COUCHES = Object.keys(COUCHES).map((c, i) => [c, String(i + 1)]);
+const TOUCHES_COUCHES = Object.keys(COUCHES).map((c, i) => [c, String((i + 1) % 10)]); // la dixième : 0
 function construireCouches() {
   $('couches').replaceChildren(...TOUCHES_COUCHES.map(([c, touche]) => {
     const input = el('input', { type: 'checkbox', id: `couche-${c}`, checked: etat.couches[c] });
@@ -188,6 +203,7 @@ function selectionner(id, { centrer = false, batiment = null } = {}) {
     chargerBatiments().then(m => { if (etat?.selection === id) selectionner(m.has(id) ? id : null); }, e => toast(e.message));
   } else afficherInspecteur(s ?? (b && { id: idBatiment, hauteur: b.hauteur ?? null, solides: b.solides ?? 0 }));
   // L'éditeur ouvert suit la sélection : il passe à l'autre tronçon ou carrefour s'il est modifiable, sinon il se ferme
+  if (editeFlux && editeFlux !== etat.selection) { if (s) ouvrirFlux(s.id); else fermerFlux(); }
   if ((edite || editeCarrefour) && (edite ?? editeCarrefour) !== etat.selection) {
     if (s?.emprise) ouvrirEditeur(s.id);
     else if (idNoeud && carrefourModifiable(idNoeud)) ouvrirCarrefour(idNoeud);
@@ -261,14 +277,16 @@ function afficherInspecteur(s, vide = t('inspecteur.vide')) {
   const batiment = estBatiment(s.id), noeud = estNoeud(s.id);
   const c = noeud ? etatCarrefour(s.id) : null;
   const sections = batiment ? lignesInspecteurBatiment(s, { t, lang: i18n.lang, infos: meta.batiments })
-    : noeud ? lignesInspecteurNoeud(s, { t, lang: i18n.lang, codes, ...c })
-      : lignesInspecteur(s, { t, lang: i18n.lang, codes, noeuds, rues, section: etat?.scenario.sections[s.id] ?? null });
+    : noeud ? [...lignesInspecteurNoeud(s, { t, lang: i18n.lang, codes, ...c }), ...(c.branches.length >= 2 && lignesRues ? lignesConflits(conflitsDe(s.id), { t, regulation: c.carrefour?.regulation ?? null }) : [])]
+      : [...lignesSimulation(etatSim(s.id), { t, lang: i18n.lang }), ...lignesInspecteur(s, { t, lang: i18n.lang, codes, noeuds, rues, section: etat?.scenario.sections[s.id] ?? null })];
   const nom = batiment ? t('inspecteur.batiment') : noeud ? nomCarrefour(c.branches) : [s.nom.fr, s.nom.nl].filter(Boolean)[0];
   $('inspecteur-corps').replaceChildren(
     ...(noeud ? [el('p', { className: 'genre-objet', textContent: t('inspecteur.noeud') })] : []),
     el('p', { className: `nom-troncon${nom ? '' : ' inconnu'}`, textContent: nom ?? t('valeur.inconnu') }),
     ...(!batiment && !noeud && s.emprise ? [el('button', { className: 'bouton inspecteur-editer', id: 'editer-section', type: 'button', onclick: () => ouvrirEditeur(s.id) },
       t('inspecteur.editer'), ' ', el('kbd', { textContent: 'M' }))] : []),
+    ...(!batiment && !noeud ? [el('button', { className: 'bouton inspecteur-editer', id: 'editer-flux', type: 'button', onclick: () => ouvrirFlux(s.id) },
+      t('inspecteur.editer-flux'), ' ', el('kbd', { textContent: 'F' }))] : []),
     ...(noeud && c.branches.length >= 2 ? [el('button', { className: 'bouton inspecteur-editer', id: 'editer-carrefour', type: 'button', onclick: () => ouvrirCarrefour(s.id) },
       t('inspecteur.editer-carrefour'), ' ', el('kbd', { textContent: 'M' }))] : []),
     ...sections.flatMap(sec => [
@@ -296,7 +314,7 @@ function chargerScene() {
   return (chargementScene ??= (async () => {
     $('scene-attente').hidden = false;
     await new Promise(res => setTimeout(res, 30)); // laisse le message s'afficher : la construction occupe le fil
-    const [{ creerScene }, couches] = await Promise.all([import('./scene/scene3d.js?v=0.4.0'), couchesScene(), chargerBatiments()]);
+    const [{ creerScene }, couches] = await Promise.all([import('./scene/scene3d.js?v=0.5.0'), couchesScene(), chargerBatiments()]);
     scene = creerScene({
       conteneur: $('scene'), repere, P: PALETTE, R, donnees: { ...couches, emprise }, mouvementReduit: reduit,
       surChoix: c => { if (enCarte()) selectionner(c?.id ?? null); },
@@ -407,10 +425,13 @@ function montrerTitre() {
 async function jouer(partie) {
   etat = { ...nouvellePartie(), ...partie };
   etat.couches = { ...COUCHES_ACTIVES, ...etat.couches }; // une couche ajoutée depuis la sauvegarde prend sa valeur par défaut
-  etat.scenario = { sections: {}, carrefours: {}, ...etat.scenario }; // une partie de la v0.3 n'a pas de carrefours : ils restent proposés
+  // Une partie de la v0.3 n'a pas de carrefours (ils restent proposés), une partie de la v0.4 ni demande ni hypothèses
+  etat.scenario = { ...scenarioVide(), ...etat.scenario };
+  etat.scenario.hypotheses = { ...HYPOTHESES, ...etat.scenario.hypotheses };
   historique.reinitialiser(etat.scenario);
   fermerEditeur();
   fermerCarrefour();
+  fermerFlux();
   // Toujours repartir de la carte : la vue 3D se rouvre ensuite si la partie y était
   mode = '2d'; scene?.activer(false); $('scene').hidden = true; $('carte').inert = false; majBascule();
   $('titre').hidden = true;
@@ -469,7 +490,7 @@ $('deselectionner').onclick = () => selectionner(null);
 
 // ─── Éditeur de section transversale (v0.3) ────────────────────────────────
 // currentScenario = etat.scenario : seules les sections modifiées y sont ; les données sources ne changent jamais.
-const historique = creerHistorique({ sections: {}, carrefours: {} });
+const historique = creerHistorique(scenarioVide());
 let edite = null, apercu = null; // tronçon édité ; section affichée pendant un glisser (pas encore dans l'historique)
 const sectionDe = id => etat?.scenario.sections[id] ?? sectionMesuree(segments.get(id));
 const nomDe = s => [s.nom.fr, s.nom.nl].filter(Boolean)[0] ?? null;
@@ -493,6 +514,7 @@ function ouvrirEditeur(id) {
   const s = segments.get(id);
   if (!s?.emprise) { toast(t(s ? 'editeur.non-editable' : 'editeur.choisir')); return false; }
   if (editeCarrefour) fermerCarrefour(); // un seul bandeau à la fois
+  if (editeFlux) fermerFlux();
   edite = id; apercu = null;
   editeur.afficher(sectionDe(id), infoEditeur(id));
   carte.resize();
@@ -511,6 +533,7 @@ function fermerEditeur() {
 function basculerEditeur() {
   if (edite) return fermerEditeur();
   if (editeCarrefour) return fermerCarrefour();
+  if (editeFlux) return fermerFlux();
   const id = etat?.selection;
   if (estNoeud(id)) return ouvrirCarrefour(id);
   if (id && segments.has(id)) return ouvrirEditeur(id);
@@ -537,11 +560,12 @@ function operer(nom, args, { apercu: provisoire = false, annulerApercu = false }
 function apresChangement() {
   if (edite) editeur.afficher(sectionDe(edite), infoEditeur(edite));
   if (editeCarrefour) editeurCarrefour.afficher(infoCarrefour(editeCarrefour));
-  majSections();
+  majSections(); // et les carrefours, et les flux
+  if (editeFlux) editeurFlux.afficher(infoFlux(editeFlux));
   if (etat.selection && !estBatiment(etat.selection)) afficherInspecteur(objetChoisi());
   sauvegarder();
 }
-const messageEditeur = (texte, refus = false) => (editeCarrefour ? editeurCarrefour : editeur).message(texte, refus);
+const messageEditeur = (texte, refus = false) => (editeCarrefour ? editeurCarrefour : editeFlux ? editeurFlux : editeur).message(texte, refus);
 function annuler() {
   const e = historique.annuler();
   if (!e) { messageEditeur(t('editeur.rien-annuler')); return; }
@@ -584,6 +608,7 @@ function majSections() {
   if (carte.getLayer('rues-selection')) carte.setPaintProperty('rues-selection', 'line-width', fin ? R.traits.selectionFinPx : largeurSelection2d);
   scene?.affinerSelection(fin);
   majCarrefours(); // les voies des carrefours viennent des sections : ils suivent
+  majFlux();       // la capacité aussi
 }
 
 // ─── Carrefours (v0.4) : raccords, traversées, régulation ──────────────────
@@ -623,6 +648,7 @@ function ouvrirCarrefour(id) {
   if (!noeuds.has(id)) { toast(t('carrefour.choisir')); return false; }
   if (!carrefourModifiable(id)) { toast(t('carrefour.non-editable')); return false; }
   if (edite) fermerEditeur();
+  if (editeFlux) fermerFlux();
   if (etat.selection !== id) { editeCarrefour = id; selectionner(id); }
   editeCarrefour = id;
   editeurCarrefour.afficher(infoCarrefour(id));
@@ -696,6 +722,94 @@ function majCarrefours() {
   }
 }
 
+// ─── Flux et indicateurs (v0.5) : simulation statique, refaite à chaque modification ─
+// simulationState n'est jamais sauvegardé : il se recalcule depuis le scénario, les données et les comptages.
+let editeFlux = null;
+const regulationDe = n => (n ? etat?.scenario.carrefours?.[n]?.regulation ?? null : null);
+function etatSim(id) {
+  const s = segments.get(id);
+  return etatTroncon({
+    segment: s, section: sectionBranche(id), choix: etat?.scenario.demande?.[id] ?? null, comptage: comptages.parTroncon[id] ?? null,
+    hypotheses: etat?.scenario.hypotheses ?? HYPOTHESES, regulation: { aller: regulationDe(s.toNode), retour: regulationDe(s.fromNode) },
+    vitesseVeloKmh: comptages.vitesseVeloKmh,
+  });
+}
+/** Les tronçons qui ont une demande : choix du joueur et comptages. */
+const tronconsFlux = () => [...new Set([...Object.keys(etat?.scenario.demande ?? {}), ...Object.keys(comptages.parTroncon)])].filter(id => segments.has(id));
+let donneesFlux2d = null; // ce que reçoit la carte (lu par le mode debug)
+function majFlux() {
+  if (!etat) return;
+  const etats = tronconsFlux().map(etatSim);
+  bilanFlux = bilan(etats);
+  majStatutFlux();
+  if (!lignesRues) return;
+  donneesFlux2d = { type: 'FeatureCollection', features: etats.filter(e => e.renseigne && lignesRues.has(e.troncon)).map(e => ({
+    type: 'Feature', properties: { id: e.troncon, niveau: niveau(e.saturationMax) ?? 'inconnu' }, geometry: { type: 'LineString', coordinates: lignesRues.get(e.troncon) },
+  })) };
+  carte.getSource('flux')?.setData(donneesFlux2d);
+}
+function conflitsDe(id) {
+  const c = etatCarrefour(id);
+  return conflits(geometrieCarrefour(c.branches, c.raccords, traverseesDe(c.branches, c.carrefour), DESSIN_CARREFOUR), c.voies);
+}
+const editeurFlux = creerEditeurFlux({
+  racine: $('editeur'), t, lang: i18n.lang,
+  rappels: {
+    surOperation: (nom, args) => opererFlux(nom, args),
+    surAnnuler: () => annuler(), surRetablir: () => retablir(),
+    surEffacer: () => effacerFlux(), surFermer: () => fermerFlux(),
+  },
+});
+const infoFlux = id => ({
+  id, nom: nomDe(segments.get(id)), etat: etatSim(id), choix: etat.scenario.demande[id] ?? null, hypotheses: etat.scenario.hypotheses,
+  peutAnnuler: historique.peutAnnuler, peutRetablir: historique.peutRetablir,
+});
+function ouvrirFlux(id) {
+  if (!segments.has(id)) { toast(t('flux.choisir')); return false; }
+  if (edite) fermerEditeur();
+  if (editeCarrefour) fermerCarrefour();
+  editeFlux = id;
+  editeurFlux.afficher(infoFlux(id));
+  carte.resize();
+  window.__jeu?.log('flux', { troncon: id });
+  return true;
+}
+function fermerFlux() {
+  if (!editeFlux) return;
+  editeFlux = null;
+  editeurFlux.masquer();
+  carte.resize();
+}
+function basculerFlux() {
+  if (editeFlux) return fermerFlux();
+  const id = etat?.selection;
+  if (id && segments.has(id)) return ouvrirFlux(id);
+  toast(t('flux.choisir'));
+}
+/** Une opération de js/simulation.js : la demande du tronçon ouvert, ou une hypothèse du scénario. */
+function opererFlux(nom, args) {
+  if (!editeFlux) return null;
+  const r = nom === 'definirHypothese' ? definirHypothese(etat.scenario.hypotheses, ...args) : definirDemande(etat.scenario.demande[editeFlux] ?? null, ...args);
+  if (r.refus) { window.__jeu?.log('refus', { operation: nom, refus: r.refus }); return r; }
+  if (r.hypotheses) etat.scenario = historique.faire({ ...etat.scenario, hypotheses: r.hypotheses });
+  else {
+    const demande = { ...etat.scenario.demande };
+    if (r.demande) demande[editeFlux] = r.demande; else delete demande[editeFlux];
+    etat.scenario = historique.faire({ ...etat.scenario, demande });
+  }
+  apresChangement();
+  window.__jeu?.log('flux-operation', { troncon: editeFlux, operation: nom });
+  return r;
+}
+function effacerFlux() {
+  if (!editeFlux || !etat.scenario.demande[editeFlux]) return;
+  const demande = { ...etat.scenario.demande };
+  delete demande[editeFlux];
+  etat.scenario = historique.faire({ ...etat.scenario, demande });
+  apresChangement();
+  editeurFlux.message(t('flux.efface'));
+}
+
 // ─── Réglages ──────────────────────────────────────────────────────────────
 $('langue').value = i18n.lang;
 $('langue').onchange = e => {
@@ -705,7 +819,8 @@ $('langue').onchange = e => {
   majStatut();
   editeur.langue(t, i18n.lang);
   editeurCarrefour.langue(t, i18n.lang);
-  if (etat) { construireCouches(); afficherInspecteur(objetChoisi()); majBascule(); if (edite) editeur.afficher(sectionDe(edite), infoEditeur(edite)); if (editeCarrefour) editeurCarrefour.afficher(infoCarrefour(editeCarrefour)); majCarrefours(); }
+  editeurFlux.langue(t, i18n.lang);
+  if (etat) { construireCouches(); afficherInspecteur(objetChoisi()); majBascule(); if (edite) editeur.afficher(sectionDe(edite), infoEditeur(edite)); if (editeCarrefour) editeurCarrefour.afficher(infoCarrefour(editeCarrefour)); if (editeFlux) editeurFlux.afficher(infoFlux(editeFlux)); majCarrefours(); }
 };
 $('exporter').onclick = () => { sauvegarder(); downloadJSON(store.exportAll(), `${JEU}-sauvegarde.json`); };
 $('importer').onclick = async () => {
@@ -751,7 +866,7 @@ function toast(texte) {
 const enCarte = () => !!etat && $('titre').hidden && !document.querySelector('dialog[open]');
 createKeys({
   actions: {
-    recentrer: 'r', troncon: 't', batiment: 'b', noeud: 'n', carrefour: 'c', vue: 'v', aide: 'i', editer: 'm', zoomPlus: ['+', '='], zoomMoins: ['-', '_'],
+    recentrer: 'r', troncon: 't', batiment: 'b', noeud: 'n', carrefour: 'c', vue: 'v', aide: 'i', editer: 'm', flux: 'f', zoomPlus: ['+', '='], zoomMoins: ['-', '_'],
     ...Object.fromEntries(TOUCHES_COUCHES.map(([c, touche]) => [`couche:${c}`, touche])),
   },
   onAction: nom => {
@@ -761,6 +876,7 @@ createKeys({
     if (nom === 'recentrer') recentrer();
     else if (nom === 'vue') definirMode(mode === '3d' ? '2d' : '3d');
     else if (nom === 'editer') basculerEditeur();
+    else if (nom === 'flux') basculerFlux();
     else if (nom === 'batiment') choisirBatimentProche();
     else if (nom === 'noeud') selectionner(noeudPlusProche());
     else if (nom === 'carrefour') basculerCarrefour();
@@ -776,7 +892,7 @@ createKeys({
 window.addEventListener('keydown', e => {
   if (e.key !== 'Escape' || e.repeat || !enCarte()) return;
   e.preventDefault();
-  if (edite) fermerEditeur(); else if (editeCarrefour) fermerCarrefour(); else if (etat.selection) selectionner(null); else $('dialogue-pause').showModal();
+  if (edite) fermerEditeur(); else if (editeCarrefour) fermerCarrefour(); else if (editeFlux) fermerFlux(); else if (etat.selection) selectionner(null); else $('dialogue-pause').showModal();
 });
 // Annuler / rétablir : Ctrl+Z, Ctrl+Y ou Ctrl+Maj+Z (Cmd sur Mac) ; dans un champ, le champ garde son propre annuler
 window.addEventListener('keydown', e => {
@@ -866,7 +982,7 @@ startUpdateCheck({ beforeReload: sauvegarder, onUpdated: v => toast(t('toast.maj
 
 // ─── Mode debug (section 18) : chargé seulement avec ?debug=1 ──────────────
 if (DEBUG) {
-  const { installDebug } = await import('./lib/debug.js?v=0.4.0');
+  const { installDebug } = await import('./lib/debug.js?v=0.5.0');
   const stations = Object.fromEntries((await couche('infra')).features
     .filter(f => f.properties.famille === 'station').map(f => [f.properties.nom.toLowerCase(), { x: f.geometry.coordinates[0], y: f.geometry.coordinates[1] }]));
   installDebug({
@@ -947,6 +1063,16 @@ if (DEBUG) {
       // Les points d'attache attendus (la géométrie calculée une fois pour les deux vues), en [lon, lat]
       ancres: id => { const g = geometriesDessinees.find(x => x.noeud === id); return g ? Object.fromEntries([...g.geometrie.ancres].map(([v, a]) => [v, lambertVersWgs84(a.point)])) : null; },
       editeurCarrefourOuvert: () => editeCarrefour,
+      // Flux (v0.5) : l'état simulé d'un tronçon, le bandeau, les opérations, ce que dessine la carte
+      sim: id => JSON.parse(JSON.stringify(etatSim(id), (k, v) => (v === Infinity ? 'Infinity' : v))),
+      conflits: id => conflitsDe(id),
+      bilanFlux: () => ({ ...bilanFlux }),
+      editerFlux: id => ouvrirFlux(id),
+      fermerFlux: () => fermerFlux(),
+      fluxOuvert: () => editeFlux,
+      operationFlux: (nom, ...args) => { const r = opererFlux(nom, args); return r?.refus ? { refus: r.refus } : r ? { ok: true } : null; },
+      flux2d: () => Object.fromEntries((donneesFlux2d?.features ?? []).map(f => [f.properties.id, f.properties.niveau])),
+      comptages: () => comptages.parTroncon,
     },
   });
 }

@@ -60,5 +60,8 @@ export const REGLAGES = {
     selectionPx: 6,
     selectionFinPx: 2,      // tronçon choisi dont la section est dessinée : un filet, pas un trait plein
     noeudRayonPx: 2.5,
+    fluxFluidePx: 4,        // couche Flux (v0.5) : l'épaisseur croît avec la saturation (signe doublé de la teinte)
+    fluxProchePx: 6,
+    fluxSaturePx: 9,
   },
 };

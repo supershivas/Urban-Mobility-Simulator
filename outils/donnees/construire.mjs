@@ -16,6 +16,7 @@ import { calculerEmprise } from './emprise.mjs';
 import { boite } from '../../js/geo/geometrie.js';
 import { hauteurDepuisSolides, METHODE_HAUTEUR } from './urbis3d.mjs';
 import { indexerSurfaces, mesurerTroncon, anneaux, METHODE_COUPE, TYPES_EMPRISE } from '../../js/geo/coupe.js';
+import { comptagesVelo, METHODE_COMPTAGES } from './comptages.mjs';
 
 const O = 'data/original', P = 'data/processed', M = 'data/metadata';
 mkdirSync(P, { recursive: true });
@@ -208,6 +209,18 @@ const infra = [
 ];
 tailles.infrastructure = ecrire(`${P}/mobility-infrastructure.geojson`, collection(infra));
 
+// ─── Comptages de référence (v0.5) : compteurs vélo de Bruxelles Mobilité ─
+const velos = existsSync(`${O}/brussels-mobility/velos.json`) ? lire(`${O}/brussels-mobility/velos.json`) : null;
+const MC = METHODE_COMPTAGES;
+const TEXTE_METHODE_COMPTAGES = `Compteurs vélo automatiques de Bruxelles Mobilité. Débit de référence : moyenne, sur les jours ouvrables de la période, des vélos comptés de ${MC.heureLocale} h à ${MC.heureLocale + 1} h (heure de Bruxelles) ; un jour sans aucun comptage est écarté (panne présumée). Chaque compteur est rattaché au tronçon de surface le plus proche à moins de ${MC.rayonM} m ; les compteurs d'un même tronçon s'additionnent ; les deux sens sont comptés ensemble.`;
+let comptages = null;
+if (velos) {
+  const r = comptagesVelo(velos, segments);
+  const periode = velos.compteurs[0]?.historique ? `${velos.compteurs[0].historique.startDate} – ${velos.compteurs[0].historique.endDate}` : null;
+  comptages = { source: 'brussels-mobility', licence: velos.licence, extraitLe: velos.extraitLe, periode, heureReference: `${MC.heureLocale}:00-${MC.heureLocale + 1}:00`, methode: TEXTE_METHODE_COMPTAGES, confiance: 'haute', ...r };
+  tailles.comptages = ecrire(`${P}/comptages.json`, comptages);
+}
+
 // ─── Le modèle (network.json) : le même pour MapLibre et, plus tard, three.js ─
 const reseau = {
   project: {
@@ -239,6 +252,7 @@ const metadonnees = {
   },
   topologie: { croisementsDenivele: topo.croisementsDenivele, anomalies: Object.fromEntries(Object.entries(anomaliesParType).map(([k, v]) => [k, v.length])) },
   osm: osmInfo,
+  comptages: comptages ? { periode: comptages.periode, compteurs: comptages.compteurs.length, troncons: Object.keys(comptages.parTroncon).length, methode: TEXTE_METHODE_COMPTAGES } : null,
   octets: tailles,
 };
 writeFileSync(`${P}/metadata.json`, JSON.stringify(metadonnees, null, 2) + '\n');
@@ -326,6 +340,17 @@ ${(() => { const l = segments.filter(s => s.emprise).map(s => s.emprise.largeur)
 
 ${osmInfo ? `Extrait le ${osmInfo.extraitLe} : ${osmInfo.chemins} chemins \`highway\`, dont ${osmInfo.cheminsChaussee} de chaussée.
 Tronçons appariés : ${osmInfo.bilan.moyenne} (confiance moyenne), ${osmInfo.bilan.ambigue} ambigus (candidats contradictoires : aucun attribut retenu), ${osmInfo.bilan.aucun} sans correspondance (dont tunnels et ponts, non appariés).` : 'Absent.'}
+
+## Comptages de référence (v0.5)
+
+${comptages ? `${TEXTE_METHODE_COMPTAGES}
+Période : ${comptages.periode} (extrait le ${comptages.extraitLe}). Les comptages automobiles de Bruxelles Mobilité n'ont pas d'historique ouvert (l'API ne rend que le direct) : aucun débit automobile n'est repris.
+
+| Compteur | Lieu | Tronçon | Distance (m) | Jours retenus / écartés | Vélos de ${MC.heureLocale} h à ${MC.heureLocale + 1} h (moyenne, min–max) | Vitesse moyenne (km/h) |
+|---|---|---|---|---|---|---|
+${comptages.compteurs.map(c => `| ${c.id} | ${c.lieu.fr} | ${c.troncon ?? '—'} | ${c.distanceM ?? '—'} | ${c.joursRetenus} / ${c.joursEcartes} | ${c.parHeure ?? '—'} (${c.min ?? '—'}–${c.max ?? '—'}) | ${c.vitesseKmh ?? '—'} |`).join('\n')}
+
+Vitesse de référence des vélos : ${comptages.vitesseVeloKmh ?? '—'} km/h (moyenne des vitesses mesurées à l'heure de référence, pondérée par les vélos ; capteurs non étalonnés, confiance faible).` : 'Absents.'}
 
 ## Contrôles
 

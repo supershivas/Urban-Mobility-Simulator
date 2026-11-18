@@ -46,6 +46,13 @@ export default {
     { avant: 'voirie', fond: 'encre', role: 'signe', ou: 'bandes d\'un passage piéton' },
     { avant: 'voirie', fond: 'cyclable', role: 'signe', ou: 'damier d\'une traversée cyclable' },
     { avant: 'inconnu', fond: 'voirie', role: 'texte', ou: 'voie sortante non raccordée (éditeur de carrefour)' },
+    // v0.5 : couche Flux — trait sur la chaussée (voirie) et sur le papier (zoom faible) ; l'épaisseur double la teinte
+    { avant: 'noeud', fond: 'papier', role: 'signe', ou: 'flux fluide sur le papier' },
+    // « bus sur voirie » 2,25 et « bus sur papier » 1,96 (mesuré, v0.5.0) : le trait « proche » est cerné d'encre
+    { avant: 'bus', fond: 'encre', role: 'signe', ou: 'flux proche de la saturation, sur son cerne d\'encre' },
+    { avant: 'encre', fond: 'voirie', role: 'signe', ou: 'cerne du flux proche, flux saturé sur la chaussée' },
+    { avant: 'encre', fond: 'papier', role: 'signe', ou: 'flux saturé sur le papier' },
+    { avant: 'inconnu', fond: 'papier', role: 'signe', ou: 'flux de capacité inconnue (tirets)' },
   ],
   groupes: {},
   poses: [],

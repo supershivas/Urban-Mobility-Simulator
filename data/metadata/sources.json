@@ -8,10 +8,7 @@
       "urlFiche": "https://be.brussels/fr/propos-de-la-region/les-donnees-urbis",
       "urlMetadonnees": "https://geobru-geonetwork.irisnet.be/geonetwork/srv/eng/csw?service=CSW&version=2.0.2&request=GetRecordById&outputSchema=http://www.isotc211.org/2005/gmd&elementSetName=full&id=af847c40-848b-11ee-9a1f-00090ffe0001",
       "urlService": "https://geoservices-urbis.irisnet.be/geoserver/urbisvector/ows (WFS 2.0.0, GetFeature, outputFormat=application/json)",
-      "specifications": [
-        "https://urbisdownload.datastore.brussels/UrbIS/TechSpec/Network_TechSpec_FR20240408.pdf",
-        "https://urbisdownload.datastore.brussels/UrbIS/TechSpec/LandCover_TechSpec_FR20240401.pdf"
-      ],
+      "specifications": ["https://urbisdownload.datastore.brussels/UrbIS/TechSpec/Network_TechSpec_FR20240408.pdf", "https://urbisdownload.datastore.brussels/UrbIS/TechSpec/LandCover_TechSpec_FR20240401.pdf"],
       "dateRecuperation": "2026-11-14",
       "versionOuDatePublication": "Fiche Réseaux de transport : révision du 2026-11-06 (métadonnées ISO). Version du jeu non exposée par le WFS.",
       "format": "GeoJSON rendu par GeoServer (membre crs = EPSG:31370) — fichiers *.wfs.json conservés tels quels dans data/original/urbis/",
@@ -30,14 +27,7 @@
         "PointsOfInterest": ["INSPIRE_ID", "TYPE", "NAMEFRE"]
       },
       "filtre": "Objets dont la géométrie touche l'emprise du corridor (CQL INTERSECTS), gardés entiers ; plus les nœuds cités par ces axes hors de l'emprise.",
-      "qualite": [
-        "Aucune largeur, aucun nombre de voies, aucun sens, aucune vitesse sur les axes.",
-        "Les couches StreetAxes_Underground et StreetNodes_Underground rendent en WFS les mêmes objets que StreetAxes et StreetNodes : non téléchargées, LVL distingue les niveaux.",
-        "120 axes ont des identifiants de nœud vides (« …/streetnode/ ») dans la source : affichés « Non renseigné (absent de la source) ».",
-        "Codes hors spécification rencontrés : HIERARCHY = T (1 axe), Tunnels TYPE = MS (12).",
-        "Bâtiments : emprise au sol seulement ; aucune hauteur dans cette couche (les hauteurs viennent de la source urbis3d).",
-        "Détail : data/metadata/quality-report.md."
-      ]
+      "qualite": ["Aucune largeur, aucun nombre de voies, aucun sens, aucune vitesse sur les axes.", "Les couches StreetAxes_Underground et StreetNodes_Underground rendent en WFS les mêmes objets que StreetAxes et StreetNodes : non téléchargées, LVL distingue les niveaux.", "120 axes ont des identifiants de nœud vides (« …/streetnode/ ») dans la source : affichés « Non renseigné (absent de la source) ».", "Codes hors spécification rencontrés : HIERARCHY = T (1 axe), Tunnels TYPE = MS (12).", "Bâtiments : emprise au sol seulement ; aucune hauteur dans cette couche (les hauteurs viennent de la source urbis3d).", "Détail : data/metadata/quality-report.md."]
     },
     {
       "id": "urbis3d",
@@ -53,15 +43,11 @@
       "licence": "CC0 1.0 (domaine public) — fiche de métadonnées Geobru « no conditions for reuse »",
       "attribution": "Non exigée par la licence ; citée par courtoisie : « UrbIS © Paradigm »",
       "restrictions": "Aucune limitation d'accès public.",
-      "couches": { "BuildingSolids": ["INSPIRE_ID", "BU_ID", "DETAILSLEV", "étendue verticale de la forme (Zmin, Zmax)"] },
+      "couches": {
+        "BuildingSolids": ["INSPIRE_ID", "BU_ID", "DETAILSLEV", "étendue verticale de la forme (Zmin, Zmax)"]
+      },
       "filtre": "Tuiles qui touchent la boîte de l'emprise ; solides dont BU_ID est un bâtiment de la couche Buildings chargée.",
-      "qualite": [
-        "Produit par photogrammétrie (photos aériennes et plans), niveau de détail LoD 2 ; non vérifié sur le terrain.",
-        "Hauteur retenue = Zmax − Zmin des solides associés au bâtiment : hauteur au faîte (toiture comprise) depuis la base du solide. Ce n'est ni une hauteur de corniche ni un nombre de niveaux.",
-        "721 bâtiments sur 14 478 n'ont aucun solide associé : hauteur null, dessinés à plat, « Non renseigné » dans l'inspecteur.",
-        "1 063 solides des tuiles lues ont un BU_ID vide : rattachés à rien, aucune correspondance géométrique tentée.",
-        "Les toitures (pentes, formes) ne sont pas reprises : le jeu extrude l'emprise au sol jusqu'à la hauteur."
-      ]
+      "qualite": ["Produit par photogrammétrie (photos aériennes et plans), niveau de détail LoD 2 ; non vérifié sur le terrain.", "Hauteur retenue = Zmax − Zmin des solides associés au bâtiment : hauteur au faîte (toiture comprise) depuis la base du solide. Ce n'est ni une hauteur de corniche ni un nombre de niveaux.", "721 bâtiments sur 14 478 n'ont aucun solide associé : hauteur null, dessinés à plat, « Non renseigné » dans l'inspecteur.", "1 063 solides des tuiles lues ont un BU_ID vide : rattachés à rien, aucune correspondance géométrique tentée.", "Les toitures (pentes, formes) ne sont pas reprises : le jeu extrude l'emprise au sol jusqu'à la hauteur."]
     },
     {
       "id": "osm",
@@ -76,27 +62,45 @@
       "licence": "ODbL 1.0",
       "attribution": "« © les contributeurs OpenStreetMap » — affichée dans la barre d'état du jeu et dans le README",
       "restrictions": "Base dérivée soumise au partage à l'identique (ODbL) : data/processed/network.json contient des attributs OSM appariés.",
-      "couches": { "ways": ["highway", "oneway", "lanes", "maxspeed", "cycleway*", "busway*", "sidewalk*", "junction", "surface", "name"] },
+      "couches": {
+        "ways": ["highway", "oneway", "lanes", "maxspeed", "cycleway*", "busway*", "sidewalk*", "junction", "surface", "name"]
+      },
       "filtre": "Seuls les chemins de chaussée (motorway … living_street, service, pedestrian, busway) servent à l'appariement.",
-      "qualite": [
-        "Appariement géométrique, pas une correspondance d'identifiants : confiance « moyenne » au mieux, jamais « vérifiée ».",
-        "Candidats aux tags contradictoires : aucune valeur retenue (« ambiguë »).",
-        "Les tunnels et ponts (LVL ≠ 0) ne sont pas appariés."
-      ]
+      "qualite": ["Appariement géométrique, pas une correspondance d'identifiants : confiance « moyenne » au mieux, jamais « vérifiée ».", "Candidats aux tags contradictoires : aucune valeur retenue (« ambiguë »).", "Les tunnels et ponts (LVL ≠ 0) ne sont pas appariés."]
+    },
+    {
+      "id": "brussels-mobility",
+      "organisme": "Bruxelles Mobilité (Service public régional de Bruxelles)",
+      "nom": "Compteurs vélo automatiques (bike counts API)",
+      "urlFiche": "https://opendata.brussels.be/explore/dataset/capteurs-de-flux-velos-et-trottinettes-geres-par-bruxelles-mobilite/",
+      "urlService": "https://data.mobility.brussels/bike/api/counts/ (request=devices, request=history)",
+      "dateRecuperation": "2026-11-18",
+      "versionOuDatePublication": "Comptages du 2026-09-21 au 2026-10-16, par quart d'heure (UTC).",
+      "format": "JSON (réponses de l'API inchangées) — data/original/brussels-mobility/velos.json",
+      "systemeCoordonnees": "EPSG:4326 (WGS84)",
+      "licence": "CC0 1.0 (licence indiquée par la republication de la Ville de Bruxelles sur opendata.brussels.be ; la page de l'API n'en cite aucune)",
+      "attribution": "« Comptages vélo : Bruxelles Mobilité » — affichée dans l'inspecteur et le bandeau des flux",
+      "restrictions": "Aucune connue.",
+      "couches": {
+        "devices": ["device_name", "road_fr", "road_nl", "descr_fr"],
+        "history": ["count_date", "time_gap", "count", "average_speed"]
+      },
+      "filtre": "Compteurs situés dans l'emprise du corridor (4 sur 18).",
+      "qualite": ["Les deux sens sont comptés ensemble ; aucun compteur ne les sépare.", "Vitesses non étalonnées (avertissement de Bruxelles Mobilité pour ses capteurs) : confiance faible.", "Les comptages automobiles de la même source n'ont pas d'historique ouvert (API « live » seulement, vérifié le 2026-11-18) : non repris."]
     }
   ],
   "nonRecuperees": [
-    {
-      "id": "brussels-mobility",
-      "nom": "Brussels Mobility — routes régionales, comptages",
-      "url": "https://data.mobility.brussels/",
-      "raison": "Hôte data.mobility.brussels bloqué par le réseau de la session de développement (2026-11-14). Non bloquant pour la v0.1."
-    },
     {
       "id": "stib-gtfs",
       "nom": "STIB-MIVB GTFS",
       "url": "https://data.belgianmobility.io/en/data.html",
       "raison": "Prévu pour les versions suivantes (pitch §7.4)."
+    },
+    {
+      "id": "brussels-mobility-trafic",
+      "nom": "Bruxelles Mobilité — comptages automobiles",
+      "url": "https://data.mobility.brussels/traffic/api/counts/",
+      "raison": "L'API ne rend que le direct (request=live), sans historique : aucune référence horaire possible (2026-11-18)."
     }
   ]
 }

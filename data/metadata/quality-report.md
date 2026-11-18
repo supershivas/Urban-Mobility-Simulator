@@ -89,6 +89,20 @@ Largeurs mesurées : de 3.7 m à 70 m, médiane 15.3 m. Le découpage de la chau
 Extrait le 2026-11-14T10:03:01.264Z : 12597 chemins `highway`, dont 3406 de chaussée.
 Tronçons appariés : 1228 (confiance moyenne), 46 ambigus (candidats contradictoires : aucun attribut retenu), 215 sans correspondance (dont tunnels et ponts, non appariés).
 
+## Comptages de référence (v0.5)
+
+Compteurs vélo automatiques de Bruxelles Mobilité. Débit de référence : moyenne, sur les jours ouvrables de la période, des vélos comptés de 8 h à 9 h (heure de Bruxelles) ; un jour sans aucun comptage est écarté (panne présumée). Chaque compteur est rattaché au tronçon de surface le plus proche à moins de 25 m ; les compteurs d'un même tronçon s'additionnent ; les deux sens sont comptés ensemble.
+Période : 2026/09/21 – 2026/10/16 (extrait le 2026-11-18T20:27:37.597Z). Les comptages automobiles de Bruxelles Mobilité n'ont pas d'historique ouvert (l'API ne rend que le direct) : aucun débit automobile n'est repris.
+
+| Compteur | Lieu | Tronçon | Distance (m) | Jours retenus / écartés | Vélos de 8 h à 9 h (moyenne, min–max) | Vitesse moyenne (km/h) |
+|---|---|---|---|---|---|---|
+| CB1142 | Rue de la Loi 130 - 1000 Bruxelles | seg-u73115 | 12.8 | 20 / 0 | 679 (401–1124) | 17 |
+| CB1143 | Rue de la Loi 145 - 1000 Bruxelles | seg-u73115 | 6.7 | 20 / 0 | 752 (16–1093) | 20.4 |
+| CEK18 | Avenue de Tervueren 28 - 1040 Etterbeek | seg-u92125 | 1.5 | 20 / 0 | 682 (411–878) | 17.2 |
+| CEK31 | Avenue des Nerviens 135 - 1040 Etterbeek | seg-u90252 | 8.3 | 20 / 0 | 641 (461–774) | 19.6 |
+
+Vitesse de référence des vélos : 18.6 km/h (moyenne des vitesses mesurées à l'heure de référence, pondérée par les vélos ; capteurs non étalonnés, confiance faible).
+
 ## Contrôles
 
 - Longueur recalculée en Lambert 72 contre l'attribut `LENGTH` : 0 écart(s) de plus de 1 m.
@@ -115,4 +129,5 @@ Les nœuds hors emprise sont ceux d'axes à cheval sur le bord ; un nœud « iso
 | `surfaces` | 4247286 |
 | `buildings` | 4995838 |
 | `infrastructure` | 237934 |
+| `comptages` | 2231 |
 | `network` | 2018694 |

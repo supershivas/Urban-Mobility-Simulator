@@ -49,11 +49,20 @@ Statuts : **à l'étude** · **validé** (Jérôme a tranché) · **en cours** �
 - [x] Zone, raccords et traversées dessinés de la même géométrie en 2D et en 3D ; critère mesuré : `node outils/critere-v04.mjs`
 - [ ] Méthode de proposition à confronter au terrain (mouvements interdits, voies d'affectation)
 
+### Simulation simplifiée et indicateurs — v0.5
+
+**Statut** : à mesurer (livré en 0.5.0, attend la validation de Jérôme)
+
+- [x] Comptages vélo de Bruxelles Mobilité (4 compteurs, 3 tronçons, 8 h – 9 h, jours ouvrables) ; demande posée par le joueur ailleurs
+- [x] Capacité depuis la section (références citées), saturation, personnes / h, temps (BPR), délai aux feux (Webster), conflits des carrefours
+- [x] Bandeau des flux (F), inspecteur, couche Flux, barre d'état ; critère mesuré : `node outils/critere-v05.mjs`
+- [ ] Taux d'occupation des voitures et des bus : aucune source citée (hypothèse du joueur, « Non renseigné » au départ)
+- [ ] Flux en 3D ; légende de la couche Flux
+
 ## Validé (pitch, dans l'ordre)
 
 | Version | Contenu |
 |---|---|
-| 0.5 | Simulation simplifiée et indicateurs |
 | 0.6 | Scénarios, comparaison, sauvegarde, finition |
 
 ## À l'étude
@@ -72,4 +81,4 @@ Seul un minimum de dessin (0,3 m) est imposé. Des repères (trottoir, piste, vo
 ### Sources complémentaires
 
 **Statut** : à l'étude
-Brussels Mobility (hôte `data.mobility.brussels` bloqué en session), STIB GTFS (v0.5), nombre de niveaux des bâtiments (aucune source).
+Bruxelles Mobilité : feux, passages piétons, voies et vitesses des routes régionales, lignes et arrêts STIB (couches WFS listées, contenu à vérifier) — pourraient remplacer des « Non renseigné » des carrefours et de la circulation ; comptages automobiles sans historique ouvert ; STIB GTFS ; nombre de niveaux des bâtiments (aucune source).

@@ -210,6 +210,16 @@
       "recupereLe": "2026-11-14T21:26:48.407Z",
       "sha256": "f250921bdf05d147760fc7988793ce06a7adfcd6cb03cda51e9a4778c4d7837c",
       "octets": 445321
+    },
+    "data/original/brussels-mobility/velos.json": {
+      "source": "brussels-mobility",
+      "url": "https://data.mobility.brussels/bike/api/counts/",
+      "objets": 4,
+      "crs": "EPSG:4326",
+      "filtre": "compteurs vélo dans l'emprise, 20260921–20261016",
+      "recupereLe": "2026-11-18T20:27:37.603Z",
+      "sha256": "caf063f068b776d06c47d95e2183abaf1e9b4422ca8d5ac016841befed0bf79d",
+      "octets": 730824
     }
   }
 }

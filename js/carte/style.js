@@ -1,7 +1,7 @@
 // Le style MapLibre de la carte, construit depuis la palette et les réglages.
 // Pur (aucun DOM) : testé dans Node. Aucune source distante : pas de fond de
 // carte en ligne, pas de glyphes (les noms passent par le DOM, pas par MapLibre).
-import { BANDES } from '../data/bandes.js?v=0.4.0';
+import { BANDES } from '../data/bandes.js?v=0.5.0';
 
 export const COUCHES = {
   // id de couche activable → couches MapLibre qu'elle commande
@@ -16,8 +16,10 @@ export const COUCHES = {
   // Sections et carrefours modifiés (v0.3, v0.4) : une seule case, les touches 1 à 9 sont prises
   sections: ['sections', 'sections-motif', 'sections-contour', 'sections-sens', 'sections-choisie-cerne', 'sections-choisie',
     'carrefours-zone', 'carrefours-zone-contour', 'carrefours-traversee', 'carrefours-raccord-cerne', 'carrefours-raccord', 'carrefours-raccord-propose', 'carrefours-raccord-sens'],
+  // Flux (v0.5) : la saturation des tronçons qui ont une demande (touche 0)
+  flux: ['flux-cerne', 'flux', 'flux-inconnu'],
 };
-export const COUCHES_ACTIVES = { batiments: true, surfaces: true, rues: true, intersections: true, rails: true, ouvrages: false, stations: true, emprise: true, sections: true };
+export const COUCHES_ACTIVES = { batiments: true, surfaces: true, rues: true, intersections: true, rails: true, ouvrages: false, stations: true, emprise: true, sections: true, flux: true };
 export const COUCHES_SELECTIONNABLES = ['rues', 'rues-tunnel'];
 
 // Partagés avec la scène 3D (js/scene/scene3d.js) : mêmes filtres, mêmes teintes dans les deux vues
@@ -49,6 +51,8 @@ export function styleCarte(P, reglages, base = 'data/') {
       sections: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
       // Le carrefour choisi (zone, raccords) et les traversées posées (v0.4) : remplis par le jeu
       carrefours: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
+      // Les tronçons qui ont une demande et leur niveau de saturation (v0.5) : remplis par le jeu
+      flux: { type: 'geojson', data: { type: 'FeatureCollection', features: [] } },
     },
     layers: [
       { id: 'fond', type: 'background', paint: { 'background-color': P.papier } },
@@ -118,6 +122,26 @@ export function styleCarte(P, reglages, base = 'data/') {
           'line-color': ['case', ['in', ['get', 'hierarchie'], ['literal', HIERARCHIE_PRINCIPALE]], P.encre, P.bord],
           'line-width': largeurSelon(['in', ['get', 'hierarchie'], ['literal', HIERARCHIE_PRINCIPALE]], t.axePrincipalPx, t.axeSecondairePx),
         },
+      },
+      // Flux (v0.5) : la saturation se lit à la teinte ET à l'épaisseur (fluide < proche < saturé) ;
+      // capacité inconnue : tirets « inconnu ». Sous les flèches et la sélection.
+      // « Proche » : l'ocre seul ne ressort ni sur le papier ni sur la chaussée (lisibilite.config.mjs) : cerné d'encre
+      {
+        id: 'flux-cerne', type: 'line', source: 'flux', filter: ['==', ['get', 'niveau'], 'proche'],
+        layout: { 'line-cap': 'butt', 'line-join': 'round' },
+        paint: { 'line-color': P.encre, 'line-width': t.fluxProchePx + 3 },
+      },
+      {
+        id: 'flux', type: 'line', source: 'flux', filter: ['!=', ['get', 'niveau'], 'inconnu'],
+        layout: { 'line-cap': 'butt', 'line-join': 'round' },
+        paint: {
+          'line-color': ['match', ['get', 'niveau'], 'sature', P.encre, 'proche', P.bus, P.noeud],
+          'line-width': ['match', ['get', 'niveau'], 'sature', t.fluxSaturePx, 'proche', t.fluxProchePx, t.fluxFluidePx],
+        },
+      },
+      {
+        id: 'flux-inconnu', type: 'line', source: 'flux', filter: ['==', ['get', 'niveau'], 'inconnu'],
+        paint: { 'line-color': P.inconnu, 'line-width': t.fluxFluidePx, 'line-dasharray': [1.5, 1] },
       },
       // Le sens des bandes de circulation : des flèches (images, pas de glyphes) le long de la ligne médiane
       {
