@@ -18,3 +18,13 @@ Mode debug : `?debug=1` → `window.__jeu` : `state()` (sélection, inspecteur, 
 - Un bouton visible avant la fin du chargement ne faisait rien en ligne (~2 Mo de données) : écran de chargement obligatoire (conventions §3, Jérôme, v0.1.2), boutons du titre aussi désactivés jusqu'à `montrerTitre()`.
 - Écran de chargement figé sans message (signalé par Jérôme en 0.6.0, non reproduit dans Chromium) : un script classique d'`index.html` affiche désormais l'erreur (module refusé, fichier introuvable) et, après 30 s, conseille Ctrl+Maj+R. Textes bilingues en dur : i18n.js n'est peut-être pas chargé à ce moment-là.
 - **Nom de fichier et bloqueurs de publicités** : `js/trafic.js` (v0.6.0) ne se chargeait pas chez Jérôme, l'écran restait sur « Chargement des données » (« main.js introuvable » : le navigateur nomme le module principal quand un import manque). Hypothèse retenue : un bloqueur visant « trafic » (compteurs de trafic). Renommé `js/circulation.js` (0.7.1). Ne pas nommer un module servi au joueur `trafic`, `stats`, `analytics`, `track*`, `counter`, `ads`. Le filet de secours d'`index.html` suit désormais les imports et nomme le fichier refusé.
+
+## Captures par éditeur
+
+```bash
+node outils/capture-editeur.mjs --sortie <dossier hors captures/>     # éditeur de section, 2D et 3D
+node outils/capture-carrefour.mjs --sortie <dossier hors captures/>   # éditeur de carrefour, 2D et 3D
+node outils/capture-flux.mjs --sortie <dossier hors captures/>        # bandeau des flux, couche Flux
+node outils/capture-trafic.mjs --sortie <dossier hors captures/>      # trafic en 3D, en 2D, de loin
+node outils/capture-outils.mjs --sortie <dossier hors captures/>      # outil, flèches, feux
+```

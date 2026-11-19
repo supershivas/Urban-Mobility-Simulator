@@ -1,6 +1,6 @@
 // Contrôles topologiques du réseau (pitch §9.4). Purs, en mètres (Lambert 72).
 // Ils RAPPORTENT les anomalies ; ils ne corrigent rien et ne fusionnent rien.
-import { distance, longueur, segmentsSeCroisent } from './geometrie.js?v=0.8.0';
+import { distance, longueur, segmentsSeCroisent } from './geometrie.js?v=0.9.0';
 
 export const TOLERANCE_NOEUD = 0.5; // m : écart admis entre une extrémité d'axe et son nœud
 

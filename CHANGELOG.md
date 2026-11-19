@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.0 — 2026-11-19
+- Nouveau sur l'écran titre : « Bêta : carte blanche », une carte vierge en 3D avec une route à double sens où passent des voitures
+- Un clic sur une route, puis la nouvelle route se courbe sous le pointeur ; un clic la construit, en impasse ou raccordée à une autre (carrefour), et les voitures l'empruntent
+- Doubler les voies d'un tronçon (2 × 2) ou lui ajouter des pistes cyclables vertes, avec picto vélo et quelques vélos
+
 ## 0.8.0 — 2026-11-19
 - La partie s'ouvre sur une mission guidée : une piste cyclable rue de la Loi, pas à pas ; puis deux missions sur de vrais lieux (Cortenbergh, rue de Trèves), jugées sur le trafic qui roule
 - Écran épuré : la vue, les outils, le temps et la mission ; le mode expert (O) rend les couches, l'inspecteur et les chiffres

@@ -1,0 +1,83 @@
+/* Jeu beta « Carte blanche » : la vue 3D plein écran, des commandes posées dessus.
+   Aucune couleur ici : les variables --jeu-* et --beta-* sont posées par js/beta/main.js
+   depuis js/palette.js (source unique). */
+:root {
+  --jeu-cible: 44px;
+  --jeu-police: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --pas: 8px;
+  --t-petit: 12px;
+  --t-texte: 14px;
+  --trait: 1px;
+}
+[hidden] { display: none !important; }
+
+.beta { font-size: var(--t-texte); }
+.beta-vue { position: absolute; inset: 0; overflow: hidden; background: var(--beta-sol); outline: none; }
+.beta-canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+.beta-vue.glisse .beta-canvas { cursor: grabbing; }
+
+/* Commandes : des pastilles claires sur la carte */
+.beta-tete, .beta-outils, .beta-actions, .beta-pied p {
+  position: absolute; z-index: 2;
+  background: var(--jeu-surface); color: var(--jeu-encre);
+  box-shadow: 0 1px 0 var(--jeu-ombre);
+}
+.beta-tete { top: var(--pas); left: var(--pas); display: flex; align-items: center; gap: calc(var(--pas) * 2); padding-right: calc(var(--pas) * 2); }
+.beta-titre { margin: 0; font-size: 16px; letter-spacing: .06em; text-transform: uppercase; }
+.beta-titre small { font-size: var(--t-petit); letter-spacing: .04em; padding: 1px 6px; background: var(--beta-velo); color: var(--jeu-surface); vertical-align: 2px; }
+.beta-version { font-size: var(--t-petit); }
+
+.beta-outils { bottom: var(--pas); left: 50%; transform: translateX(-50%); display: flex; gap: 4px; padding: 4px; }
+.beta-actions { top: var(--pas); right: var(--pas); display: flex; gap: 4px; padding: 4px; }
+
+.bouton {
+  display: inline-flex; align-items: center; gap: var(--pas);
+  min-height: var(--jeu-cible); padding: 0 calc(var(--pas) * 1.5);
+  background: var(--jeu-encre); color: var(--jeu-fond);
+  border: 0; font: inherit; font-size: var(--t-texte); cursor: pointer; text-decoration: none; white-space: nowrap;
+}
+.bouton:focus-visible, a:focus-visible { outline: 2px solid var(--jeu-accent); outline-offset: 2px; }
+@media (hover: hover) { .bouton:hover { background: var(--jeu-lien); } }
+.bouton:disabled { cursor: default; background: var(--jeu-ombre); }
+.bouton kbd { font: inherit; font-size: var(--t-petit); padding: 0 6px; border: var(--trait) solid currentColor; }
+.bouton svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.bouton svg .tiret { stroke-dasharray: 2 3; stroke-width: 1.5; }
+.beta-retour svg { width: 18px; height: 18px; }
+
+/* Les outils : clair au repos, foncé quand il est choisi ; la piste cyclable garde son vert */
+.beta-outil { background: var(--jeu-surface); color: var(--jeu-encre); }
+@media (hover: hover) { .beta-outil:hover { background: var(--jeu-fond); } }
+.beta-outil[aria-pressed="true"] { background: var(--jeu-encre); color: var(--jeu-surface); }
+.beta-outil[data-outil="velo"] svg { stroke: var(--beta-velo); }
+.beta-outil[data-outil="velo"][aria-pressed="true"] { background: var(--beta-velo); }
+.beta-outil[data-outil="velo"][aria-pressed="true"] svg { stroke: var(--jeu-surface); }
+
+.beta-pied p { margin: 0; padding: 6px 10px; max-width: min(640px, 60vw); }
+#aide { left: 50%; transform: translateX(-50%); bottom: calc(var(--pas) * 2 + var(--jeu-cible) + 8px); font-weight: 600; text-align: center; max-width: min(760px, 70vw); }
+.beta-camera { left: var(--pas); bottom: var(--pas); font-size: var(--t-petit); }
+.beta-compte { right: var(--pas); bottom: var(--pas); font-variant-numeric: tabular-nums; }
+
+/* L'étiquette sous le pointeur : ce que fera le clic, ou pourquoi il ne marchera pas */
+.beta-etiquette {
+  position: absolute; z-index: 3; pointer-events: none; white-space: nowrap;
+  padding: 4px 8px; font-size: var(--t-petit); font-weight: 600;
+  background: var(--jeu-encre); color: var(--jeu-surface);
+  transform: translate(14px, 14px);
+}
+.beta-etiquette.refus { background: var(--beta-refus); }
+
+dialog { background: var(--jeu-fond); color: var(--jeu-encre); border: 2px solid var(--jeu-encre); padding: calc(var(--pas) * 3); max-width: min(420px, 92vw); }
+dialog h2 { margin: 0 0 calc(var(--pas) * 2); font-size: 18px; }
+dialog h2 small { font-size: var(--t-petit); font-weight: 400; }
+dialog form { margin-top: calc(var(--pas) * 2); }
+.menu { display: grid; gap: var(--pas); min-width: min(260px, 80vw); }
+.menu .bouton { justify-content: center; }
+
+/* Fenêtre étroite : les libellés des outils et des actions se replient, les touches restent */
+@media (max-width: 1280px) {
+  .beta-actions .icone-texte kbd, .beta-version { display: none; }
+}
+@media (max-width: 1100px) {
+  .beta-outil span { display: none; }
+  .beta-camera { display: none; }
+}

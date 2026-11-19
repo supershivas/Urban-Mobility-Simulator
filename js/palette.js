@@ -31,3 +31,20 @@ export const ROLES = {
   inconnu: PALETTE.inconnu,
   bati: PALETTE.bati,
 };
+
+// Le jeu beta « Carte blanche » (Jérôme, v0.9.0) : minimalisme à la Traffic City.
+// Sol clair, chaussée grise, marquages blancs, pistes vertes, voitures en couleurs franches.
+export const PALETTE_BETA = {
+  sol: '#E9E5DC',
+  limite: '#CFC8BA',     // bord de la carte constructible
+  asphalte: '#5A5E66',
+  bordure: '#C4BDAF',    // bordure de trottoir autour de la chaussée
+  marquage: '#F7F6F1',
+  velo: '#3E9E5A',       // piste cyclable (et son picto blanc)
+  cycliste: '#1F5C36',
+  apercu: '#2F7FD8',     // la route en projet
+  refus: '#D9442B',      // la route impossible (même rouge que la sélection)
+  surlignage: '#F2B33D', // le tronçon sous l'outil
+  vitre: '#2B2F36',
+  voitures: ['#E4572E', '#2E86AB', '#F3A712', '#F7F6F1', '#3A3F47', '#8E5BA8', '#C8553D', '#4F6D7A'],
+};

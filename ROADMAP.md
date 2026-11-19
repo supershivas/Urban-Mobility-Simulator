@@ -95,7 +95,7 @@ Statuts : **à l'étude** · **validé** (Jérôme a tranché) · **en cours** �
 | 0.6 | Le trafic bouge : boucle à pas fixe, blocs par mode sur les voies et raccords, files, feux ; partie ouverte en 3D ; demande = comptages + entrées aux bords (débit de jeu par hiérarchie UrbIS, « hypothèse de jeu ») ; route au hasard aux carrefours |
 | 0.7 | Construire sur la carte : édition directe (outils de voie), flèches de direction, phases de feux |
 | 0.8 | Objectifs sur le corridor, sans budget |
-| 0.9 | Vue 3D semi-réaliste |
+| 0.10 | Vue 3D semi-réaliste |
 | plus tard | Scénarios nommés dans la partie, export CSV + JSON ; la comparaison avant / après reste à redéfinir (la question n'était pas claire) |
 
 

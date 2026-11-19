@@ -4,6 +4,7 @@ export const TEXTES = {
   fr: {
     'titre.continuer': 'Continuer',
     'titre.nouvelle': 'Nouvelle partie',
+    'titre.beta': 'Bêta : carte blanche',
     'titre.reglages': 'Réglages',
     'entete.corridor': 'Schuman — Roodebeek',
     'entete.retour-titre': 'Retour à l\'écran titre',
@@ -535,6 +536,7 @@ export const TEXTES = {
   en: {
     'titre.continuer': 'Continue',
     'titre.nouvelle': 'New game',
+    'titre.beta': 'Beta: blank map',
     'titre.reglages': 'Settings',
     'entete.corridor': 'Schuman — Roodebeek',
     'entete.retour-titre': 'Back to title screen',

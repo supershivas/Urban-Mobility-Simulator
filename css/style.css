@@ -90,6 +90,7 @@
 .titre[hidden] { display: none; }
 .titre h1 { margin: 0; font-size: clamp(28px, 6vmin, 56px); letter-spacing: .08em; text-transform: uppercase; color: var(--jeu-encre); text-align: center; }
 .titre-menu, .menu { display: grid; gap: var(--pas); min-width: min(260px, 80vw); }
+.titre-beta { display: flex; align-items: center; justify-content: center; text-decoration: none; background: var(--jeu-surface); color: var(--jeu-encre); outline: var(--trait) solid var(--jeu-encre); outline-offset: -1px; }
 .titre-reglages { position: absolute; top: calc(var(--pas) + env(safe-area-inset-top, 0px)); right: var(--pas); }
 
 dialog { background: var(--jeu-fond); color: var(--jeu-encre); border: 2px solid var(--jeu-encre); padding: calc(var(--pas) * 3); max-width: min(420px, 92vw); }

@@ -3,49 +3,49 @@
 // lisent les mêmes données locales de data/ (aucun service distant) et partagent
 // la sélection et l'inspecteur. Le style est dans carte/style.js, la scène dans
 // scene/scene3d.js (chargée à la première bascule), l'inspecteur dans inspecteur.js.
-import * as maplibregl from '../vendor/maplibre-gl/maplibre-gl.mjs?v=0.8.0';
-import { createKeys, stopTypeahead } from './lib/keys.js?v=0.8.0';
-import { lockBrowserGestures } from './lib/pointer.js?v=0.8.0';
-import { createStore, autosave, pickJSONFile } from './lib/save.js?v=0.8.0';
-import { createI18n } from './lib/i18n.js?v=0.8.0';
-import { startUpdateCheck, loadVersion, loadChangelog, downloadJSON } from './lib/app-update.js?v=0.8.0';
-import { PALETTE, ROLES } from './palette.js?v=0.8.0';
-import { TEXTES } from './data/textes.js?v=0.8.0';
-import { COMMANDES_AIDE } from './data/aide.js?v=0.8.0';
-import { styleCarte, COUCHES, COUCHES_ACTIVES, COUCHES_SELECTIONNABLES } from './carte/style.js?v=0.8.0';
-import { lignesInspecteur, lignesInspecteurBatiment, lignesInspecteurNoeud } from './inspecteur.js?v=0.8.0';
-import { creerRepere } from './geo/repere.js?v=0.8.0';
-import { boite } from './geo/geometrie.js?v=0.8.0';
-import { distancePourZoom, zoomPourDistance } from './scene/camera.js?v=0.8.0';
-import { lireJSON, couche, couchesScene } from './donnees.js?v=0.8.0';
-import { chargerContenu } from './design-store.js?v=0.8.0';
-import { sectionMesuree, OPERATIONS, memeSection, decalages, verifier } from './section.js?v=0.8.0';
-import { creerHistorique } from './historique.js?v=0.8.0';
-import { featuresSections } from './carte/sections.js?v=0.8.0';
-import { ajouterImages } from './carte/motifs.js?v=0.8.0';
-import { wgs84VersLambert, lambertVersWgs84 } from './geo/coordonnees.js?v=0.8.0';
-import { creerEditeur } from './editeur.js?v=0.8.0';
-import { creerEditeurCarrefour, lettre } from './editeur-carrefour.js?v=0.8.0';
-import { branchesDe, toutesLesVoies, raccordsDe, verifierCarrefour, traverseesDe, OPERATIONS_CARREFOUR } from './carrefour.js?v=0.8.0';
-import { geometrieCarrefour, pointSurLigne } from './geo/raccords.js?v=0.8.0';
-import { featuresCarrefours } from './carte/carrefours.js?v=0.8.0';
-import { DESSIN_CARREFOUR } from './data/carrefours.js?v=0.8.0';
-import { etatTroncon, niveau, bilan, conflits, definirDemande, definirHypothese } from './simulation.js?v=0.8.0';
-import { HYPOTHESES } from './data/simulation.js?v=0.8.0';
-import { lignesSimulation, lignesConflits } from './inspecteur.js?v=0.8.0';
-import { creerEditeurFlux } from './editeur-flux.js?v=0.8.0';
-import { createLoop } from './lib/loop.js?v=0.8.0';
-import { construireReseau, creerTrafic } from './circulation.js?v=0.8.0';
-import { SIMULATION, VEHICULES } from './data/circulation.js?v=0.8.0';
-import { lignesTrafic } from './inspecteur.js?v=0.8.0';
-import { appliquerOutil } from './outils.js?v=0.8.0';
-import { OUTILS } from './data/bandes.js?v=0.8.0';
-import { directionsDe, phasesDe, auVert, etatFeux } from './carrefour.js?v=0.8.0';
-import { distancePointLigne } from './geo/geometrie.js?v=0.8.0';
-import { contourBande } from './geo/decalage.js?v=0.8.0';
-import { bandeAuDecalage } from './outils.js?v=0.8.0';
-import { MISSIONS } from './data/missions.js?v=0.8.0';
-import { mission, suivante, suivi, evaluer, progressionVide } from './missions.js?v=0.8.0';
+import * as maplibregl from '../vendor/maplibre-gl/maplibre-gl.mjs?v=0.9.0';
+import { createKeys, stopTypeahead } from './lib/keys.js?v=0.9.0';
+import { lockBrowserGestures } from './lib/pointer.js?v=0.9.0';
+import { createStore, autosave, pickJSONFile } from './lib/save.js?v=0.9.0';
+import { createI18n } from './lib/i18n.js?v=0.9.0';
+import { startUpdateCheck, loadVersion, loadChangelog, downloadJSON } from './lib/app-update.js?v=0.9.0';
+import { PALETTE, ROLES } from './palette.js?v=0.9.0';
+import { TEXTES } from './data/textes.js?v=0.9.0';
+import { COMMANDES_AIDE } from './data/aide.js?v=0.9.0';
+import { styleCarte, COUCHES, COUCHES_ACTIVES, COUCHES_SELECTIONNABLES } from './carte/style.js?v=0.9.0';
+import { lignesInspecteur, lignesInspecteurBatiment, lignesInspecteurNoeud } from './inspecteur.js?v=0.9.0';
+import { creerRepere } from './geo/repere.js?v=0.9.0';
+import { boite } from './geo/geometrie.js?v=0.9.0';
+import { distancePourZoom, zoomPourDistance } from './scene/camera.js?v=0.9.0';
+import { lireJSON, couche, couchesScene } from './donnees.js?v=0.9.0';
+import { chargerContenu } from './design-store.js?v=0.9.0';
+import { sectionMesuree, OPERATIONS, memeSection, decalages, verifier } from './section.js?v=0.9.0';
+import { creerHistorique } from './historique.js?v=0.9.0';
+import { featuresSections } from './carte/sections.js?v=0.9.0';
+import { ajouterImages } from './carte/motifs.js?v=0.9.0';
+import { wgs84VersLambert, lambertVersWgs84 } from './geo/coordonnees.js?v=0.9.0';
+import { creerEditeur } from './editeur.js?v=0.9.0';
+import { creerEditeurCarrefour, lettre } from './editeur-carrefour.js?v=0.9.0';
+import { branchesDe, toutesLesVoies, raccordsDe, verifierCarrefour, traverseesDe, OPERATIONS_CARREFOUR } from './carrefour.js?v=0.9.0';
+import { geometrieCarrefour, pointSurLigne } from './geo/raccords.js?v=0.9.0';
+import { featuresCarrefours } from './carte/carrefours.js?v=0.9.0';
+import { DESSIN_CARREFOUR } from './data/carrefours.js?v=0.9.0';
+import { etatTroncon, niveau, bilan, conflits, definirDemande, definirHypothese } from './simulation.js?v=0.9.0';
+import { HYPOTHESES } from './data/simulation.js?v=0.9.0';
+import { lignesSimulation, lignesConflits } from './inspecteur.js?v=0.9.0';
+import { creerEditeurFlux } from './editeur-flux.js?v=0.9.0';
+import { createLoop } from './lib/loop.js?v=0.9.0';
+import { construireReseau, creerTrafic } from './circulation.js?v=0.9.0';
+import { SIMULATION, VEHICULES } from './data/circulation.js?v=0.9.0';
+import { lignesTrafic } from './inspecteur.js?v=0.9.0';
+import { appliquerOutil } from './outils.js?v=0.9.0';
+import { OUTILS } from './data/bandes.js?v=0.9.0';
+import { directionsDe, phasesDe, auVert, etatFeux } from './carrefour.js?v=0.9.0';
+import { distancePointLigne } from './geo/geometrie.js?v=0.9.0';
+import { contourBande } from './geo/decalage.js?v=0.9.0';
+import { bandeAuDecalage } from './outils.js?v=0.9.0';
+import { MISSIONS } from './data/missions.js?v=0.9.0';
+import { mission, suivante, suivi, evaluer, progressionVide } from './missions.js?v=0.9.0';
 
 const JEU = 'urban-mobility-simulator';
 const $ = id => document.getElementById(id);
@@ -345,7 +345,7 @@ function chargerScene() {
   return (chargementScene ??= (async () => {
     $('scene-attente').hidden = false;
     await new Promise(res => setTimeout(res, 30)); // laisse le message s'afficher : la construction occupe le fil
-    const [{ creerScene }, couches] = await Promise.all([import('./scene/scene3d.js?v=0.8.0'), couchesScene(), chargerBatiments()]);
+    const [{ creerScene }, couches] = await Promise.all([import('./scene/scene3d.js?v=0.9.0'), couchesScene(), chargerBatiments()]);
     scene = creerScene({
       conteneur: $('scene'), repere, P: PALETTE, R, donnees: { ...couches, emprise }, mouvementReduit: reduit,
       surChoix: (c, pt) => { if (!enCarte()) return; if (pt && cliquerFleche(pt.x, pt.y)) return; selectionner(c?.id ?? null); },
@@ -1503,7 +1503,7 @@ startUpdateCheck({ isBusy: () => enCarte() && !pauseJoueur, beforeReload: sauveg
 
 // ─── Mode debug (section 18) : chargé seulement avec ?debug=1 ──────────────
 if (DEBUG) {
-  const { installDebug } = await import('./lib/debug.js?v=0.8.0');
+  const { installDebug } = await import('./lib/debug.js?v=0.9.0');
   const stations = Object.fromEntries((await couche('infra')).features
     .filter(f => f.properties.famille === 'station').map(f => [f.properties.nom.toLowerCase(), { x: f.geometry.coordinates[0], y: f.geometry.coordinates[1] }]));
   installDebug({

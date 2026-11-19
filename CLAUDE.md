@@ -104,7 +104,8 @@ Table complète (clavier et souris) : `docs/domaines/interface.md` ; textes de l
 | 0.6 | Le trafic bouge : boucle de simulation, blocs qui circulent (2D et 3D), files, feux ; modifications visibles en direct | livrée en 0.6.0, à valider |
 | 0.7 | Construire sur la carte : outils de voie, flèches de direction, phases de feux | livrée en 0.7.0, à valider |
 | 0.8 | Prise en main : écran épuré, mission guidée, missions sur le corridor, survol des voies | livrée en 0.8.0, à valider |
-| 0.9 | Vue 3D semi-réaliste (toits, façades, marquages) | prochaine |
+| 0.9 | Bêta « Carte blanche » (`beta.html`, bouton de l'écran titre) : carte vierge 3D, routes en arc, voies doublées, pistes cyclables, trafic (`docs/domaines/beta.md`) | livrée en 0.9.0, à valider |
+| 0.10 | Vue 3D semi-réaliste (toits, façades, marquages) | prochaine |
 | plus tard | Scénarios nommés, export CSV + JSON (Jérôme, v0.5.0) | — |
 
 Une bande s'arrête toujours au bout de son axe : la zone de carrefour est dessinée par-dessus, les raccords partent du recul.
@@ -139,6 +140,7 @@ Forme des carrefours (oreilles, îlots), raccords hors des carrefours, affectati
 - `js/palette.js`, `js/data/reglages.js` (réglables par l'atelier, publiés dans `assets/design/reglages.json`).
 - `data/corridor.json` (emprise), `data/urbis-codes.json` (libellés des codes, d'après les spécifications UrbIS), `data/metadata/sources.json`.
 - `outils/critere-v01.mjs` à `-v08` — les critères de validation dans le vrai jeu.
+- `beta.html`, `css/beta.css`, `js/beta/` — le jeu bêta « Carte blanche » (réseau, géométrie, trafic purs et testés ; scène ; main).
 
 ## Où lire quoi
 
@@ -155,6 +157,7 @@ Forme des carrefours (oreilles, îlots), raccords hors des carrefours, affectati
 | `js/scene/` | `docs/domaines/scene3d.md`, en-têtes des trois modules, `test/scene|camera.test.mjs`, réglages `scene` |
 | interface, CSS, commandes, palette | `docs/domaines/interface.md`, conventions §3, §5, §7, §8 |
 | `package.json`, `vendor/`, `.claude/` | `docs/domaines/outillage.md` |
+| `beta.html`, `js/beta/`, `css/beta.css` | `docs/domaines/beta.md`, `test/beta.test.mjs` |
 
 ## Vérification (section 19 de game-system)
 
@@ -167,13 +170,11 @@ node outils/captures.mjs --cibles bureau,bureau_125 --clic "#nouvelle" --clic "#
 node outils/audit-ecran.mjs --clic "#nouvelle" --ecrans bureau,bureau_125        # + --clic "#bascule-vue" pour la 3D
 node outils/lisibilite.mjs
 node outils/critere-v01.mjs                      # puis -v02 à -v08 (-v01 à -v05, -v07, -v08 : ?debug=1&vue=2d) : les critères (en-têtes des fichiers)
-node outils/capture-editeur.mjs --sortie <dossier hors captures/>     # éditeur de section, 2D et 3D
-node outils/capture-carrefour.mjs --sortie <dossier hors captures/>   # éditeur de carrefour, 2D et 3D
-node outils/capture-flux.mjs --sortie <dossier hors captures/>        # bandeau des flux, couche Flux
-node outils/capture-trafic.mjs --sortie <dossier hors captures/>      # trafic en 3D, en 2D, de loin
-node outils/capture-outils.mjs --sortie <dossier hors captures/>      # outil, flèches, feux
+node outils/critere-beta.mjs --sortie <dossier hors captures/>       # jeu bêta, à la souris
 node outils/stamp-version.mjs
 ```
+
+Captures par éditeur (`capture-editeur|carrefour|flux|trafic|outils.mjs`) : `docs/domaines/outillage.md`.
 
 Données : `node outils/donnees/telecharger.mjs` (réseau : `geoservices-urbis.irisnet.be`, `api.openstreetmap.org`, `urbisdownload.datastore.brussels`), puis `npm run donnees`. Ne jamais éditer `data/original/` ni `data/processed/` à la main.
 
