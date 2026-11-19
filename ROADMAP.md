@@ -59,11 +59,16 @@ Statuts : **à l'étude** · **validé** (Jérôme a tranché) · **en cours** �
 - [ ] Taux d'occupation des voitures et des bus : aucune source citée (hypothèse du joueur, « Non renseigné » au départ)
 - [ ] Flux en 3D ; légende de la couche Flux
 
-## Validé (pitch, dans l'ordre)
+## Validé (Jérôme, v0.5.0 : vers un city builder en temps réel)
 
 | Version | Contenu |
 |---|---|
-| 0.6 | Scénarios, comparaison, sauvegarde, finition |
+| 0.6 | Le trafic bouge : boucle à pas fixe, blocs par mode sur les voies et raccords, files, feux ; partie ouverte en 3D ; demande = comptages + entrées aux bords (débit de jeu par hiérarchie UrbIS, « hypothèse de jeu ») ; route au hasard aux carrefours |
+| 0.7 | Construire sur la carte : édition directe (outils de voie), flèches de direction, phases de feux |
+| 0.8 | Objectifs sur le corridor, sans budget |
+| 0.9 | Vue 3D semi-réaliste |
+| plus tard | Scénarios nommés dans la partie, export CSV + JSON ; la comparaison avant / après reste à redéfinir (la question n'était pas claire) |
+
 
 ## À l'étude
 

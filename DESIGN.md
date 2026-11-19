@@ -31,7 +31,13 @@ tant que le joueur ne le dessine pas.
 
 City / colonie builder · Gestion / automatisation · Simulation (Jérôme, v0.1.0). Inspirations
 de mécanique seulement : *Traffic City* (réorganiser un réseau pour le fluidifier),
-*Junxions* (concevoir carrefours et raccordements). Jamais leur nom, leurs visuels ni leurs niveaux.
+*Junxions* (concevoir carrefours et raccordements ; tous les flux, vélo compris ; UI claire).
+À partir de la v0.6 (Jérôme, v0.5.0) : *Highways & Co* (jonctions, feux, directions du trafic) et
+*Cities: Skylines* (vue de la ville). Jamais leur nom, leurs visuels ni leurs niveaux.
+
+**Direction (Jérôme, v0.5.0)** : un city builder en temps réel. On retouche les voies et l'on voit le trafic
+évoluer sous ses yeux ; on joue pour améliorer les flux, pour des objectifs, sans budget. Le corridor réel
+et les vraies largeurs restent ; un pilier ne s'assouplit qu'au cas par cas, sur demande.
 
 ## La boucle de jeu (cible, à partir de la v0.3)
 
@@ -91,7 +97,7 @@ en tirets).
 ## Ce que le jeu refuse
 
 - **Pas de fond de carte en ligne** : tout ce qui est dessiné vient de `data/` et est sourcé (porte ouverte vers Steam, pilier 6). (Choix par défaut, v0.1.0 : Jérôme n'a pas tranché.)
-- **Pas de décor décoratif** : ni arbres, ni voitures, ni foule inventés pour faire joli (pilier 6). (Choix par défaut, v0.1.0.)
+- **Pas de décor décoratif** : rien d'inventé pour faire joli (pilier 6). Les blocs qui circulent (v0.6) ne sont pas un décor : ils représentent la demande (comptage, ou hypothèse de jeu affichée comme telle). Les arbres de la v0.9 viendront d'une source (à trouver), pas d'un semis au hasard.
 - **Pas de prédiction d'accidents** : on montre l'exposition aux conflits (pilier 3).
 - **Pas d'élargissement de la rue, pas de construction de bâtiments** (pilier 2).
 
@@ -101,4 +107,5 @@ en tirets).
 
 - Largeurs de chaussée : UrbIS fournit des **surfaces** (chaussée, trottoir, terre-plein, site propre) mais aucune largeur ; la méthode de mesure (coupe perpendiculaire à l'axe sur les surfaces ?) est à décider avant l'éditeur (v0.3).
 - Hauteurs des bâtiments : résolu en v0.2.0 par UrbIS 3D (Zmax − Zmin des solides, par identifiant). Restent sans source : le nombre de niveaux, et 721 bâtiments sans solide (dessinés à plat).
-- Brussels Mobility (routes régionales, comptages) : hôte bloqué pendant la v0.1.
+- Brussels Mobility : compteurs vélo repris en v0.5 ; pas d'historique des comptages automobiles. Feux, passages piétons, voies des routes régionales : couches listées, à vérifier.
+- Comparaison avant / après (v0.6 du pitch) : à redéfinir, la question posée n'était pas claire (Jérôme, v0.5.0).

@@ -20,7 +20,7 @@ Jeu de conception urbaine inspiré des city builders, limité à l'espace public
 | Décision | Valeur |
 |---|---|
 | Genre | City / colonie builder · Gestion / automatisation · Simulation |
-| Vue | Carte 2D MapLibre **et** vue 3D three.js à caméra **orbitale** (Jérôme, v0.2.0), bascule par bouton ou V ; la partie s'ouvre en 2D |
+| Vue | Carte 2D MapLibre **et** vue 3D three.js à caméra **orbitale** (Jérôme, v0.2.0), bascule par bouton ou V ; la partie s'ouvrira **en 3D** à partir de la v0.6 (Jérôme, v0.5.0) |
 | Public | Joueur averti |
 | Session | Partie longue continue |
 | Cible | **Ordinateur uniquement** (≈ 1440 × 900), toutes tailles de fenêtre ; pas de version téléphone (Jérôme, v0.1.4) |
@@ -44,6 +44,8 @@ Jeu de conception urbaine inspiré des city builders, limité à l'espace public
 | Éditeur | Bandeau sous la carte (`js/editeur.js`), ouvert par M ou le bouton de l'inspecteur ; somme ≤ emprise, reste = espace libre ; refus écrits ; minimum de dessin 0,3 m seulement (Jérôme, v0.3.0) |
 | Carrefours | Raccords **proposés, à revoir** (méthode affichée, confiance faible) ; raccords + traversées + régulation (`null` au départ) ; même bandeau sous la carte (Jérôme, v0.4.0). Détail : `docs/domaines/carrefours.md` |
 | Simulation | **Comptages + hypothèses**, **par tronçon, statique**, références **citées** (Jérôme, v0.5.0) ; occupation : hypothèse du joueur, `null` au départ. `docs/domaines/simulation.md` |
+| Direction (v0.6+) | **City builder en temps réel** (Jérôme, v0.5.0) : trafic visible, édition directe, objectifs sans budget, 3D semi-réaliste ; esprit de Junxions, Highways & Co, Cities: Skylines (`DESIGN.md`). Piliers assouplis **au cas par cas, sur demande** |
+| Trafic (v0.6) | Blocs abstraits (parallélépipèdes) par mode, sur les voies et raccords réels ; route **au hasard aux carrefours** parmi les raccords de la voie (graine fixe) ; demande : comptages, sinon **entrées aux bords du corridor** avec un **débit de jeu par hiérarchie UrbIS**, affiché « hypothèse de jeu », réglable (assouplissement du pilier 6, Jérôme, v0.5.0) |
 | Onglet caché | Rien ne tourne (simulation statique, 3D dessinée sur demande seulement) ; la vue est sauvegardée |
 
 - **Production** : https://supershivas.github.io/Urban-Mobility-Simulator/
@@ -73,24 +75,7 @@ Police : police système (aucune police distante). Les aplats (bâti, trottoir) 
 
 ### Commandes
 
-| Action | Clavier | Souris |
-|---|---|---|
-| Choisir un tronçon | T (le plus proche du centre) | clic sur l'axe (tolérance 8 px) |
-| Choisir un bâtiment | B (le plus proche du centre) | clic sur le bâtiment |
-| Choisir un carrefour | N (le plus proche du centre) | clic sur le nœud (tolérance 7 px, avant l'axe) |
-| Modifier la section ou le carrefour | M (ouvrir / fermer) ; C : carrefour, aussi depuis un tronçon | bouton de l'inspecteur |
-| Flux et demande du tronçon | F (ouvrir / fermer) | bouton de l'inspecteur |
-| Raccorder / détacher | Tab jusqu'à la voie qui entre, Entrée, puis la voie qui sort | clic sur l'une, puis sur l'autre |
-| Limite entre deux bandes | ← → sur la limite (Maj : 0,5 m) | glisser la limite |
-| Annuler / rétablir | Ctrl+Z / Ctrl+Y (ou Ctrl+Maj+Z) | boutons de l'éditeur |
-| Vue 2D / 3D | V | bouton « Passer en 3D / en 2D » |
-| Tourner, incliner (3D) | touches physiques Q / E (A / E en AZERTY), Page préc. / suiv. | clic droit + glisser, ou Maj + glisser |
-| Fermer l'éditeur, puis désélectionner | Échap | clic dans le vide, croix de l'inspecteur |
-| Se déplacer | flèches, ZQSD / WASD (touche physique) | glisser |
-| Zoomer | + et − | molette |
-| Retour à l'emprise | R | bouton « Retour à l'emprise » |
-| Couches | 1 à 9, 0 (Flux) | cases à cocher |
-| Menu | Échap (sans sélection) | roue crantée |
+Table complète (clavier et souris) : `docs/domaines/interface.md` ; textes de l'aide (touche I) : `js/data/aide.js`.
 
 ## Piliers (non négociables)
 
@@ -131,13 +116,17 @@ Police : police système (aucune police distante). Les aplats (bâti, trottoir) 
 | 0.3 | Éditeur de section transversale, contraintes de largeur, undo/redo | livrée en 0.3.0, à valider |
 | 0.4 | Éditeur de carrefours : raccords voie à voie, traversées, régulation | livrée en 0.4.0, à valider |
 | 0.5 | Simulation simplifiée et indicateurs | livrée en 0.5.0, à valider |
-| 0.6 | Scénarios, comparaison, sauvegarde, finition | — |
+| 0.6 | Le trafic bouge : boucle de simulation, blocs qui circulent (2D et 3D), files, feux ; modifications visibles en direct | prochaine |
+| 0.7 | Construire sur la carte : édition directe des voies et carrefours, flèches de direction, phases de feux | — |
+| 0.8 | Objectifs sur le corridor (personnes / h, conflits), sans budget | — |
+| 0.9 | Vue 3D semi-réaliste (toits, façades, marquages) | — |
+| plus tard | Scénarios nommés, export CSV + JSON (Jérôme, v0.5.0) | — |
 
 Une bande s'arrête toujours au bout de son axe : la zone de carrefour est dessinée par-dessus, les raccords partent du recul.
 
 ## Exclu jusqu'ici
 
-Forme des carrefours (oreilles, îlots), raccords hors des carrefours, affectation sur le graphe (itinéraires), flux en 3D, repères de largeur par usage (sans source citée), simulation microscopique, véhicules animés, relief (le sol est plat, les altitudes d'UrbIS 3D ne servent qu'à la hauteur), formes de toiture, son, comptes ou serveur distant.
+Forme des carrefours (oreilles, îlots), raccords hors des carrefours, affectation sur le graphe (itinéraires origine → destination), repères de largeur par usage (sans source citée), simulation microscopique fine (au-delà de suivre sa voie, garder la distance, s'arrêter au rouge), relief (le sol est plat, les altitudes d'UrbIS 3D ne servent qu'à la hauteur), formes de toiture, son, comptes ou serveur distant.
 
 ## Stack
 
@@ -173,7 +162,7 @@ Forme des carrefours (oreilles, îlots), raccords hors des carrefours, affectati
 | flux (`simulation`, `editeur-flux`, comptages) | `docs/domaines/simulation.md`, `test/simulation.test.mjs`, pitch §13 sprint 5, §16 |
 | `js/geo/` | pitch §8–9, tests `test/coordonnees|repere|topologie|appariement.test.mjs` |
 | `js/scene/` | `docs/domaines/scene3d.md`, en-têtes des trois modules, `test/scene|camera.test.mjs`, réglages `scene` |
-| interface, CSS | conventions §3, §5, §7, §8 (`.claude/conventions-detail.md`) |
+| interface, CSS, commandes | `docs/domaines/interface.md`, conventions §3, §5, §7, §8 |
 | `package.json`, `vendor/`, `.claude/` | `docs/domaines/outillage.md` |
 
 ## Vérification (section 19 de game-system)
