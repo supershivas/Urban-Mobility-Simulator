@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.0 — 2026-11-19
+- Le trafic roule : voitures, bus et vélos circulent sur les vraies voies du corridor, entrent par ses bords et choisissent leur route aux carrefours ; la partie s'ouvre en 3D
+- Chaque modification se voit tout de suite : une voie retirée, un raccord détaché ou un feu posé changent ce qui roule (files au rouge comprises)
+- Pause (Espace) et vitesse du temps (X, jusqu'à ×8) en haut à gauche ; l'inspecteur d'une rue montre ce qui y passe en ce moment
+
 ## 0.5.0 — 2026-11-18
 - Flux et demande (F) : posez la demande d'une rue par mode et par sens ; capacité, saturation, personnes / h, temps de parcours et délai aux feux se recalculent à chaque modification
 - Les comptages vélo réels de Bruxelles Mobilité (rue de la Loi, Tervueren, Nerviens) servent de demande ; les valeurs de référence sont citées et « Non renseigné » reste la règle sans donnée

@@ -239,3 +239,27 @@ export function lignesConflits(c, { t, regulation }) {
   lignes.unshift({ champ: t('sim.conflits'), valeur: t('sim.n-conflits', { n: c.total }), inconnu: false, source: t(regulation === 'feux' ? 'sim.methode-conflits-feux' : 'sim.methode-conflits') });
   return [{ titre: t('inspecteur.section.conflits'), lignes }];
 }
+
+/**
+ * Le trafic simulé sur un tronçon (v0.6) : ce qui y passe en ce moment.
+ * m : js/trafic.js (mesures) ; ctx : { t, lang, entree : [{ sens, hierarchie, modes: { mode → { debit, origine } } }] si la rue entre
+ * dans le corridor, comptage : comptages.parTroncon[id] ou null }. Les débits d'entrée sont des hypothèses de jeu, affichées comme telles.
+ */
+export function lignesTrafic(m, { t, lang, entree = [], comptage = null }) {
+  const loc = lang === 'en' ? 'en-GB' : 'fr-BE';
+  const n = v => v.toLocaleString(loc, { maximumFractionDigits: 0 });
+  const lignes = [];
+  const debits = Object.entries(m.debits).filter(([, v]) => v > 0).map(([mode, v]) => t(`trafic.unite.${mode}`, { v: n(v) }));
+  lignes.push(debits.length
+    ? { champ: t('trafic.debit'), valeur: debits.join(' · '), inconnu: false, source: t('trafic.methode-debit', { min: Math.round(m.fenetreS / 60) }) }
+    : { champ: t('trafic.debit'), valeur: t('trafic.aucun'), inconnu: true });
+  if (comptage) lignes.push({ champ: t('trafic.compte'), valeur: t('trafic.unite.velo', { v: n(comptage.parHeure) }), inconnu: false, source: t('sim.source-comptage', { compteurs: comptage.compteurs.join(', ') }) });
+  lignes.push({ champ: t('trafic.presents'), valeur: t('trafic.presents-valeur', { n: m.presents, a: m.arretes }), inconnu: false });
+  lignes.push(m.vitesseKmh === null ? { champ: t('trafic.vitesse-moyenne'), valeur: t('trafic.aucun'), inconnu: true } : { champ: t('trafic.vitesse-moyenne'), valeur: t('valeur.kmh', { n: m.vitesseKmh }), inconnu: false });
+  for (const e of entree) {
+    const parts = Object.entries(e.modes).filter(([, d]) => d.debit > 0).map(([mode, d]) => t(`trafic.unite.${mode}`, { v: n(d.debit) }));
+    const joueur = Object.values(e.modes).some(d => d.origine === 'joueur');
+    lignes.push({ champ: t(`trafic.entree.${e.sens}`), valeur: parts.length ? parts.join(' · ') : t('trafic.aucun'), inconnu: !parts.length, source: t(joueur ? 'trafic.origine-joueur' : 'trafic.origine-jeu', { h: e.hierarchie }) });
+  }
+  return [{ titre: t('inspecteur.section.trafic'), lignes }];
+}

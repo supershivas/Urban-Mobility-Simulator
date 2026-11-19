@@ -51,6 +51,9 @@ export const REGLAGES = {
     planLointainMinM: 6000,
     echelleMaxPx: 120,      // barre d'échelle, valable au point visé
   },
+  trafic: {                 // v0.6
+    delaiReconstructionMs: 150, // une rafale de modifications ne reconstruit le réseau du trafic qu'une fois
+  },
   carrefour: {
     lettreAuDelaM: 6,       // lettre d'une branche (carte, 3D) : à cette distance au-delà du recul
   },

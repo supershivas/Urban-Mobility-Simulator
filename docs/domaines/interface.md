@@ -19,5 +19,7 @@
 | Zoomer | + et − | molette |
 | Retour à l'emprise | R | bouton « Retour à l'emprise » |
 | Couches | 1 à 9, 0 (Flux) | cases à cocher |
+| Trafic : pause / reprendre | Espace | bouton en haut à gauche de la vue |
+| Trafic : vitesse ×1, ×2, ×4, ×8 | X | bouton en haut à gauche de la vue |
 | Menu | Échap (sans sélection) | roue crantée |
 

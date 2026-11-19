@@ -2,18 +2,19 @@
 // nœuds, rails, emprise. Elle lit les mêmes GeoJSON que la carte MapLibre et
 // garde les mêmes identifiants ; tout est en mètres dans le repère local.
 // Ce module dessine et vise : il ne modifie jamais l'état du jeu (main.js décide).
-// Rien ne s'anime tout seul : une image n'est calculée que sur demande, et jamais
-// quand la vue est inactive ou l'onglet caché.
-import * as THREE from '../../vendor/three/three.module.js?v=0.5.0';
-import { versScene, depuisScene } from '../geo/repere.js?v=0.5.0';
-import { distancePointLigne, boite } from '../geo/geometrie.js?v=0.5.0';
-import { decalerLigne } from '../geo/decalage.js?v=0.5.0';
-import { pose, contraindre, deplacer, tourner, zoomer, cadrer, metresParPixel, interpoler } from './camera.js?v=0.5.0';
+// Une image n'est calculée que sur demande (le trafic, v0.6, en demande une à chaque pas
+// de la boucle), et jamais quand la vue est inactive ou l'onglet caché.
+import * as THREE from '../../vendor/three/three.module.js?v=0.6.0';
+import { versScene, depuisScene } from '../geo/repere.js?v=0.6.0';
+import { distancePointLigne, boite } from '../geo/geometrie.js?v=0.6.0';
+import { decalerLigne } from '../geo/decalage.js?v=0.6.0';
+import { pose, contraindre, deplacer, tourner, zoomer, cadrer, metresParPixel, interpoler } from './camera.js?v=0.6.0';
 import {
   maillerSurfaces, maillerBatiments, maillerAxes, maillerRuban, maillerSections, maillerPolygones, segmentsDeLignes, lignesLocales, rangDuTriangle,
-} from './geometrie3d.js?v=0.5.0';
-import { BANDES } from '../data/bandes.js?v=0.5.0';
-import { HIERARCHIE_PRINCIPALE, SURFACE_PIETONNE, SURFACE_SOUTERRAINE } from '../carte/style.js?v=0.5.0';
+} from './geometrie3d.js?v=0.6.0';
+import { BANDES } from '../data/bandes.js?v=0.6.0';
+import { VEHICULES } from '../data/trafic.js?v=0.6.0';
+import { HIERARCHIE_PRINCIPALE, SURFACE_PIETONNE, SURFACE_SOUTERRAINE } from '../carte/style.js?v=0.6.0';
 
 const rad = deg => (deg * Math.PI) / 180;
 
@@ -110,6 +111,41 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
     new THREE.LineDashedMaterial({ color: P.encre, dashSize: S.tiretsEmpriseM[0], gapSize: S.tiretsEmpriseM[1] }));
   contour.computeLineDistances();
   groupe('emprise', contour);
+
+  // ─── Trafic (v0.6) : un bloc par véhicule, des instances par mode (couche « flux ») ──
+  // Voitures en `noeud` [À VALIDER] : l'encre se perdait sur les axes principaux, le blanc sur la chaussée.
+  // Côtés assombris : la 3D n'a pas de lumière.
+  const TEINTE_MODE = { voiture: P.noeud, bus: P.bus, velo: P.cyclable };
+  const blocs = {};
+  const fantome = new THREE.Object3D();
+  for (const [mode, G] of Object.entries(VEHICULES)) {
+    const g = new THREE.BoxGeometry(G.longueur, G.hauteur, G.largeur);
+    g.translate(0, G.hauteur / 2, 0);
+    const nrm = g.getAttribute('normal'), teintes = new Float32Array(nrm.count * 3);
+    for (let i = 0; i < nrm.count; i++) teintes.fill(nrm.getY(i) > 0.5 ? 1 : nrm.getX(i) !== 0 ? S.ombreMurMax : 1 - S.ombreMurMax / 2, i * 3, i * 3 + 3);
+    g.setAttribute('color', new THREE.BufferAttribute(teintes, 3));
+    const m = new THREE.InstancedMesh(g, new THREE.MeshBasicMaterial({ color: TEINTE_MODE[mode], vertexColors: true }), 4000);
+    m.count = 0;
+    m.frustumCulled = false; // les instances bougent : la boîte englobante du maillage ne les suit pas
+    blocs[mode] = m;
+    groupe('flux', m);
+  }
+  // lots : { mode → Float32Array [x, y, cap, …] } en Lambert 72 (cap : angle depuis l'est, sens trigonométrique)
+  function definirTrafic(lots) {
+    const [ox, oy] = repere.origine;
+    for (const [mode, m] of Object.entries(blocs)) {
+      const t = lots[mode] ?? new Float32Array(0), n = Math.min(t.length / 3, m.instanceMatrix.count);
+      for (let i = 0; i < n; i++) {
+        fantome.position.set(t[i * 3] - ox, 0, -(t[i * 3 + 1] - oy));
+        fantome.rotation.set(0, t[i * 3 + 2], 0); // tourner +X (est) vers −Z (nord) : rotation positive autour de Y
+        fantome.updateMatrix();
+        m.setMatrixAt(i, fantome.matrix);
+      }
+      m.count = n;
+      m.instanceMatrix.needsUpdate = true;
+    }
+    demander();
+  }
 
   // ─── Sections transversales (v0.3) : refaites quand le scénario change ──
   // Posées sur les surfaces, sous les axes ; mêmes bords que sur la carte.
@@ -379,6 +415,9 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
     definirSections(entrees, bande = null) { bandeChoisie = bande; dessinerSections(entrees); demander(); },
     /** Les carrefours à dessiner (v0.4) : [{ noeud, zone, traversees, raccords, complet }] en local ; voie : la voie entrante choisie. */
     definirCarrefours(entrees, voie = null) { dessinerCarrefours(entrees, voie); demander(); },
+    /** Les blocs du trafic (v0.6) : { mode → Float32Array [x, y, cap, …] } en Lambert 72. */
+    definirTrafic,
+    blocs: () => Object.fromEntries(Object.entries(blocs).map(([m, b]) => [m, { n: b.count, visible: b.visible && b.parent?.visible, premier: b.count ? [...b.instanceMatrix.array.slice(12, 15)] : null }])),
     /** Ce que la scène dessine des raccords : { "de>vers": { debut, fin, origine } } (local). */
     raccords: () => Object.fromEntries(carrefoursDessines.filter(e => e.complet).flatMap(e => e.raccords)
       .map(r => [`${r.de}>${r.vers}`, { debut: r.ligne[0], fin: r.ligne.at(-1), origine: r.origine }])),

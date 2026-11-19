@@ -10,9 +10,9 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta property="og:title" content="Urban Mobility Simulator">
 <meta property="og:image" content="og.png">
-<link rel="stylesheet" href="vendor/maplibre-gl/maplibre-gl.css?v=0.5.0">
-<link rel="stylesheet" href="js/lib/game.css?v=0.5.0">
-<link rel="stylesheet" href="css/style.css?v=0.5.0">
+<link rel="stylesheet" href="vendor/maplibre-gl/maplibre-gl.css?v=0.6.0">
+<link rel="stylesheet" href="js/lib/game.css?v=0.6.0">
+<link rel="stylesheet" href="css/style.css?v=0.6.0">
 </head>
 <body>
 <div class="jeu-ecran app" id="ecran">
@@ -35,12 +35,19 @@
 
   <main class="carte-zone">
     <div class="carte" id="carte" role="application" data-i18n-aria="carte.libelle"></div>
+    <!-- Trafic (v0.6) : les blocs dessinés par-dessus la carte (rien ne s'y clique), et les commandes du temps -->
+    <canvas class="trafic-2d" id="trafic-2d" aria-hidden="true"></canvas>
     <!-- Vue 3D (three.js, chargé à la première bascule) : même corridor, mêmes objets, mêmes identifiants -->
     <div class="scene" id="scene" role="application" data-i18n-aria="scene.libelle" tabindex="0" hidden>
       <div class="scene-etiquettes" id="scene-etiquettes"></div>
       <div class="scene-echelle" id="scene-echelle" data-i18n-title="scene.echelle"></div>
       <p class="scene-legende"><span class="scene-legende-signe" aria-hidden="true"></span><span data-i18n="scene.legende"></span></p>
       <p class="scene-attente" id="scene-attente" role="status" data-i18n="scene.attente" hidden></p>
+    </div>
+    <div class="trafic-hud" id="trafic-hud" role="group" data-i18n-aria="trafic.libelle" hidden>
+      <button class="bouton trafic-bouton" id="trafic-pause" aria-pressed="false"><span id="trafic-pause-texte"></span> <kbd data-i18n="trafic.touche-pause"></kbd></button>
+      <button class="bouton trafic-bouton" id="trafic-vitesse"><span id="trafic-vitesse-texte"></span> <kbd>X</kbd></button>
+      <span class="trafic-horloge" id="trafic-horloge" role="status"></span>
     </div>
   </main>
 
@@ -131,6 +138,6 @@
 </dialog>
 
 <div class="jeu-toast" id="toast" role="status" hidden></div>
-<script type="module" src="js/main.js?v=0.5.0"></script>
+<script type="module" src="js/main.js?v=0.6.0"></script>
 </body>
 </html>

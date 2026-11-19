@@ -3,8 +3,8 @@
 // raccords (courbes de la voie entrante à la voie sortante), la zone de carrefour
 // et les traversées. Calculée une seule fois et lue par la carte ET la vue 3D :
 // les deux dessinent les mêmes points. Pure, testée (test/carrefour.test.mjs).
-import { contourBande } from './decalage.js?v=0.5.0';
-import { voiesDe } from '../carrefour.js?v=0.5.0';
+import { contourBande } from './decalage.js?v=0.6.0';
+import { voiesDe } from '../carrefour.js?v=0.6.0';
 
 /** Le point à la distance d le long d'une ligne, et la tangente unitaire en ce point. */
 export function pointSurLigne(ligne, d) {
@@ -38,7 +38,8 @@ export function recul(branches, D) {
   const demi = Math.max(0, ...branches.map(b => (b.section ? Math.max(b.section.axe, b.section.emprise - b.section.axe) : 0)));
   return Math.max(D.reculMinM, demi + D.reculMargeM);
 }
-const reculBranche = (b, r, D) => Math.min(r, b.longueur * D.reculPart);
+/** Le recul sur une branche : le recul commun, borné à une part de la longueur de la branche. */
+export const reculBranche = (b, r, D) => Math.min(r, b.longueur * D.reculPart);
 
 /** Bords de l'emprise d'une branche, en s'éloignant du nœud (gauche > droite), ou null sans section. */
 function bords(b) {

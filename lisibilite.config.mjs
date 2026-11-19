@@ -53,6 +53,11 @@ export default {
     { avant: 'encre', fond: 'voirie', role: 'signe', ou: 'cerne du flux proche, flux saturé sur la chaussée' },
     { avant: 'encre', fond: 'papier', role: 'signe', ou: 'flux saturé sur le papier' },
     { avant: 'inconnu', fond: 'papier', role: 'signe', ou: 'flux de capacité inconnue (tirets)' },
+    // v0.6 : blocs du trafic — voitures `noeud` cernées de blanc (2D), bus et vélos cernés d'encre
+    { avant: 'noeud', fond: 'voirie', role: 'signe', ou: 'voiture sur la chaussée' },
+    { avant: 'voirie', fond: 'encre', role: 'signe', ou: 'cerne blanc d\'une voiture sur un axe principal' },
+    { avant: 'bus', fond: 'encre', role: 'signe', ou: 'bus (et son cerne) sur un axe principal' },
+    { avant: 'encre', fond: 'voirie', role: 'signe', ou: 'cerne d\'un bus ou d\'un vélo sur la chaussée' },
   ],
   groupes: {},
   poses: [],

@@ -210,3 +210,11 @@ dialog form { margin-top: calc(var(--pas) * 2); }
 .flux-table tr[data-niveau="sature"] th { text-decoration: underline 3px var(--jeu-encre); text-underline-offset: 3px; }
 .flux-table tr[data-niveau="proche"] th { text-decoration: underline 1px var(--jeu-encre); text-underline-offset: 3px; }
 .flux-champ { width: 7em; min-height: var(--jeu-cible); font: inherit; font-size: var(--t-texte); box-sizing: border-box; }
+
+/* ─── Trafic en temps réel (v0.6) : calque 2D et commandes du temps ─────────── */
+.trafic-2d { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.trafic-hud { position: absolute; left: 10px; top: 10px; z-index: 2; display: flex; align-items: center; gap: var(--pas); padding: 4px; background: var(--jeu-surface); border: var(--trait) solid var(--jeu-encre); }
+.trafic-bouton { padding: 0 calc(var(--pas) * 1.5); }
+.trafic-horloge { padding: 0 var(--pas); font-variant-numeric: tabular-nums; font-size: var(--t-petit); white-space: nowrap; }
+.trafic-hud.en-pause .trafic-horloge { text-decoration: underline 2px var(--jeu-encre); text-underline-offset: 3px; }
+

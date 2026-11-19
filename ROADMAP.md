@@ -59,6 +59,16 @@ Statuts : **à l'étude** · **validé** (Jérôme a tranché) · **en cours** �
 - [ ] Taux d'occupation des voitures et des bus : aucune source citée (hypothèse du joueur, « Non renseigné » au départ)
 - [ ] Flux en 3D ; légende de la couche Flux
 
+### Le trafic bouge — v0.6
+
+**Statut** : à mesurer (livré en 0.6.0, attend la validation de Jérôme)
+
+- [x] Boucle à pas fixe, blocs voiture / bus / vélo sur les voies et raccords du scénario, en 2D et en 3D ; partie ouverte en 3D
+- [x] Entrées aux bords (débit de jeu par hiérarchie, « hypothèse de jeu »), route au hasard aux carrefours, IDM, feux du scénario
+- [x] Modifications visibles en direct ; pause (Espace), vitesse (X) ; inspecteur « trafic simulé » ; critère `node outils/critere-v06.mjs`
+- [ ] Teinte des voitures (`noeud`) [À VALIDER] ; densité de jeu à régler (débits par hiérarchie)
+- [ ] Piétons ; priorités et conflits dans la zone de carrefour ; sens des rues inconnu (double sens par défaut, « sans issue »)
+
 ## Validé (Jérôme, v0.5.0 : vers un city builder en temps réel)
 
 | Version | Contenu |

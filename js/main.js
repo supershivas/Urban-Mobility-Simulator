@@ -3,37 +3,41 @@
 // lisent les mêmes données locales de data/ (aucun service distant) et partagent
 // la sélection et l'inspecteur. Le style est dans carte/style.js, la scène dans
 // scene/scene3d.js (chargée à la première bascule), l'inspecteur dans inspecteur.js.
-import * as maplibregl from '../vendor/maplibre-gl/maplibre-gl.mjs?v=0.5.0';
-import { createKeys, stopTypeahead } from './lib/keys.js?v=0.5.0';
-import { lockBrowserGestures } from './lib/pointer.js?v=0.5.0';
-import { createStore, autosave, pickJSONFile } from './lib/save.js?v=0.5.0';
-import { createI18n } from './lib/i18n.js?v=0.5.0';
-import { startUpdateCheck, loadVersion, loadChangelog, downloadJSON } from './lib/app-update.js?v=0.5.0';
-import { PALETTE, ROLES } from './palette.js?v=0.5.0';
-import { TEXTES } from './data/textes.js?v=0.5.0';
-import { COMMANDES_AIDE } from './data/aide.js?v=0.5.0';
-import { styleCarte, COUCHES, COUCHES_ACTIVES, COUCHES_SELECTIONNABLES } from './carte/style.js?v=0.5.0';
-import { lignesInspecteur, lignesInspecteurBatiment, lignesInspecteurNoeud } from './inspecteur.js?v=0.5.0';
-import { creerRepere } from './geo/repere.js?v=0.5.0';
-import { boite } from './geo/geometrie.js?v=0.5.0';
-import { distancePourZoom, zoomPourDistance } from './scene/camera.js?v=0.5.0';
-import { lireJSON, couche, couchesScene } from './donnees.js?v=0.5.0';
-import { chargerContenu } from './design-store.js?v=0.5.0';
-import { sectionMesuree, OPERATIONS, memeSection, decalages, verifier } from './section.js?v=0.5.0';
-import { creerHistorique } from './historique.js?v=0.5.0';
-import { featuresSections } from './carte/sections.js?v=0.5.0';
-import { ajouterImages } from './carte/motifs.js?v=0.5.0';
-import { wgs84VersLambert, lambertVersWgs84 } from './geo/coordonnees.js?v=0.5.0';
-import { creerEditeur } from './editeur.js?v=0.5.0';
-import { creerEditeurCarrefour, lettre } from './editeur-carrefour.js?v=0.5.0';
-import { branchesDe, toutesLesVoies, raccordsDe, verifierCarrefour, traverseesDe, OPERATIONS_CARREFOUR } from './carrefour.js?v=0.5.0';
-import { geometrieCarrefour, pointSurLigne } from './geo/raccords.js?v=0.5.0';
-import { featuresCarrefours } from './carte/carrefours.js?v=0.5.0';
-import { DESSIN_CARREFOUR } from './data/carrefours.js?v=0.5.0';
-import { etatTroncon, niveau, bilan, conflits, definirDemande, definirHypothese } from './simulation.js?v=0.5.0';
-import { HYPOTHESES } from './data/simulation.js?v=0.5.0';
-import { lignesSimulation, lignesConflits } from './inspecteur.js?v=0.5.0';
-import { creerEditeurFlux } from './editeur-flux.js?v=0.5.0';
+import * as maplibregl from '../vendor/maplibre-gl/maplibre-gl.mjs?v=0.6.0';
+import { createKeys, stopTypeahead } from './lib/keys.js?v=0.6.0';
+import { lockBrowserGestures } from './lib/pointer.js?v=0.6.0';
+import { createStore, autosave, pickJSONFile } from './lib/save.js?v=0.6.0';
+import { createI18n } from './lib/i18n.js?v=0.6.0';
+import { startUpdateCheck, loadVersion, loadChangelog, downloadJSON } from './lib/app-update.js?v=0.6.0';
+import { PALETTE, ROLES } from './palette.js?v=0.6.0';
+import { TEXTES } from './data/textes.js?v=0.6.0';
+import { COMMANDES_AIDE } from './data/aide.js?v=0.6.0';
+import { styleCarte, COUCHES, COUCHES_ACTIVES, COUCHES_SELECTIONNABLES } from './carte/style.js?v=0.6.0';
+import { lignesInspecteur, lignesInspecteurBatiment, lignesInspecteurNoeud } from './inspecteur.js?v=0.6.0';
+import { creerRepere } from './geo/repere.js?v=0.6.0';
+import { boite } from './geo/geometrie.js?v=0.6.0';
+import { distancePourZoom, zoomPourDistance } from './scene/camera.js?v=0.6.0';
+import { lireJSON, couche, couchesScene } from './donnees.js?v=0.6.0';
+import { chargerContenu } from './design-store.js?v=0.6.0';
+import { sectionMesuree, OPERATIONS, memeSection, decalages, verifier } from './section.js?v=0.6.0';
+import { creerHistorique } from './historique.js?v=0.6.0';
+import { featuresSections } from './carte/sections.js?v=0.6.0';
+import { ajouterImages } from './carte/motifs.js?v=0.6.0';
+import { wgs84VersLambert, lambertVersWgs84 } from './geo/coordonnees.js?v=0.6.0';
+import { creerEditeur } from './editeur.js?v=0.6.0';
+import { creerEditeurCarrefour, lettre } from './editeur-carrefour.js?v=0.6.0';
+import { branchesDe, toutesLesVoies, raccordsDe, verifierCarrefour, traverseesDe, OPERATIONS_CARREFOUR } from './carrefour.js?v=0.6.0';
+import { geometrieCarrefour, pointSurLigne } from './geo/raccords.js?v=0.6.0';
+import { featuresCarrefours } from './carte/carrefours.js?v=0.6.0';
+import { DESSIN_CARREFOUR } from './data/carrefours.js?v=0.6.0';
+import { etatTroncon, niveau, bilan, conflits, definirDemande, definirHypothese } from './simulation.js?v=0.6.0';
+import { HYPOTHESES } from './data/simulation.js?v=0.6.0';
+import { lignesSimulation, lignesConflits } from './inspecteur.js?v=0.6.0';
+import { creerEditeurFlux } from './editeur-flux.js?v=0.6.0';
+import { createLoop } from './lib/loop.js?v=0.6.0';
+import { construireReseau, creerTrafic } from './trafic.js?v=0.6.0';
+import { SIMULATION, VEHICULES } from './data/trafic.js?v=0.6.0';
+import { lignesTrafic } from './inspecteur.js?v=0.6.0';
 
 const JEU = 'urban-mobility-simulator';
 const $ = id => document.getElementById(id);
@@ -110,7 +114,9 @@ majStatut();
 //   scenario: { sections, carrefours, demande, hypotheses } } — le scénario ne garde que ce que le joueur a modifié
 //   (le reste : état mesuré, raccords proposés, comptages)
 const scenarioVide = () => ({ sections: {}, carrefours: {}, demande: {}, hypotheses: { ...HYPOTHESES } });
-const nouvellePartie = () => ({ vue: null, vue3d: null, mode: '2d', selection: null, couches: { ...COUCHES_ACTIVES }, scenario: scenarioVide() });
+// La partie s'ouvre en 3D (Jérôme, v0.5.0) ; en mode debug, &vue=2d la garde sur la carte (critères, captures)
+const VUE_DEPART = DEBUG && new URLSearchParams(location.search).get('vue') === '2d' ? '2d' : '3d';
+const nouvellePartie = () => ({ vue: null, vue3d: null, mode: VUE_DEPART, selection: null, couches: { ...COUCHES_ACTIVES }, scenario: scenarioVide() });
 let etat = null;
 
 // ─── Carte ─────────────────────────────────────────────────────────────────
@@ -278,7 +284,7 @@ function afficherInspecteur(s, vide = t('inspecteur.vide')) {
   const c = noeud ? etatCarrefour(s.id) : null;
   const sections = batiment ? lignesInspecteurBatiment(s, { t, lang: i18n.lang, infos: meta.batiments })
     : noeud ? [...lignesInspecteurNoeud(s, { t, lang: i18n.lang, codes, ...c }), ...(c.branches.length >= 2 && lignesRues ? lignesConflits(conflitsDe(s.id), { t, regulation: c.carrefour?.regulation ?? null }) : [])]
-      : [...lignesSimulation(etatSim(s.id), { t, lang: i18n.lang }), ...lignesInspecteur(s, { t, lang: i18n.lang, codes, noeuds, rues, section: etat?.scenario.sections[s.id] ?? null })];
+      : [...(trafic ? lignesTrafic(trafic.mesures(s.id), { t, lang: i18n.lang, entree: entreeDe(s.id), comptage: comptages.parTroncon[s.id] ?? null }) : []), ...lignesSimulation(etatSim(s.id), { t, lang: i18n.lang }), ...lignesInspecteur(s, { t, lang: i18n.lang, codes, noeuds, rues, section: etat?.scenario.sections[s.id] ?? null })];
   const nom = batiment ? t('inspecteur.batiment') : noeud ? nomCarrefour(c.branches) : [s.nom.fr, s.nom.nl].filter(Boolean)[0];
   $('inspecteur-corps').replaceChildren(
     ...(noeud ? [el('p', { className: 'genre-objet', textContent: t('inspecteur.noeud') })] : []),
@@ -314,7 +320,7 @@ function chargerScene() {
   return (chargementScene ??= (async () => {
     $('scene-attente').hidden = false;
     await new Promise(res => setTimeout(res, 30)); // laisse le message s'afficher : la construction occupe le fil
-    const [{ creerScene }, couches] = await Promise.all([import('./scene/scene3d.js?v=0.5.0'), couchesScene(), chargerBatiments()]);
+    const [{ creerScene }, couches] = await Promise.all([import('./scene/scene3d.js?v=0.6.0'), couchesScene(), chargerBatiments()]);
     scene = creerScene({
       conteneur: $('scene'), repere, P: PALETTE, R, donnees: { ...couches, emprise }, mouvementReduit: reduit,
       surChoix: c => { if (enCarte()) selectionner(c?.id ?? null); },
@@ -419,6 +425,7 @@ function montrerTitre() {
   $('nouvelle').disabled = false;
   $('titre').hidden = false;
   scene?.activer(false); // derrière l'écran titre, la scène ne calcule rien
+  majBoucle();
   $('continuer').hidden = !store.has('partie');
   ($('continuer').hidden ? $('nouvelle') : $('continuer')).focus();
 }
@@ -442,6 +449,8 @@ async function jouer(partie) {
   else recentrer();
   selectionner(etat.selection);
   majSections();
+  // Le trafic repart à 8 h à chaque partie ouverte : seul le scénario est sauvegardé, pas les blocs
+  demarrerTrafic();
   if (partie.mode === '3d') await definirMode('3d', { reprise: true });
 }
 function sauvegarder() {
@@ -468,8 +477,9 @@ $('nouvelle').onclick = () => {
   d.showModal();
 };
 $('nom-jeu').onclick = e => { e.preventDefault(); sauvegarder(); montrerTitre(); };
-$('ouvrir-menu').onclick = () => $('dialogue-pause').showModal();
+$('ouvrir-menu').onclick = () => { $('dialogue-pause').showModal(); majBoucle(); };
 $('reprendre').onclick = () => $('dialogue-pause').close();
+for (const d of document.querySelectorAll('dialog')) d.addEventListener('close', () => majBoucle()); // une boîte fermée : le trafic reprend
 $('quitter').onclick = () => { $('dialogue-pause').close(); sauvegarder(); montrerTitre(); };
 // Aide clavier : texte relu à chaque ouverture, donc toujours dans la langue courante
 function basculerAide() {
@@ -563,6 +573,7 @@ function apresChangement() {
   majSections(); // et les carrefours, et les flux
   if (editeFlux) editeurFlux.afficher(infoFlux(editeFlux));
   if (etat.selection && !estBatiment(etat.selection)) afficherInspecteur(objetChoisi());
+  majReseauTrafic(); // les blocs suivent aussitôt les voies et raccords du scénario
   sauvegarder();
 }
 const messageEditeur = (texte, refus = false) => (editeCarrefour ? editeurCarrefour : editeFlux ? editeurFlux : editeur).message(texte, refus);
@@ -587,7 +598,7 @@ function revenirMesure() {
 
 // Les sections dessinées : toutes celles du scénario, plus celle qu'on édite (même inchangée)
 let lignesRues = null; // Map(id → ligne WGS84), une fois streets.geojson lu
-couche('rues').then(g => { lignesRues = new Map(g.features.map(f => [f.properties.id, f.geometry.coordinates])); majSections(); });
+couche('rues').then(g => { lignesRues = new Map(g.features.map(f => [f.properties.id, f.geometry.coordinates])); majSections(); if (etat && !trafic) demarrerTrafic(); });
 function sectionsDessinees() {
   if (!etat) return [];
   const ids = new Set(Object.keys(etat.scenario.sections));
@@ -810,6 +821,129 @@ function effacerFlux() {
   editeurFlux.message(t('flux.efface'));
 }
 
+// ─── Trafic en temps réel (v0.6) : boucle à pas fixe, blocs sur les voies du scénario ──
+// La simulation avance par pas fixes (js/lib/loop.js), en pause quand le joueur la met en pause, sur l'écran
+// titre, quand une boîte de dialogue est ouverte et onglet caché. Le rendu lit les positions à chaque image.
+let trafic = null, reseauTrafic = null, pauseJoueur = false, rangVitesse = 0, dernierTemps2d = -1, dernierTemps3d = -1;
+const boucle = createLoop({ update: dt => trafic?.pas(dt), render: alpha => dessinerTrafic(alpha), step: SIMULATION.pasS, hidden: 'pause' });
+function nouveauReseau() {
+  return construireReseau({
+    segments, noeuds, sectionDe, ligneDe, carrefourDe: id => etat?.scenario.carrefours?.[id] ?? null, regulationDe,
+    vitesseVeloKmh: comptages.vitesseVeloKmh, D: DESSIN_CARREFOUR,
+  });
+}
+function demarrerTrafic() {
+  if (!lignesRues) return; // les axes ne sont pas encore lus : demarrerTrafic() est rappelé quand ils le sont
+  const t = performance.now();
+  reseauTrafic = nouveauReseau();
+  trafic = creerTrafic(reseauTrafic, { graine: SIMULATION.graine, demandeDe: id => etat?.scenario.demande?.[id] ?? null });
+  window.__jeu?.log('trafic', { chemins: reseauTrafic.chemins.size, entrees: reseauTrafic.entrees.length, ms: Math.round(performance.now() - t) });
+  boucle.start();
+  majBoucle();
+}
+// Reconstruire tout le réseau prend ~0,1 à 0,3 s : une rafale de modifications (glisser, annuler en série)
+// n'en déclenche qu'une, peu après la dernière ; reconstruireTrafic() le fait tout de suite (debug, critères)
+let minuterieReseau = 0;
+function majReseauTrafic() {
+  if (!trafic) return;
+  clearTimeout(minuterieReseau);
+  minuterieReseau = setTimeout(reconstruireTrafic, R.trafic?.delaiReconstructionMs ?? 150);
+}
+function reconstruireTrafic() {
+  clearTimeout(minuterieReseau);
+  if (!trafic) return;
+  const t = performance.now();
+  reseauTrafic = nouveauReseau();
+  trafic.reconstruire(reseauTrafic);
+  dernierTemps2d = dernierTemps3d = -1;
+  window.__jeu?.log('trafic-reseau', { ms: Math.round(performance.now() - t) });
+}
+const entreeDe = id => (reseauTrafic?.entrees.filter(e => e.troncon === id) ?? []).map(e => ({ sens: e.sens, hierarchie: e.hierarchie, modes: Object.fromEntries(Object.keys(VEHICULES).map(m => [m, trafic.debitEntree(e, m)])) }));
+/** La boucle tourne en partie, hors pause du joueur et hors boîte de dialogue ; sinon elle attend. */
+function majBoucle() {
+  const marche = !!trafic && enCarte() && !pauseJoueur;
+  if (marche) boucle.resume(); else boucle.pause();
+  majHud();
+}
+function basculerPause() { pauseJoueur = !pauseJoueur; majBoucle(); window.__jeu?.log('trafic-pause', { pause: pauseJoueur }); }
+function changerVitesse() {
+  rangVitesse = (rangVitesse + 1) % SIMULATION.vitesses.length;
+  boucle.setTimeScale(SIMULATION.vitesses[rangVitesse]);
+  majHud();
+}
+const heure = s => { const m = Math.floor(SIMULATION.heureDepart * 60 + s / 60); return `${Math.floor(m / 60) % 24} h ${String(m % 60).padStart(2, '0')}`; };
+let hudSeconde = -1;
+function majHud(force = true) {
+  if (!trafic) { $('trafic-hud').hidden = true; return; }
+  const sec = Math.floor(trafic.temps);
+  if (!force && sec === hudSeconde) return;
+  hudSeconde = sec;
+  $('trafic-hud').hidden = false;
+  const enPause = pauseJoueur || !enCarte();
+  $('trafic-pause-texte').textContent = t(pauseJoueur ? 'trafic.reprendre' : 'trafic.pause');
+  $('trafic-pause').setAttribute('aria-pressed', String(pauseJoueur));
+  $('trafic-vitesse-texte').textContent = `×${SIMULATION.vitesses[rangVitesse]}`;
+  $('trafic-vitesse').title = t('trafic.vitesse');
+  const b = trafic.bilan();
+  $('trafic-horloge').textContent = t('trafic.horloge', { h: heure(trafic.temps), n: b.enCirculation });
+  $('trafic-horloge').title = t('trafic.bilan', { e: b.entres, s: b.sortis, i: b.sansIssue, r: b.refuses });
+  $('trafic-hud').classList.toggle('en-pause', enPause);
+  // L'inspecteur d'un tronçon suit le trafic, une fois par seconde simulée
+  if (!force && etat?.selection && segments.has(etat.selection) && sec % 2 === 0) afficherInspecteur(objetChoisi());
+}
+$('trafic-pause').onclick = basculerPause;
+$('trafic-vitesse').onclick = changerVitesse;
+
+// Le rendu : un calque 2D par-dessus la carte (rectangles à l'échelle), des instances dans la 3D
+const calque = $('trafic-2d'), ctx2d = calque.getContext('2d');
+const TEINTE_2D = { voiture: PALETTE.noeud, bus: PALETTE.bus, velo: PALETTE.cyclable }; // mêmes teintes que la 3D ; cerne blanc (lisible sur l'encre des axes)
+function dessinerTrafic(alpha) {
+  if (!trafic) return;
+  majHud(false);
+  const visible = etat?.couches.flux !== false;
+  if (mode === '3d') {
+    if (calque.width) { ctx2d.clearRect(0, 0, calque.width, calque.height); }
+    if (scene && (trafic.temps !== dernierTemps3d || !visible)) { scene.definirTrafic(trafic.positions(alpha)); dernierTemps3d = trafic.temps; }
+    return;
+  }
+  dessiner2d(visible ? trafic.positions(alpha) : null);
+}
+function dessiner2d(lots) {
+  const r = $('carte').getBoundingClientRect(), dpr = Math.min(devicePixelRatio || 1, 2);
+  if (calque.width !== Math.round(r.width * dpr) || calque.height !== Math.round(r.height * dpr)) { calque.width = Math.round(r.width * dpr); calque.height = Math.round(r.height * dpr); }
+  ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx2d.clearRect(0, 0, r.width, r.height);
+  if (!lots) return;
+  // Lambert 72 → écran : une transformation affine calée au centre de la vue (écart < 1 px dans l'écran)
+  const c = wgs84VersLambert(carte.getCenter().toArray());
+  const ecran = p => carte.project(lambertVersWgs84(p));
+  const o = ecran(c), ex = ecran([c[0] + 100, c[1]]), ey = ecran([c[0], c[1] + 100]);
+  const ux = [(ex.x - o.x) / 100, (ex.y - o.y) / 100], uy = [(ey.x - o.x) / 100, (ey.y - o.y) / 100];
+  const pxParM = Math.hypot(...ux);
+  for (const [m, t] of Object.entries(lots)) {
+    const G = VEHICULES[m], L = Math.max(G.longueur, 2 / pxParM) / 2, W = Math.max(G.largeur, 1.5 / pxParM) / 2;
+    ctx2d.fillStyle = TEINTE_2D[m];
+    ctx2d.strokeStyle = m === 'voiture' ? PALETTE.voirie : PALETTE.encre;
+    ctx2d.lineWidth = 1;
+    ctx2d.beginPath();
+    for (let i = 0; i < t.length; i += 3) {
+      const dx = t[i] - c[0], dy = t[i + 1] - c[1];
+      const X = o.x + dx * ux[0] + dy * uy[0], Y = o.y + dx * ux[1] + dy * uy[1];
+      if (X < -20 || Y < -20 || X > r.width + 20 || Y > r.height + 20) continue;
+      const ca = Math.cos(t[i + 2]), sa = Math.sin(t[i + 2]);
+      // Axe du bloc (cap) et sa normale, en mètres Lambert, puis à l'écran
+      const ax = [ca * ux[0] + sa * uy[0], ca * ux[1] + sa * uy[1]], ay = [-sa * ux[0] + ca * uy[0], -sa * ux[1] + ca * uy[1]];
+      ctx2d.moveTo(X + ax[0] * L + ay[0] * W, Y + ax[1] * L + ay[1] * W);
+      ctx2d.lineTo(X + ax[0] * L - ay[0] * W, Y + ax[1] * L - ay[1] * W);
+      ctx2d.lineTo(X - ax[0] * L - ay[0] * W, Y - ax[1] * L - ay[1] * W);
+      ctx2d.lineTo(X - ax[0] * L + ay[0] * W, Y - ax[1] * L + ay[1] * W);
+      ctx2d.closePath();
+    }
+    ctx2d.fill();
+    ctx2d.stroke(); // aucune teinte ne ressort seule partout (axes d'encre, chaussée blanche, papier)
+  }
+}
+
 // ─── Réglages ──────────────────────────────────────────────────────────────
 $('langue').value = i18n.lang;
 $('langue').onchange = e => {
@@ -866,7 +1000,7 @@ function toast(texte) {
 const enCarte = () => !!etat && $('titre').hidden && !document.querySelector('dialog[open]');
 createKeys({
   actions: {
-    recentrer: 'r', troncon: 't', batiment: 'b', noeud: 'n', carrefour: 'c', vue: 'v', aide: 'i', editer: 'm', flux: 'f', zoomPlus: ['+', '='], zoomMoins: ['-', '_'],
+    recentrer: 'r', troncon: 't', batiment: 'b', noeud: 'n', carrefour: 'c', vue: 'v', aide: 'i', editer: 'm', flux: 'f', pause: ' ', vitesse: 'x', zoomPlus: ['+', '='], zoomMoins: ['-', '_'],
     ...Object.fromEntries(TOUCHES_COUCHES.map(([c, touche]) => [`couche:${c}`, touche])),
   },
   onAction: nom => {
@@ -877,6 +1011,8 @@ createKeys({
     else if (nom === 'vue') definirMode(mode === '3d' ? '2d' : '3d');
     else if (nom === 'editer') basculerEditeur();
     else if (nom === 'flux') basculerFlux();
+    else if (nom === 'pause') basculerPause();
+    else if (nom === 'vitesse') changerVitesse();
     else if (nom === 'batiment') choisirBatimentProche();
     else if (nom === 'noeud') selectionner(noeudPlusProche());
     else if (nom === 'carrefour') basculerCarrefour();
@@ -892,7 +1028,7 @@ createKeys({
 window.addEventListener('keydown', e => {
   if (e.key !== 'Escape' || e.repeat || !enCarte()) return;
   e.preventDefault();
-  if (edite) fermerEditeur(); else if (editeCarrefour) fermerCarrefour(); else if (editeFlux) fermerFlux(); else if (etat.selection) selectionner(null); else $('dialogue-pause').showModal();
+  if (edite) fermerEditeur(); else if (editeCarrefour) fermerCarrefour(); else if (editeFlux) fermerFlux(); else if (etat.selection) selectionner(null); else { $('dialogue-pause').showModal(); majBoucle(); }
 });
 // Annuler / rétablir : Ctrl+Z, Ctrl+Y ou Ctrl+Maj+Z (Cmd sur Mac) ; dans un champ, le champ garde son propre annuler
 window.addEventListener('keydown', e => {
@@ -978,11 +1114,11 @@ function tronconPlusProche(point) {
 autosave(sauvegarder, { everyMs: 10000 });
 
 // ─── Mise à jour automatique : la vue est sauvegardée avant (section 4) ────
-startUpdateCheck({ beforeReload: sauvegarder, onUpdated: v => toast(t('toast.maj', { v })) });
+startUpdateCheck({ isBusy: () => enCarte() && !pauseJoueur, beforeReload: sauvegarder, onUpdated: v => toast(t('toast.maj', { v })) });
 
 // ─── Mode debug (section 18) : chargé seulement avec ?debug=1 ──────────────
 if (DEBUG) {
-  const { installDebug } = await import('./lib/debug.js?v=0.5.0');
+  const { installDebug } = await import('./lib/debug.js?v=0.6.0');
   const stations = Object.fromEntries((await couche('infra')).features
     .filter(f => f.properties.famille === 'station').map(f => [f.properties.nom.toLowerCase(), { x: f.geometry.coordinates[0], y: f.geometry.coordinates[1] }]));
   installDebug({
@@ -1073,6 +1209,18 @@ if (DEBUG) {
       operationFlux: (nom, ...args) => { const r = opererFlux(nom, args); return r?.refus ? { refus: r.refus } : r ? { ok: true } : null; },
       flux2d: () => Object.fromEntries((donneesFlux2d?.features ?? []).map(f => [f.properties.id, f.properties.niveau])),
       comptages: () => comptages.parTroncon,
+      // Trafic (v0.6) : bilan, mesures d'un tronçon, avancer de n pas, pause, vitesse, blocs dessinés
+      trafic: () => (trafic ? { temps: trafic.temps, ...trafic.bilan(), pause: pauseJoueur, enMarche: !boucle.paused, vitesse: SIMULATION.vitesses[rangVitesse] } : null),
+      mesuresTrafic: id => trafic?.mesures(id) ?? null,
+      avancerTrafic: n => { boucle.tick(n); return trafic.temps; },
+      pauseTrafic: oui => { pauseJoueur = oui; majBoucle(); return pauseJoueur; },
+      reconstruireTrafic: () => reconstruireTrafic(),
+      // Repart de 8 h, en pause : le trafic ne dépend alors que de la graine et du nombre de pas
+      relancerTrafic: () => { pauseJoueur = true; demarrerTrafic(); return trafic.temps; },
+      entrees: () => reseauTrafic?.entrees.map(e => ({ troncon: e.troncon, sens: e.sens, hierarchie: e.hierarchie })) ?? [],
+      vehicules: () => trafic?.vehicules().map(v => ({ id: v.id, mode: v.mode, chemin: v.chemin.cle, s: v.s, v: v.v })) ?? [],
+      blocs3d: () => scene?.blocs() ?? null,
+      cheminsTrafic: () => reseauTrafic ? Object.fromEntries([...reseauTrafic.chemins.values()].map(c => [c.cle, { debut: c.points[0], fin: c.points.at(-1), suivants: c.suivants.map(x => x.cle) }])) : null,
     },
   });
 }
