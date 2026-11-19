@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.1 — 2026-11-19
+- Le jeu démarre même avec un bloqueur de publicités : le module du trafic, qu'il pouvait refuser à cause de son nom, s'appelle autrement
+- Si le jeu ne démarre pas, l'écran de chargement nomme le fichier qui manque, et le message se sélectionne pour être copié
+
 ## 0.7.0 — 2026-11-19
 - Construire à la main : une barre d'outils en bas de la vue (voie auto, bus, piste, trottoir, stationnement, planté, sens, retirer) ; un clic ou un glisser sur une voie la transforme, en 2D comme en 3D
 - Flèches au sol sur le carrefour choisi : un clic allume ou éteint une direction ; aux feux, elles passent au vert ou au rouge, et le trafic s'arrête au rouge pour sa direction

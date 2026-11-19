@@ -1,7 +1,7 @@
 // v0.6 : le trafic en temps réel — réseau de chemins dirigés (voies + raccords), entrées au bord,
 // poursuite IDM, feux, déterminisme à graine fixe, reconstruction quand le scénario change.
 import { readFileSync } from 'node:fs';
-import { construireReseau, creerTrafic, voiesDuTroncon } from '../js/trafic.js';
+import { construireReseau, creerTrafic, voiesDuTroncon } from '../js/circulation.js';
 import { etatFeux, auVert, phasesDe, branchesDe } from '../js/carrefour.js';
 import { sectionMesuree } from '../js/section.js';
 import { DESSIN_CARREFOUR as D } from '../js/data/carrefours.js';

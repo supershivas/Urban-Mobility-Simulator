@@ -6,11 +6,11 @@
 
 - **Direction** : un city builder en temps réel ; on retouche les voies et l'on voit le trafic changer. Ordre : 0.6 le trafic bouge, 0.7 édition directe, 0.8 objectifs, 0.9 vue semi-réaliste.
 - **Blocs abstraits** (parallélépipèdes) par mode : voiture, bus, vélo. Pas encore de piétons.
-- **Demande** : entrées aux bords du corridor, débit de jeu par hiérarchie UrbIS (`js/data/trafic.js → DEBITS_JEU`, « hypothèse de jeu », réglable) ; la demande posée par le joueur (F) sur une rue d'entrée la remplace. Aucun comptage n'est à un bord : les comptages vélo servent de comparaison dans l'inspecteur.
+- **Demande** : entrées aux bords du corridor, débit de jeu par hiérarchie UrbIS (`js/data/circulation.js → DEBITS_JEU`, « hypothèse de jeu », réglable) ; la demande posée par le joueur (F) sur une rue d'entrée la remplace. Aucun comptage n'est à un bord : les comptages vélo servent de comparaison dans l'inspecteur.
 - **Routes** : au hasard à chaque carrefour, parmi les raccords de la voie compatibles avec le mode (graine fixe). Pas d'origine → destination.
 - **Vue** : la partie s'ouvre en 3D ; `?debug=1&vue=2d` la garde sur la carte (outils de vérification).
 
-## Modèle (`js/trafic.js`, pur)
+## Modèle (`js/circulation.js`, pur)
 
 - **Chemins** : une voie de circulation (bande voiture, bus, cyclable ; chaussée non découpée = voie générale au sens d'OSM, double sens si inconnu) donne un chemin par sens. Il va du point d'attache de la voie au carrefour de départ à celui du carrefour d'arrivée (`geometrieCarrefour`), décalé à droite pour une voie à double sens. Chaque raccord en vigueur est un chemin du bout d'une voie au début d'une autre. Clés : `troncon:bande|a` (sens de l'axe) ou `|r`, et `noeud/de>vers` pour un raccord (le nœud : deux tronçons entre les deux mêmes nœuds donnent le même `de>vers` aux deux bouts).
 - **Entrées** : les voies qui partent d'un nœud de moins de deux branches (bord du corridor, cul-de-sac). **Sorties** : celles qui y arrivent (`sortie: true`). Un bloc qui arrive à un carrefour sans raccord pour lui sort, compté « sans issue ».

@@ -10,20 +10,20 @@
 // d'une autre. Les mêmes points que la carte et la 3D : un bloc suit exactement ce qui est dessiné.
 //
 // Règles (Jérôme, v0.5.0) : un bloc entre par une rue coupée par le bord du corridor (débit de
-// jeu par hiérarchie UrbIS, js/data/trafic.js, ou la demande posée par le joueur) ; à chaque
+// jeu par hiérarchie UrbIS, js/data/circulation.js, ou la demande posée par le joueur) ; à chaque
 // carrefour il prend AU HASARD un raccord de sa voie compatible avec son mode ; sans raccord
 // il sort du jeu (compté « sans issue »). Il suit le véhicule de devant (modèle IDM, Treiber
 // et al. 2000), s'arrête au rouge pour SON mouvement (phases du scénario, js/carrefour.js phasesDe :
 // modèle proposé et durées de vert ; v0.7).
 // Les blocs ne se gênent pas dans la zone d'un carrefour (exclu : priorités, conflits).
-import { branchesDe, raccordsDe, phasesDe, auVert } from './carrefour.js?v=0.7.0';
-import { geometrieCarrefour, recul, reculBranche, extraire, pointSurLigne } from './geo/raccords.js?v=0.7.0';
-import { decalerLigne } from './geo/decalage.js?v=0.7.0';
-import { decalages } from './section.js?v=0.7.0';
-import { longueur } from './geo/geometrie.js?v=0.7.0';
-import { MODE_DE_BANDE } from './data/carrefours.js?v=0.7.0';
-import { DEBITS_JEU, VOIES_DU_MODE, DEMANDE_DU_MODE, VEHICULES, VITESSES, SIMULATION } from './data/trafic.js?v=0.7.0';
-import { createRng } from './lib/rng.js?v=0.7.0';
+import { branchesDe, raccordsDe, phasesDe, auVert } from './carrefour.js?v=0.7.1';
+import { geometrieCarrefour, recul, reculBranche, extraire, pointSurLigne } from './geo/raccords.js?v=0.7.1';
+import { decalerLigne } from './geo/decalage.js?v=0.7.1';
+import { decalages } from './section.js?v=0.7.1';
+import { longueur } from './geo/geometrie.js?v=0.7.1';
+import { MODE_DE_BANDE } from './data/carrefours.js?v=0.7.1';
+import { DEBITS_JEU, VOIES_DU_MODE, DEMANDE_DU_MODE, VEHICULES, VITESSES, SIMULATION } from './data/circulation.js?v=0.7.1';
+import { createRng } from './lib/rng.js?v=0.7.1';
 
 const SENS_SOURCE = { 'unique-direct': 'aller', 'unique-inverse': 'retour' };
 const LARGEUR_INCONNUE = 3; // m, dessin seulement : décale les deux sens d'une voie inconnue

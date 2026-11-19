@@ -242,7 +242,7 @@ export function lignesConflits(c, { t, regulation }) {
 
 /**
  * Le trafic simulé sur un tronçon (v0.6) : ce qui y passe en ce moment.
- * m : js/trafic.js (mesures) ; ctx : { t, lang, entree : [{ sens, hierarchie, modes: { mode → { debit, origine } } }] si la rue entre
+ * m : js/circulation.js (mesures) ; ctx : { t, lang, entree : [{ sens, hierarchie, modes: { mode → { debit, origine } } }] si la rue entre
  * dans le corridor, comptage : comptages.parTroncon[id] ou null }. Les débits d'entrée sont des hypothèses de jeu, affichées comme telles.
  */
 export function lignesTrafic(m, { t, lang, entree = [], comptage = null }) {

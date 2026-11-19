@@ -3,10 +3,10 @@
 // Pur : des tableaux typés et des tables d'identifiants, aucun objet three.js
 // (seule la triangulation des polygones vient de three : ShapeUtils, earcut).
 // Testé dans Node (test/scene.test.mjs).
-import { ShapeUtils, Vector2 } from '../../vendor/three/three.module.js?v=0.7.0';
-import { versScene } from '../geo/repere.js?v=0.7.0';
-import { decalerLigne } from '../geo/decalage.js?v=0.7.0';
-import { decalages } from '../section.js?v=0.7.0';
+import { ShapeUtils, Vector2 } from '../../vendor/three/three.module.js?v=0.7.1';
+import { versScene } from '../geo/repere.js?v=0.7.1';
+import { decalerLigne } from '../geo/decalage.js?v=0.7.1';
+import { decalages } from '../section.js?v=0.7.1';
 
 /** Les polygones d'une géométrie GeoJSON, en local : [[anneauExtérieur, ...trous]], sans point de fermeture répété. */
 export function polygonesLocaux(geometrie, repere) {

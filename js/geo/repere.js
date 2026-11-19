@@ -6,7 +6,7 @@
 //
 //   local  : [x, y]    = [Est − origine, Nord − origine], en mètres
 //   scène  : [X, Y, Z] = [x, hauteur, −y]  (three.js : Y vers le haut, le nord vers −Z)
-import { wgs84VersLambert, lambertVersWgs84 } from './coordonnees.js?v=0.7.0';
+import { wgs84VersLambert, lambertVersWgs84 } from './coordonnees.js?v=0.7.1';
 
 export function creerRepere(origine) {
   if (!Array.isArray(origine) || origine.length !== 2 || !origine.every(Number.isFinite)) throw new Error('Repère local : origine [x, y] Lambert 72 attendue');

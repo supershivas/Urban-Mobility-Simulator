@@ -233,4 +233,5 @@ dialog form { margin-top: calc(var(--pas) * 2); }
 .feux-frise .vert:nth-child(4n+3) { background: var(--jeu-bord); }
 .feux-phase { display: flex; align-items: center; gap: var(--pas); }
 .feux-phase input[type="range"] { width: 8em; min-height: var(--jeu-cible); }
-
+/* Le message de l'écran de chargement se sélectionne et se copie (« impossible de copier le code erreur », v0.7.0) */
+#chargement-texte { user-select: text; -webkit-user-select: text; cursor: text; }

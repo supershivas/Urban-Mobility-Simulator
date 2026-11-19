@@ -130,7 +130,7 @@ Forme des carrefours (oreilles, îlots), raccords hors des carrefours, affectati
 - `js/carrefour.js` — branches, voies, raccords proposés, opérations (`{ carrefour }` ou `{ refus }`) ; `js/geo/raccords.js` — recul, ancres, raccords, zone, traversées (partagés 2D / 3D) ; `js/data/carrefours.js` (contenu) ; `js/editeur-carrefour.js` (le bandeau) ; `js/carte/carrefours.js` (GeoJSON). Purs sauf le bandeau, testés (`test/carrefour.test.mjs`).
 - `js/carte/sections.js` (GeoJSON des bandes, pur), `js/carte/motifs.js` (motifs et flèches dessinés depuis la palette), `js/geo/decalage.js` (bords décalés, partagés 2D / 3D), `js/geo/coupe.js` (mesure de l'emprise, pipeline).
 - `js/simulation.js` — scénario → état simulé, opérations ; `js/data/simulation.js` (références) ; `js/editeur-flux.js` (bandeau) ; `data/processed/comptages.json`. Purs sauf le bandeau, testés.
-- `js/trafic.js` — chemins (voies + raccords), IDM, feux, entrées, mesures ; `js/data/trafic.js` ; `js/lib/loop.js`, `rng.js`. Pur, testé.
+- `js/circulation.js` — chemins (voies + raccords), IDM, feux, entrées, mesures ; `js/data/circulation.js` ; `js/lib/loop.js`, `rng.js`. Pur, testé.
 - `js/outils.js` — outils de la barre (voie visée, chaussée découpée) ; directions et phases de feux dans `js/carrefour.js`. Purs, testés.
 - `js/inspecteur.js` — lignes de l'inspecteur : tronçon (et ses flux), nœud (et ses conflits), bâtiment (pur, testé) ; `js/data/textes.js` — tous les textes FR/EN.
 - `js/geo/` — `coordonnees.js` (proj4), `repere.js` (repère local de la 3D), `geometrie.js`, `topologie.js`, `appariement.js` (OSM) : purs, partagés par le jeu, le pipeline et les tests.
@@ -146,7 +146,7 @@ Forme des carrefours (oreilles, îlots), raccords hors des carrefours, affectati
 | éditeur de section (`section`, `historique`, `editeur`, `carte/sections`, `geo/decalage`, `geo/coupe`) | en-têtes des modules, `test/section.test.mjs`, pitch §15 |
 | carrefours (`carrefour`, `geo/raccords`, `editeur-carrefour`, `carte/carrefours`) | `docs/domaines/carrefours.md`, `test/carrefour.test.mjs`, pitch §13 sprint 4 |
 | outils, flèches, feux (`outils`, `carrefour`, `editeur-carrefour`) | `docs/domaines/edition.md`, `test/outils.test.mjs` |
-| trafic (`trafic`, boucle, calque 2D, blocs 3D) | `docs/domaines/trafic.md`, `test/trafic.test.mjs` |
+| trafic (`circulation`, boucle, calque 2D, blocs 3D) | `docs/domaines/trafic.md`, `test/trafic.test.mjs` |
 | flux (`simulation`, `editeur-flux`, comptages) | `docs/domaines/simulation.md`, `test/simulation.test.mjs`, pitch §13 sprint 5, §16 |
 | `js/geo/` | pitch §8–9, tests `test/coordonnees|repere|topologie|appariement.test.mjs` |
 | `js/scene/` | `docs/domaines/scene3d.md`, en-têtes des trois modules, `test/scene|camera.test.mjs`, réglages `scene` |

@@ -3,8 +3,8 @@
 // raccords (courbes de la voie entrante à la voie sortante), la zone de carrefour
 // et les traversées. Calculée une seule fois et lue par la carte ET la vue 3D :
 // les deux dessinent les mêmes points. Pure, testée (test/carrefour.test.mjs).
-import { contourBande } from './decalage.js?v=0.7.0';
-import { voiesDe } from '../carrefour.js?v=0.7.0';
+import { contourBande } from './decalage.js?v=0.7.1';
+import { voiesDe } from '../carrefour.js?v=0.7.1';
 
 /** Le point à la distance d le long d'une ligne, et la tangente unitaire en ce point. */
 export function pointSurLigne(ligne, d) {

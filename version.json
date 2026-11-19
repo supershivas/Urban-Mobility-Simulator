@@ -1,9 +1,8 @@
 {
-  "version": "0.7.0",
+  "version": "0.7.1",
   "date": "2026-11-19",
   "changes": [
-    "Construire à la main : une barre d'outils en bas de la vue (voie auto, bus, piste, trottoir, stationnement, planté, sens, retirer) ; un clic ou un glisser sur une voie la transforme, en 2D comme en 3D",
-    "Flèches au sol sur le carrefour choisi : un clic allume ou éteint une direction ; aux feux, elles passent au vert ou au rouge, et le trafic s'arrête au rouge pour sa direction",
-    "Feux réglables dans l'éditeur de carrefour (M) : modèle de phases et durée de vert de chaque phase ; si le jeu ne démarre pas, l'écran de chargement dit pourquoi"
+    "Le jeu démarre même avec un bloqueur de publicités : le module du trafic, qu'il pouvait refuser à cause de son nom, s'appelle autrement",
+    "Si le jeu ne démarre pas, l'écran de chargement nomme le fichier qui manque, et le message se sélectionne pour être copié"
   ]
 }

@@ -10,9 +10,9 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta property="og:title" content="Urban Mobility Simulator">
 <meta property="og:image" content="og.png">
-<link rel="stylesheet" href="vendor/maplibre-gl/maplibre-gl.css?v=0.7.0">
-<link rel="stylesheet" href="js/lib/game.css?v=0.7.0">
-<link rel="stylesheet" href="css/style.css?v=0.7.0">
+<link rel="stylesheet" href="vendor/maplibre-gl/maplibre-gl.css?v=0.7.1">
+<link rel="stylesheet" href="js/lib/game.css?v=0.7.1">
+<link rel="stylesheet" href="css/style.css?v=0.7.1">
 </head>
 <body>
 <div class="jeu-ecran app" id="ecran">
@@ -151,11 +151,28 @@
       if (b) b.hidden = true;
       if (t) t.textContent = 'Le jeu n\u2019a pas pu d\u00e9marrer : ' + raison + ' \u2014 rechargez avec Ctrl+Maj+R. / The game could not start: ' + raison + ' \u2014 reload with Ctrl+Shift+R.';
     };
+    // Le navigateur signale main.js même quand c'est un module qu'il importe qui manque (ou qu'un bloqueur
+    // de publicités refuse, vu en 0.6.0 avec « trafic.js ») : on suit les imports pour nommer le coupable.
+    var sonder = function (url, vus) {
+      if (vus[url]) return Promise.resolve(null);
+      vus[url] = 1;
+      return fetch(url).then(function (r) {
+        if (!r.ok) return url + ' (HTTP ' + r.status + ')';
+        return r.text().then(function (t) {
+          var re = /^import\s[^'"]*['"](\.[^'"]+)['"]/gm, m, liste = []; // en début de ligne : pas les exemples en commentaire
+          while ((m = re.exec(t))) liste.push(new URL(m[1], url).href);
+          return liste.reduce(function (p, u) { return p.then(function (x) { return x || sonder(u, vus); }); }, Promise.resolve(null));
+        });
+      }, function () { return url + ' (bloqué : bloqueur de publicités ? / blocked: ad blocker?)'; });
+    };
+    var court = function (u) { return u.replace(location.href.replace(/[^/]*$/, ''), ''); };
     window.addEventListener('error', function (e) {
       var tag = e.target && e.target.tagName;
       if (tag && tag !== 'SCRIPT' && tag !== 'LINK') return; // une image manquante ne bloque rien
       var cible = e.target && e.target !== window ? (e.target.src || e.target.href) : null;
-      dire(cible ? 'fichier introuvable / missing file ' + cible : (e.message || 'erreur / error') + (e.filename ? ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')' : ''));
+      if (!cible) { dire((e.message || 'erreur / error') + (e.filename ? ' (' + court(e.filename) + ':' + e.lineno + ')' : '')); return; }
+      dire('fichier non chargé / file not loaded ' + court(cible));
+      if (tag === 'SCRIPT') sonder(cible, {}).then(function (x) { if (x) dire('fichier non chargé / file not loaded ' + court(x)); });
     }, true);
     window.addEventListener('unhandledrejection', function (e) { dire(String((e.reason && e.reason.message) || e.reason)); });
     setTimeout(function () {
@@ -165,6 +182,6 @@
     }, 30000);
   })();
 </script>
-<script type="module" src="js/main.js?v=0.7.0"></script>
+<script type="module" src="js/main.js?v=0.7.1"></script>
 </body>
 </html>

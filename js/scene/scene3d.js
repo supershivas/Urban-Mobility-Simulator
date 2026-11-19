@@ -4,17 +4,17 @@
 // Ce module dessine et vise : il ne modifie jamais l'état du jeu (main.js décide).
 // Une image n'est calculée que sur demande (le trafic, v0.6, en demande une à chaque pas
 // de la boucle), et jamais quand la vue est inactive ou l'onglet caché.
-import * as THREE from '../../vendor/three/three.module.js?v=0.7.0';
-import { versScene, depuisScene } from '../geo/repere.js?v=0.7.0';
-import { distancePointLigne, boite } from '../geo/geometrie.js?v=0.7.0';
-import { decalerLigne } from '../geo/decalage.js?v=0.7.0';
-import { pose, contraindre, deplacer, tourner, zoomer, cadrer, metresParPixel, interpoler } from './camera.js?v=0.7.0';
+import * as THREE from '../../vendor/three/three.module.js?v=0.7.1';
+import { versScene, depuisScene } from '../geo/repere.js?v=0.7.1';
+import { distancePointLigne, boite } from '../geo/geometrie.js?v=0.7.1';
+import { decalerLigne } from '../geo/decalage.js?v=0.7.1';
+import { pose, contraindre, deplacer, tourner, zoomer, cadrer, metresParPixel, interpoler } from './camera.js?v=0.7.1';
 import {
   maillerSurfaces, maillerBatiments, maillerAxes, maillerRuban, maillerSections, maillerPolygones, segmentsDeLignes, lignesLocales, rangDuTriangle,
-} from './geometrie3d.js?v=0.7.0';
-import { BANDES } from '../data/bandes.js?v=0.7.0';
-import { VEHICULES } from '../data/trafic.js?v=0.7.0';
-import { HIERARCHIE_PRINCIPALE, SURFACE_PIETONNE, SURFACE_SOUTERRAINE } from '../carte/style.js?v=0.7.0';
+} from './geometrie3d.js?v=0.7.1';
+import { BANDES } from '../data/bandes.js?v=0.7.1';
+import { VEHICULES } from '../data/circulation.js?v=0.7.1';
+import { HIERARCHIE_PRINCIPALE, SURFACE_PIETONNE, SURFACE_SOUTERRAINE } from '../carte/style.js?v=0.7.1';
 
 const rad = deg => (deg * Math.PI) / 180;
 
