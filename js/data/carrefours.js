@@ -36,3 +36,14 @@ export const ANGLES = { toutDroitDegres: 40 };
  * largeurPietonM, largeurVeloM : profondeur dessinée des traversées ; zebreM : largeur d'une bande du passage piéton (3D).
  */
 export const DESSIN_CARREFOUR = { reculMinM: 4, reculMargeM: 1, reculPart: 0.45, largeurPietonM: 3, largeurVeloM: 2, zebreM: 0.5, pointsCourbe: 12 };
+
+/**
+ * Modèles de feux (v0.7, Jérôme, v0.5.0 : « phases proposées + durées »). branches : nombre de branches exigé (null : toutes).
+ * axes : les branches opposées ensemble ; tag-protege : tout droit et à droite d'un axe, puis ses tourne-à-gauche ;
+ * par-branche : une branche à la fois. Les textes : « feux.modele.<id> ».
+ */
+export const MODELES_FEUX = { axes: { branches: 4 }, 'tag-protege': { branches: 4 }, 'par-branche': { branches: null } };
+
+/** Durée de vert d'une phase (s) : bornes de saisie (pas des normes) et pas du curseur. */
+export const VERTS = { minS: 5, maxS: 90, pasS: 1 };
+

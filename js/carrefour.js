@@ -8,15 +8,18 @@
 //
 // Raccords (Jérôme, v0.4.0 : « proposés, à revoir ») : le jeu PROPOSE des raccords
 // calculés (méthode dans proposer()) ; le joueur en retire, en ajoute ou les valide.
-// Le scénario ne garde que ses choix : { ajoutes, retires, traversees, regulation }.
+// Le scénario ne garde que ses choix : { ajoutes, retires, traversees, regulation, feux }.
+// v0.7 : directions (flèches au sol : un clic allume ou éteint tous les raccords d'une voie vers une branche)
+// et phases de feux (modèle proposé, durées de vert réglables).
 // Les raccords en vigueur sont recalculés à partir des sections du moment : une voie
 // ajoutée dans un tronçon reçoit ses raccords proposés, une voie retirée emporte
 // les siens (ceux que le joueur avait choisis sont comptés « perdus »).
 //
 // Les opérations rendent { carrefour } (null : rien à garder) ou { refus, valeurs }.
-import { decalages } from './section.js?v=0.6.0';
-import { MODE_DE_BANDE, COMPATIBLES, REGULATIONS, TRAVERSEES, ANGLES } from './data/carrefours.js?v=0.6.0';
-import { longueur, pointA } from './geo/geometrie.js?v=0.6.0';
+import { decalages } from './section.js?v=0.7.0';
+import { MODE_DE_BANDE, COMPATIBLES, REGULATIONS, TRAVERSEES, ANGLES, MODELES_FEUX, VERTS } from './data/carrefours.js?v=0.7.0';
+import { REFERENCES } from './data/simulation.js?v=0.7.0';
+import { longueur, pointA } from './geo/geometrie.js?v=0.7.0';
 
 const DEUX_PI = 2 * Math.PI;
 /** Angle ramené dans ]-π, π]. */
@@ -181,11 +184,12 @@ export function verifierCarrefour(branches, raccords) {
 }
 
 // ─── Opérations du joueur ─────────────────────────────────────────────────
-export const carrefourVide = () => ({ ajoutes: [], retires: [], traversees: {}, regulation: null });
+export const carrefourVide = () => ({ ajoutes: [], retires: [], traversees: {}, regulation: null, feux: null });
 const normal = c => {
   const traversees = Object.fromEntries(Object.entries(c.traversees ?? {})
     .map(([id, t]) => [id, Object.fromEntries(Object.entries(t).filter(([, v]) => v !== null))]).filter(([, t]) => Object.keys(t).length));
   const n = { ajoutes: [...new Set(c.ajoutes ?? [])], retires: [...new Set(c.retires ?? [])], traversees, regulation: c.regulation ?? null };
+  if (n.regulation === 'feux' && c.feux) n.feux = c.feux; // le réglage des feux ne survit pas à une autre régulation
   return n.ajoutes.length || n.retires.length || Object.keys(traversees).length || n.regulation ? n : null;
 };
 const refus = (r, valeurs = {}) => ({ refus: r, valeurs });
@@ -236,7 +240,7 @@ export function definirRegulation(c, branches, valeur) {
   return { carrefour: normal({ ...carrefourVide(), ...c, regulation: valeur }) };
 }
 
-export const OPERATIONS_CARREFOUR = { basculerRaccord, validerPropositions, definirTraversee, definirRegulation };
+export const OPERATIONS_CARREFOUR = { basculerRaccord, validerPropositions, definirTraversee, definirRegulation, basculerDirection: (...a) => basculerDirection(...a), definirModeleFeux: (...a) => definirModeleFeux(...a), definirVert: (...a) => definirVert(...a) };
 
 /**
  * Les traversées en vigueur d'un carrefour : celles que le joueur a posées et dont la branche
@@ -253,3 +257,99 @@ export function traverseesDe(branches, c) {
   }
   return out;
 }
+
+// ─── Directions (v0.7) : les flèches au sol d'une voie qui entre ─────────
+/** Où va une branche B pour qui arrive par A : 'gauche', 'droit' ou 'droite' (seuil : ANGLES.toutDroitDegres). */
+export function direction(A, B) {
+  const virage = normaliser(B.angle - (A.angle + Math.PI));
+  return { virage, direction: Math.abs(virage) < (ANGLES.toutDroitDegres * Math.PI) / 180 ? 'droit' : virage > 0 ? 'gauche' : 'droite' };
+}
+
+/**
+ * Les directions d'une voie entrante : une par autre branche, de la plus à gauche à la plus à droite.
+ * → [{ troncon, direction, virage, actif, raccords }] ; [] si la voie n'entre pas dans le carrefour.
+ */
+export function directionsDe(branches, raccords, voieId) {
+  const voies = toutesLesVoies(branches), v = voies.get(voieId);
+  if (!v?.entrante) return [];
+  const A = branches.find(b => b.troncon === v.troncon);
+  return branches.filter(B => B !== A).map(B => ({
+    troncon: B.troncon, ...direction(A, B),
+    raccords: raccords.filter(r => r.de === voieId && voies.get(r.vers)?.troncon === B.troncon),
+  })).map(d => ({ ...d, actif: d.raccords.length > 0 })).sort((a, b) => b.virage - a.virage);
+}
+
+/** Allume ou éteint une direction : tous les raccords de la voie vers la branche, ou un seul raccord choisi comme les propositions. */
+export function basculerDirection(c, branches, voieId, troncon) {
+  const { raccords } = raccordsDe(branches, c);
+  const d = directionsDe(branches, raccords, voieId).find(x => x.troncon === troncon);
+  if (!d) return refus('voie');
+  let x = { ...carrefourVide(), ...c };
+  if (d.actif) {
+    for (const r of d.raccords) x = basculerRaccord(x, branches, r.de, r.vers).carrefour ?? carrefourVide();
+    return { carrefour: normal(x), actif: false };
+  }
+  const voies = toutesLesVoies(branches), v = voies.get(voieId);
+  const sorties = [...voies.values()].filter(s => s.troncon === troncon && s.sortante);
+  const vers = choisirSortie(v, 0, 1, sorties, d.virage, (ANGLES.toutDroitDegres * Math.PI) / 180);
+  if (!vers) return refus('sans-sortie', { de: v.mode });
+  const r = basculerRaccord(x, branches, voieId, vers.id);
+  return r.refus ? r : { carrefour: r.carrefour, actif: true };
+}
+
+// ─── Feux (v0.7) : phases proposées, durées de vert ────────────────────────
+/** Les modèles possibles pour ce carrefour. */
+export const modelesPossibles = branches => Object.entries(MODELES_FEUX).filter(([, m]) => m.branches === null || m.branches === branches.length).map(([id]) => id);
+export const modeleParDefaut = branches => (branches.length === 4 ? 'axes' : 'par-branche');
+
+/**
+ * Les phases en vigueur : [{ mouvements: Set("de>vers" entre tronçons), vert (s) }], le temps perdu par phase et le cycle.
+ * Un mouvement est le passage d'une branche à une autre ; une phase met au vert tous ses mouvements.
+ */
+export function phasesDe(branches, c) {
+  const possibles = modelesPossibles(branches);
+  const modele = possibles.includes(c?.feux?.modele) ? c.feux.modele : modeleParDefaut(branches);
+  const mvt = (A, filtre = () => true) => branches.filter(B => B !== A && filtre(direction(A, B).direction)).map(B => `${A.troncon}>${B.troncon}`);
+  const groupes = modele === 'axes' ? [[0, 2], [1, 3]].map(ix => ix.flatMap(i => mvt(branches[i])))
+    : modele === 'tag-protege' ? [[[0, 2], d => d !== 'gauche'], [[0, 2], d => d === 'gauche'], [[1, 3], d => d !== 'gauche'], [[1, 3], d => d === 'gauche']]
+      .map(([ix, f]) => ix.flatMap(i => mvt(branches[i], f)))
+      : branches.map(b => mvt(b));
+  const F = REFERENCES.feux, n = groupes.length;
+  const defaut = Math.round((F.cycleS - n * F.perteParPhaseS) / n);
+  const verts = c?.feux?.modele === modele && c.feux.verts?.length === n ? c.feux.verts : groupes.map(() => defaut);
+  const phases = groupes.map((g, i) => ({ mouvements: new Set(g), vert: verts[i] }));
+  return { modele, modeles: possibles, phases, perte: F.perteParPhaseS, cycle: verts.reduce((a, b) => a + b, 0) + n * F.perteParPhaseS };
+}
+
+/** Choisit un modèle de feux (et passe le carrefour aux feux) ; les durées repartent des valeurs proposées. */
+export function definirModeleFeux(c, branches, modele) {
+  if (!modelesPossibles(branches).includes(modele)) return refus('modele-feux');
+  const n = phasesDe(branches, { feux: { modele } }).phases.length;
+  return { carrefour: normal({ ...carrefourVide(), ...c, regulation: 'feux', feux: { modele, verts: phasesDe(branches, { feux: { modele } }).phases.map(p => p.vert).slice(0, n) } }) };
+}
+
+/** Règle la durée de vert (s) de la phase i. */
+export function definirVert(c, branches, i, secondes) {
+  if (c?.regulation !== 'feux') return refus('pas-de-feux');
+  const p = phasesDe(branches, c);
+  if (!Number.isInteger(i) || i < 0 || i >= p.phases.length) return refus('phase');
+  if (!Number.isFinite(secondes) || secondes < VERTS.minS || secondes > VERTS.maxS) return refus('vert', { min: VERTS.minS, max: VERTS.maxS });
+  const verts = p.phases.map((ph, k) => (k === i ? Math.round(secondes) : ph.vert));
+  return { carrefour: normal({ ...carrefourVide(), ...c, feux: { modele: p.modele, verts } }) };
+}
+
+/** À l'instant t (s), quelle phase est au vert (null : temps perdu, tout au rouge) et combien de temps il lui reste. */
+export function etatFeux(feux, t) {
+  let local = ((t % feux.cycle) + feux.cycle) % feux.cycle;
+  for (let i = 0; i < feux.phases.length; i++) {
+    const v = feux.phases[i].vert;
+    if (local < v) return { phase: i, reste: v - local };
+    local -= v;
+    if (local < feux.perte) return { phase: null, reste: feux.perte - local, apres: (i + 1) % feux.phases.length };
+    local -= feux.perte;
+  }
+  return { phase: null, reste: 0 };
+}
+/** Un mouvement "de>vers" est-il au vert à l'instant t ? */
+export const auVert = (feux, t, mouvement) => { const e = etatFeux(feux, t); return e.phase !== null && feux.phases[e.phase].mouvements.has(mouvement); };
+

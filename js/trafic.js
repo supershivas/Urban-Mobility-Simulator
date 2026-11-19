@@ -13,18 +13,17 @@
 // jeu par hiérarchie UrbIS, js/data/trafic.js, ou la demande posée par le joueur) ; à chaque
 // carrefour il prend AU HASARD un raccord de sa voie compatible avec son mode ; sans raccord
 // il sort du jeu (compté « sans issue »). Il suit le véhicule de devant (modèle IDM, Treiber
-// et al. 2000), s'arrête au rouge (feux du scénario : cycle de js/data/simulation.js, une phase
-// par paire de branches opposées dans un carrefour à quatre branches, une par branche sinon).
+// et al. 2000), s'arrête au rouge pour SON mouvement (phases du scénario, js/carrefour.js phasesDe :
+// modèle proposé et durées de vert ; v0.7).
 // Les blocs ne se gênent pas dans la zone d'un carrefour (exclu : priorités, conflits).
-import { branchesDe, raccordsDe } from './carrefour.js?v=0.6.0';
-import { geometrieCarrefour, recul, reculBranche, extraire, pointSurLigne } from './geo/raccords.js?v=0.6.0';
-import { decalerLigne } from './geo/decalage.js?v=0.6.0';
-import { decalages } from './section.js?v=0.6.0';
-import { longueur } from './geo/geometrie.js?v=0.6.0';
-import { MODE_DE_BANDE } from './data/carrefours.js?v=0.6.0';
-import { REFERENCES } from './data/simulation.js?v=0.6.0';
-import { DEBITS_JEU, VOIES_DU_MODE, DEMANDE_DU_MODE, VEHICULES, VITESSES, SIMULATION } from './data/trafic.js?v=0.6.0';
-import { createRng } from './lib/rng.js?v=0.6.0';
+import { branchesDe, raccordsDe, phasesDe, auVert } from './carrefour.js?v=0.7.0';
+import { geometrieCarrefour, recul, reculBranche, extraire, pointSurLigne } from './geo/raccords.js?v=0.7.0';
+import { decalerLigne } from './geo/decalage.js?v=0.7.0';
+import { decalages } from './section.js?v=0.7.0';
+import { longueur } from './geo/geometrie.js?v=0.7.0';
+import { MODE_DE_BANDE } from './data/carrefours.js?v=0.7.0';
+import { DEBITS_JEU, VOIES_DU_MODE, DEMANDE_DU_MODE, VEHICULES, VITESSES, SIMULATION } from './data/trafic.js?v=0.7.0';
+import { createRng } from './lib/rng.js?v=0.7.0';
 
 const SENS_SOURCE = { 'unique-direct': 'aller', 'unique-inverse': 'retour' };
 const LARGEUR_INCONNUE = 3; // m, dessin seulement : décale les deux sens d'une voie inconnue
@@ -67,11 +66,10 @@ export function construireReseau({ segments, noeuds, sectionDe, ligneDe, carrefo
     const { raccords } = raccordsDe(branches, carrefourDe(n.id));
     const geo = geometrieCarrefour(branches, raccords, [], D);
     const r = recul(branches, D);
-    const np = branches.length === 4 ? 2 : branches.length;
+    const regulation = regulationDe(n.id);
     infos.set(n.id, {
-      geo, regulation: regulationDe(n.id), np,
+      geo, regulation, feux: regulation === 'feux' ? phasesDe(branches, carrefourDe(n.id)) : null,
       rb: new Map(branches.map(b => [b.troncon, reculBranche(b, r, D)])),
-      phase: new Map(branches.map((b, i) => [b.troncon, branches.length === 4 ? i % 2 : i])),
     });
   }
   const chemins = new Map(), entrees = [];
@@ -97,7 +95,7 @@ export function construireReseau({ segments, noeuds, sectionDe, ligneDe, carrefo
           sortie: !infos.has(arrivee), // finit au bord du corridor (ou à un cul-de-sac) : le bloc sort du jeu
         });
         const info = infos.get(arrivee);
-        if (info?.regulation === 'feux') c.feu = { noeud: arrivee, phase: info.phase.get(s.id), np: info.np };
+        if (info?.feux) c.feu = info.feux; // le feu dit, pour le mouvement choisi (raccord suivant), s'il est au vert
         chemins.set(c.cle, c);
         if (!infos.has(depart)) parSens[sens].push(c);
       }
@@ -111,21 +109,19 @@ export function construireReseau({ segments, noeuds, sectionDe, ligneDe, carrefo
       const vers = [...['a', 'r']].map(x => chemins.get(`${r.vers}|${x}`)).find(c => c?.depart === n);
       if (!de || !vers) continue;
       // Clé avec le nœud : deux tronçons entre les deux mêmes nœuds donnent le même « de>vers » à chaque bout
-      const lien = chemin(r.ligne.map(p => [...p]), { cle: `${n}/${r.de}>${r.vers}`, type: 'raccord', noeud: n, mode: vers.mode, vMax: Math.min(kmh(VITESSES.raccordKmh), vers.vMax) });
+      const lien = chemin(r.ligne.map(p => [...p]), {
+        cle: `${n}/${r.de}>${r.vers}`, type: 'raccord', noeud: n, mode: vers.mode, vMax: Math.min(kmh(VITESSES.raccordKmh), vers.vMax),
+        mouvement: `${de.troncon}>${vers.troncon}`, // d'une branche à l'autre : ce que les phases de feux mettent au vert
+      });
       lien.suivants.push(vers);
       de.suivants.push(lien);
       chemins.set(lien.cle, lien);
     }
   }
-  const feux = new Map([...infos].filter(([, i]) => i.regulation === 'feux').map(([n, i]) => [n, { phases: i.np }]));
+  const feux = new Map([...infos].filter(([, i]) => i.feux).map(([n, i]) => [n, i.feux]));
   return { chemins, entrees, feux, vitesseVeloKmh };
 }
 
-/** Le feu d'une approche est-il vert à l'instant t (s) ? Cycle et temps perdu : REFERENCES.feux. */
-export function vert(t, phase, np, F = REFERENCES.feux) {
-  const tranche = F.cycleS / np, local = ((t % F.cycleS) + F.cycleS) % F.cycleS;
-  return local >= phase * tranche && local < (phase + 1) * tranche - F.perteParPhaseS;
-}
 
 /** Un mode peut-il emprunter ce chemin ? (un raccord : selon la voie où il mène) */
 const permis = (mode, c) => VOIES_DU_MODE[mode].includes(c.type === 'raccord' ? c.suivants[0].mode : c.mode);
@@ -198,8 +194,8 @@ export function creerTrafic(reseau, { graine = SIMULATION.graine, demandeDe = ()
       const d2 = veh.prochain.vehicules.at(-1);
       if (d2) { ecart = c.longueur - veh.s + d2.s - d2.longueur; dv = veh.v - d2.v; }
     }
-    // Feu rouge au bout de la voie : un obstacle immobile à la ligne d'arrêt, sauf si l'on ne peut plus s'arrêter
-    if (c.feu && !vert(temps, c.feu.phase, c.feu.np)) {
+    // Feu rouge pour son mouvement au bout de la voie : un obstacle immobile à la ligne d'arrêt, sauf si l'on ne peut plus s'arrêter
+    if (c.feu && veh.prochain && !auVert(c.feu, temps, veh.prochain.mouvement)) {
       const arret = c.longueur - veh.s - 0.5;
       if (arret > 0 && veh.v * veh.v / (2 * arret) < SIMULATION.freinageMax && arret < ecart) { ecart = arret; dv = veh.v; }
     }

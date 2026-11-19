@@ -26,3 +26,15 @@ export const SENS = ['aller', 'retour', 'double'];
 
 /** Règles de largeur (m). Le pas est celui de l'éditeur ; le minimum, une limite de dessin. */
 export const LARGEURS = { pas: 0.1, grandPas: 0.5, min: 0.3 };
+
+/**
+ * Les outils de la barre (v0.7, Jérôme, v0.5.0 : « outil + clic sur une voie ») : un type de bande, ou une action.
+ * Un outil de type change la bande visée en gardant sa largeur. Textes : « outil.<id> ».
+ */
+export const OUTILS = ['voiture', 'bus', 'cyclable', 'trottoir', 'stationnement', 'plante', 'sens', 'supprimer'];
+
+/**
+ * Découpage proposé d'une chaussée non découpée quand on y pose un outil : des voies d'au plus
+ * `largeurVoieM` (une convention de dessin, pas une norme), au moins une. Le joueur le corrige ensuite.
+ */
+export const DECOUPE = { largeurVoieM: 3.5 };

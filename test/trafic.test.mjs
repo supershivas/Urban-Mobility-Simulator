@@ -1,7 +1,8 @@
 // v0.6 : le trafic en temps réel — réseau de chemins dirigés (voies + raccords), entrées au bord,
 // poursuite IDM, feux, déterminisme à graine fixe, reconstruction quand le scénario change.
 import { readFileSync } from 'node:fs';
-import { construireReseau, creerTrafic, voiesDuTroncon, vert } from '../js/trafic.js';
+import { construireReseau, creerTrafic, voiesDuTroncon } from '../js/trafic.js';
+import { etatFeux, auVert, phasesDe, branchesDe } from '../js/carrefour.js';
 import { sectionMesuree } from '../js/section.js';
 import { DESSIN_CARREFOUR as D } from '../js/data/carrefours.js';
 import { REFERENCES } from '../js/data/simulation.js';
@@ -80,18 +81,17 @@ test('personne ne dépasse la vitesse de sa voie, personne ne recule, aucun bloc
 test('au rouge, aucun bloc ne franchit la ligne d\'arrêt s\'il pouvait s\'arrêter', () => {
   const r = croix({ regulation: 'feux' });
   const t = creerTrafic(r, { graine: 5, demandeDe: () => ({ voiture: { aller: 900, retour: 900 } }) });
-  const F = REFERENCES.feux;
   let franchis = 0, arretes = 0;
   const avant = new Map();
   for (let i = 0; i < 8000; i++) {
-    for (const v of t.vehicules()) avant.set(v.id, { chemin: v.chemin, v: v.v, s: v.s });
+    for (const v of t.vehicules()) avant.set(v.id, { chemin: v.chemin, v: v.v, s: v.s, prochain: v.prochain });
     t.pas();
     for (const v of t.vehicules()) {
       const a = avant.get(v.id);
       if (!a || a.chemin === v.chemin || !a.chemin.feu) continue;
       // Il vient de quitter une voie à feu : était-ce au vert, ou ne pouvait-il plus s'arrêter ?
       const c = a.chemin;
-      if (!vert(t.temps - 0.05, c.feu.phase, c.feu.np, F)) {
+      if (!auVert(c.feu, t.temps - 0.05, a.prochain.mouvement)) {
         const reste = c.longueur - a.s - 0.5;
         if (reste > 0 && (a.v * a.v) / (2 * reste) < 4.5) franchis++;
       }
@@ -113,12 +113,18 @@ test('fermer la seule sortie d\'une branche : les blocs qui y allaient sortent �
   for (let i = 0; i < 2000; i++) t.pas();
   assert.equal(t.vehicules().filter(v => v.mode === 'voiture' && v.chemin.troncon === 'est').length, 0);
 });
-test('les feux : vert, puis temps perdu, puis la phase suivante', () => {
-  const F = REFERENCES.feux;
-  assert.equal(vert(1, 0, 2, F), true);
-  assert.equal(vert(F.cycleS / 2 - 1, 0, 2, F), false);
-  assert.equal(vert(F.cycleS / 2 + 1, 1, 2, F), true);
-  assert.equal(vert(F.cycleS + 1, 0, 2, F), true);
+test('les feux : chaque phase au vert pendant sa durée, puis le temps perdu, puis la suivante', () => {
+  const branches = branchesDe(noeuds.get('N'), { segments, sectionDe: deuxSens, ligneDe: id => lignes[id] });
+  const f = phasesDe(branches, { regulation: 'feux', feux: { modele: 'axes', verts: [30, 20] } });
+  assert.equal(f.cycle, 30 + 20 + 2 * REFERENCES.feux.perteParPhaseS);
+  assert.deepEqual(etatFeux(f, 1), { phase: 0, reste: 29 });
+  assert.equal(etatFeux(f, 31).phase, null);
+  assert.equal(etatFeux(f, 30 + f.perte + 1).phase, 1);
+  assert.equal(etatFeux(f, f.cycle + 1).phase, 0);
+  // Axes : l'est et l'ouest ensemble (branches opposées) ; le nord attend
+  const [b0, , b2] = branches;
+  assert.equal(auVert(f, 1, `${b0.troncon}>${b2.troncon}`), true);
+  assert.equal(auVert(f, 1, `${branches[1].troncon}>${branches[3].troncon}`), false);
 });
 
 group('trafic — le vrai corridor');

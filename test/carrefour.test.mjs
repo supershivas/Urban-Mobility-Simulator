@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import {
   branchesDe, voiesDe, proposer, raccordsDe, verifierCarrefour, basculerRaccord, validerPropositions,
   definirTraversee, definirRegulation, traverseesDe, cle, normaliser, toutesLesVoies,
+  directionsDe, basculerDirection, phasesDe, definirModeleFeux, definirVert, modelesPossibles,
 } from '../js/carrefour.js';
 import { geometrieCarrefour, pointSurLigne, extraire, recul } from '../js/geo/raccords.js';
 import { sectionMesuree, changerType, ajouter, retirer, diviser, changerSens } from '../js/section.js';
@@ -242,3 +243,44 @@ test('carte : zone, traversées et raccords du carrefour choisi ; seulement les 
   const reduit = featuresCarrefours([{ noeud: 'N', geometrie: g, complet: false }], null, id).features;
   assert.deepEqual(reduit.map(f => f.properties.genre), ['traversee']);
 });
+
+group('carrefour — directions et feux (v0.7)');
+test('une voie qui entre a une direction par autre branche, de gauche à droite', () => {
+  const b = croix();
+  const { raccords } = raccordsDe(b, null);
+  const v = [...toutesLesVoies(b).values()].find(x => x.entrante && x.troncon === 'ouest');
+  const d = directionsDe(b, raccords, v.id);
+  assert.deepEqual(d.map(x => [x.troncon, x.direction]), [['nord', 'gauche'], ['est', 'droit'], ['sud', 'droite']]);
+  assert.ok(d.every(x => x.actif));
+});
+test('éteindre une direction retire tous ses raccords ; la rallumer en remet un ; refus sur une voie qui sort', () => {
+  const b = croix();
+  const v = [...toutesLesVoies(b).values()].find(x => x.entrante && x.troncon === 'ouest');
+  const r1 = basculerDirection(null, b, v.id, 'nord');
+  assert.equal(r1.actif, false);
+  assert.equal(directionsDe(b, raccordsDe(b, r1.carrefour).raccords, v.id).find(x => x.troncon === 'nord').actif, false);
+  const r2 = basculerDirection(r1.carrefour, b, v.id, 'nord');
+  assert.equal(r2.actif, true);
+  assert.equal(directionsDe(b, raccordsDe(b, r2.carrefour).raccords, v.id).find(x => x.troncon === 'nord').raccords.length, 1);
+  const sortante = [...toutesLesVoies(b).values()].find(x => x.sortante && !x.entrante);
+  assert.equal(basculerDirection(null, b, sortante.id, 'nord').refus, 'voie');
+});
+test('feux : modèles proposés selon le nombre de branches, durées réglables et bornées', () => {
+  const b = croix();
+  assert.deepEqual(modelesPossibles(b), ['axes', 'tag-protege', 'par-branche']);
+  assert.deepEqual(modelesPossibles(b.slice(0, 3)), ['par-branche']);
+  const m = definirModeleFeux(null, b, 'tag-protege');
+  assert.equal(m.carrefour.regulation, 'feux');
+  const p = phasesDe(b, m.carrefour);
+  assert.equal(p.phases.length, 4);
+  // Tourne-à-gauche protégé : la phase 0 n'a aucun tourne-à-gauche, la phase 1 seulement eux
+  assert.ok(p.phases[1].mouvements.size > 0 && p.phases[0].mouvements.size > 0);
+  const v = definirVert(m.carrefour, b, 1, 12);
+  assert.equal(phasesDe(b, v.carrefour).phases[1].vert, 12);
+  assert.equal(definirVert(m.carrefour, b, 1, 2).refus, 'vert');
+  assert.equal(definirVert(null, b, 0, 20).refus, 'pas-de-feux');
+  assert.equal(definirModeleFeux(null, b.slice(0, 3), 'axes').refus, 'modele-feux');
+  // Une autre régulation efface le réglage des feux
+  assert.equal(definirRegulation(v.carrefour, b, 'giratoire').carrefour.feux, undefined);
+});
+

@@ -10,9 +10,9 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta property="og:title" content="Urban Mobility Simulator">
 <meta property="og:image" content="og.png">
-<link rel="stylesheet" href="vendor/maplibre-gl/maplibre-gl.css?v=0.6.0">
-<link rel="stylesheet" href="js/lib/game.css?v=0.6.0">
-<link rel="stylesheet" href="css/style.css?v=0.6.0">
+<link rel="stylesheet" href="vendor/maplibre-gl/maplibre-gl.css?v=0.7.0">
+<link rel="stylesheet" href="js/lib/game.css?v=0.7.0">
+<link rel="stylesheet" href="css/style.css?v=0.7.0">
 </head>
 <body>
 <div class="jeu-ecran app" id="ecran">
@@ -44,6 +44,8 @@
       <p class="scene-legende"><span class="scene-legende-signe" aria-hidden="true"></span><span data-i18n="scene.legende"></span></p>
       <p class="scene-attente" id="scene-attente" role="status" data-i18n="scene.attente" hidden></p>
     </div>
+    <!-- Outils (v0.7) : un clic ou un glisser sur une voie la transforme -->
+    <div class="barre-outils" id="barre-outils" role="toolbar"></div>
     <div class="trafic-hud" id="trafic-hud" role="group" data-i18n-aria="trafic.libelle" hidden>
       <button class="bouton trafic-bouton" id="trafic-pause" aria-pressed="false"><span id="trafic-pause-texte"></span> <kbd data-i18n="trafic.touche-pause"></kbd></button>
       <button class="bouton trafic-bouton" id="trafic-vitesse"><span id="trafic-vitesse-texte"></span> <kbd>X</kbd></button>
@@ -138,6 +140,31 @@
 </dialog>
 
 <div class="jeu-toast" id="toast" role="status" hidden></div>
-<script type="module" src="js/main.js?v=0.6.0"></script>
+<!-- Avant l'écran titre, i18n.js n'est peut-être pas chargé : ce filet de secours dit en deux langues ce qui bloque
+     (module refusé par le navigateur, fichier introuvable, erreur) au lieu de laisser le chargement figé (vu en 0.6.0). -->
+<script>
+  (function () {
+    var fini = function () { var c = document.getElementById('chargement'); return !c || c.hidden; };
+    var dire = function (raison) {
+      if (fini()) return;
+      var t = document.getElementById('chargement-texte'), b = document.querySelector('#chargement .jeu-chargement-barre');
+      if (b) b.hidden = true;
+      if (t) t.textContent = 'Le jeu n\u2019a pas pu d\u00e9marrer : ' + raison + ' \u2014 rechargez avec Ctrl+Maj+R. / The game could not start: ' + raison + ' \u2014 reload with Ctrl+Shift+R.';
+    };
+    window.addEventListener('error', function (e) {
+      var tag = e.target && e.target.tagName;
+      if (tag && tag !== 'SCRIPT' && tag !== 'LINK') return; // une image manquante ne bloque rien
+      var cible = e.target && e.target !== window ? (e.target.src || e.target.href) : null;
+      dire(cible ? 'fichier introuvable / missing file ' + cible : (e.message || 'erreur / error') + (e.filename ? ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')' : ''));
+    }, true);
+    window.addEventListener('unhandledrejection', function (e) { dire(String((e.reason && e.reason.message) || e.reason)); });
+    setTimeout(function () {
+      if (fini()) return;
+      var t = document.getElementById('chargement-texte');
+      if (t && !/Ctrl/.test(t.textContent)) t.textContent += ' (30 s : si rien ne bouge, Ctrl+Maj+R / if nothing moves, Ctrl+Shift+R)';
+    }, 30000);
+  })();
+</script>
+<script type="module" src="js/main.js?v=0.7.0"></script>
 </body>
 </html>

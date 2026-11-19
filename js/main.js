@@ -3,41 +3,45 @@
 // lisent les mêmes données locales de data/ (aucun service distant) et partagent
 // la sélection et l'inspecteur. Le style est dans carte/style.js, la scène dans
 // scene/scene3d.js (chargée à la première bascule), l'inspecteur dans inspecteur.js.
-import * as maplibregl from '../vendor/maplibre-gl/maplibre-gl.mjs?v=0.6.0';
-import { createKeys, stopTypeahead } from './lib/keys.js?v=0.6.0';
-import { lockBrowserGestures } from './lib/pointer.js?v=0.6.0';
-import { createStore, autosave, pickJSONFile } from './lib/save.js?v=0.6.0';
-import { createI18n } from './lib/i18n.js?v=0.6.0';
-import { startUpdateCheck, loadVersion, loadChangelog, downloadJSON } from './lib/app-update.js?v=0.6.0';
-import { PALETTE, ROLES } from './palette.js?v=0.6.0';
-import { TEXTES } from './data/textes.js?v=0.6.0';
-import { COMMANDES_AIDE } from './data/aide.js?v=0.6.0';
-import { styleCarte, COUCHES, COUCHES_ACTIVES, COUCHES_SELECTIONNABLES } from './carte/style.js?v=0.6.0';
-import { lignesInspecteur, lignesInspecteurBatiment, lignesInspecteurNoeud } from './inspecteur.js?v=0.6.0';
-import { creerRepere } from './geo/repere.js?v=0.6.0';
-import { boite } from './geo/geometrie.js?v=0.6.0';
-import { distancePourZoom, zoomPourDistance } from './scene/camera.js?v=0.6.0';
-import { lireJSON, couche, couchesScene } from './donnees.js?v=0.6.0';
-import { chargerContenu } from './design-store.js?v=0.6.0';
-import { sectionMesuree, OPERATIONS, memeSection, decalages, verifier } from './section.js?v=0.6.0';
-import { creerHistorique } from './historique.js?v=0.6.0';
-import { featuresSections } from './carte/sections.js?v=0.6.0';
-import { ajouterImages } from './carte/motifs.js?v=0.6.0';
-import { wgs84VersLambert, lambertVersWgs84 } from './geo/coordonnees.js?v=0.6.0';
-import { creerEditeur } from './editeur.js?v=0.6.0';
-import { creerEditeurCarrefour, lettre } from './editeur-carrefour.js?v=0.6.0';
-import { branchesDe, toutesLesVoies, raccordsDe, verifierCarrefour, traverseesDe, OPERATIONS_CARREFOUR } from './carrefour.js?v=0.6.0';
-import { geometrieCarrefour, pointSurLigne } from './geo/raccords.js?v=0.6.0';
-import { featuresCarrefours } from './carte/carrefours.js?v=0.6.0';
-import { DESSIN_CARREFOUR } from './data/carrefours.js?v=0.6.0';
-import { etatTroncon, niveau, bilan, conflits, definirDemande, definirHypothese } from './simulation.js?v=0.6.0';
-import { HYPOTHESES } from './data/simulation.js?v=0.6.0';
-import { lignesSimulation, lignesConflits } from './inspecteur.js?v=0.6.0';
-import { creerEditeurFlux } from './editeur-flux.js?v=0.6.0';
-import { createLoop } from './lib/loop.js?v=0.6.0';
-import { construireReseau, creerTrafic } from './trafic.js?v=0.6.0';
-import { SIMULATION, VEHICULES } from './data/trafic.js?v=0.6.0';
-import { lignesTrafic } from './inspecteur.js?v=0.6.0';
+import * as maplibregl from '../vendor/maplibre-gl/maplibre-gl.mjs?v=0.7.0';
+import { createKeys, stopTypeahead } from './lib/keys.js?v=0.7.0';
+import { lockBrowserGestures } from './lib/pointer.js?v=0.7.0';
+import { createStore, autosave, pickJSONFile } from './lib/save.js?v=0.7.0';
+import { createI18n } from './lib/i18n.js?v=0.7.0';
+import { startUpdateCheck, loadVersion, loadChangelog, downloadJSON } from './lib/app-update.js?v=0.7.0';
+import { PALETTE, ROLES } from './palette.js?v=0.7.0';
+import { TEXTES } from './data/textes.js?v=0.7.0';
+import { COMMANDES_AIDE } from './data/aide.js?v=0.7.0';
+import { styleCarte, COUCHES, COUCHES_ACTIVES, COUCHES_SELECTIONNABLES } from './carte/style.js?v=0.7.0';
+import { lignesInspecteur, lignesInspecteurBatiment, lignesInspecteurNoeud } from './inspecteur.js?v=0.7.0';
+import { creerRepere } from './geo/repere.js?v=0.7.0';
+import { boite } from './geo/geometrie.js?v=0.7.0';
+import { distancePourZoom, zoomPourDistance } from './scene/camera.js?v=0.7.0';
+import { lireJSON, couche, couchesScene } from './donnees.js?v=0.7.0';
+import { chargerContenu } from './design-store.js?v=0.7.0';
+import { sectionMesuree, OPERATIONS, memeSection, decalages, verifier } from './section.js?v=0.7.0';
+import { creerHistorique } from './historique.js?v=0.7.0';
+import { featuresSections } from './carte/sections.js?v=0.7.0';
+import { ajouterImages } from './carte/motifs.js?v=0.7.0';
+import { wgs84VersLambert, lambertVersWgs84 } from './geo/coordonnees.js?v=0.7.0';
+import { creerEditeur } from './editeur.js?v=0.7.0';
+import { creerEditeurCarrefour, lettre } from './editeur-carrefour.js?v=0.7.0';
+import { branchesDe, toutesLesVoies, raccordsDe, verifierCarrefour, traverseesDe, OPERATIONS_CARREFOUR } from './carrefour.js?v=0.7.0';
+import { geometrieCarrefour, pointSurLigne } from './geo/raccords.js?v=0.7.0';
+import { featuresCarrefours } from './carte/carrefours.js?v=0.7.0';
+import { DESSIN_CARREFOUR } from './data/carrefours.js?v=0.7.0';
+import { etatTroncon, niveau, bilan, conflits, definirDemande, definirHypothese } from './simulation.js?v=0.7.0';
+import { HYPOTHESES } from './data/simulation.js?v=0.7.0';
+import { lignesSimulation, lignesConflits } from './inspecteur.js?v=0.7.0';
+import { creerEditeurFlux } from './editeur-flux.js?v=0.7.0';
+import { createLoop } from './lib/loop.js?v=0.7.0';
+import { construireReseau, creerTrafic } from './trafic.js?v=0.7.0';
+import { SIMULATION, VEHICULES } from './data/trafic.js?v=0.7.0';
+import { lignesTrafic } from './inspecteur.js?v=0.7.0';
+import { appliquerOutil } from './outils.js?v=0.7.0';
+import { OUTILS } from './data/bandes.js?v=0.7.0';
+import { directionsDe, phasesDe, auVert, etatFeux } from './carrefour.js?v=0.7.0';
+import { distancePointLigne } from './geo/geometrie.js?v=0.7.0';
 
 const JEU = 'urban-mobility-simulator';
 const $ = id => document.getElementById(id);
@@ -273,6 +277,8 @@ function noeudPres(point) {
   return meilleur;
 }
 carte.on('click', e => {
+  if (outil) return; // l'outil actif peint (pointerdown / move / up), il ne choisit pas
+  if (cliquerFleche(e.point.x, e.point.y)) return;
   const noeud = noeudPres(e.point), troncon = noeud ? null : tronconPres(e.point), b = noeud || troncon ? null : batimentSous(e.point);
   selectionner(noeud ?? troncon ?? b?.id ?? null, { batiment: b });
 });
@@ -320,10 +326,10 @@ function chargerScene() {
   return (chargementScene ??= (async () => {
     $('scene-attente').hidden = false;
     await new Promise(res => setTimeout(res, 30)); // laisse le message s'afficher : la construction occupe le fil
-    const [{ creerScene }, couches] = await Promise.all([import('./scene/scene3d.js?v=0.6.0'), couchesScene(), chargerBatiments()]);
+    const [{ creerScene }, couches] = await Promise.all([import('./scene/scene3d.js?v=0.7.0'), couchesScene(), chargerBatiments()]);
     scene = creerScene({
       conteneur: $('scene'), repere, P: PALETTE, R, donnees: { ...couches, emprise }, mouvementReduit: reduit,
-      surChoix: c => { if (enCarte()) selectionner(c?.id ?? null); },
+      surChoix: (c, pt) => { if (!enCarte()) return; if (pt && cliquerFleche(pt.x, pt.y)) return; selectionner(c?.id ?? null); },
       surRendu: habillerScene,
     });
     majSections(); // et les carrefours
@@ -644,7 +650,7 @@ const nomCarrefour = branches => [...new Set(branches.map(b => b.nomTexte).filte
 const carrefourModifiable = id => !!lignesRues && etatCarrefour(id).branches.length >= 2;
 function infoCarrefour(id) {
   const c = etatCarrefour(id);
-  return { id, nom: nomCarrefour(c.branches), ...c, peutAnnuler: historique.peutAnnuler, peutRetablir: historique.peutRetablir };
+  return { id, nom: nomCarrefour(c.branches), ...c, feux: c.carrefour?.regulation === 'feux' ? phasesDe(c.branches, c.carrefour) : null, peutAnnuler: historique.peutAnnuler, peutRetablir: historique.peutRetablir };
 }
 const editeurCarrefour = creerEditeurCarrefour({
   racine: $('editeur'), t, lang: i18n.lang,
@@ -677,15 +683,18 @@ function fermerCarrefour() {
 }
 /** Une opération de js/carrefour.js sur le carrefour édité ; le scénario n'en garde que les choix du joueur. */
 function opererCarrefour(nom, args) {
-  if (!editeCarrefour) return null;
-  const c = etatCarrefour(editeCarrefour);
+  return editeCarrefour ? opererSurNoeud(editeCarrefour, nom, args) : null;
+}
+/** Une opération de js/carrefour.js sur un nœud (bandeau ouvert ou flèches au sol) ; le scénario n'en garde que les choix. */
+function opererSurNoeud(id, nom, args) {
+  const c = etatCarrefour(id);
   const r = OPERATIONS_CARREFOUR[nom](c.carrefour, c.branches, ...args);
   if (r.refus) { window.__jeu?.log('refus', { operation: nom, refus: r.refus }); return r; }
   const carrefours = { ...etat.scenario.carrefours };
-  if (r.carrefour) carrefours[editeCarrefour] = r.carrefour; else delete carrefours[editeCarrefour];
+  if (r.carrefour) carrefours[id] = r.carrefour; else delete carrefours[id];
   etat.scenario = historique.faire({ ...etat.scenario, carrefours });
   apresChangement();
-  window.__jeu?.log('carrefour-operation', { noeud: editeCarrefour, operation: nom });
+  window.__jeu?.log('carrefour-operation', { noeud: id, operation: nom });
   return r;
 }
 function remettreCarrefour() {
@@ -901,9 +910,11 @@ function dessinerTrafic(alpha) {
   if (!trafic) return;
   majHud(false);
   const visible = etat?.couches.flux !== false;
+  majFleches();
   if (mode === '3d') {
     if (calque.width) { ctx2d.clearRect(0, 0, calque.width, calque.height); }
     if (scene && (trafic.temps !== dernierTemps3d || !visible)) { scene.definirTrafic(trafic.positions(alpha)); dernierTemps3d = trafic.temps; }
+    scene?.definirFleches(fleches.map(f => ({ anneau: f.anneau.map(p => repere.versLocal(p)), couleur: f.couleur })));
     return;
   }
   dessiner2d(visible ? trafic.positions(alpha) : null);
@@ -913,13 +924,31 @@ function dessiner2d(lots) {
   if (calque.width !== Math.round(r.width * dpr) || calque.height !== Math.round(r.height * dpr)) { calque.width = Math.round(r.width * dpr); calque.height = Math.round(r.height * dpr); }
   ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx2d.clearRect(0, 0, r.width, r.height);
-  if (!lots) return;
   // Lambert 72 → écran : une transformation affine calée au centre de la vue (écart < 1 px dans l'écran)
   const c = wgs84VersLambert(carte.getCenter().toArray());
   const ecran = p => carte.project(lambertVersWgs84(p));
   const o = ecran(c), ex = ecran([c[0] + 100, c[1]]), ey = ecran([c[0], c[1] + 100]);
   const ux = [(ex.x - o.x) / 100, (ex.y - o.y) / 100], uy = [(ey.x - o.x) / 100, (ey.y - o.y) / 100];
   const pxParM = Math.hypot(...ux);
+  versEcran2d = p => { const dx = p[0] - c[0], dy = p[1] - c[1]; return [o.x + dx * ux[0] + dy * uy[0], o.y + dx * ux[1] + dy * uy[1]]; };
+  // Les flèches au sol du carrefour choisi (sous les blocs)
+  for (const f of fleches) {
+    ctx2d.beginPath();
+    f.anneau.forEach((p, k) => { const [X, Y] = versEcran2d(p); if (k) ctx2d.lineTo(X, Y); else ctx2d.moveTo(X, Y); });
+    ctx2d.closePath();
+    ctx2d.fillStyle = f.couleur;
+    ctx2d.fill();
+    ctx2d.strokeStyle = PALETTE.voirie; // un filet blanc détache la flèche des axes d'encre
+    ctx2d.lineWidth = 1;
+    ctx2d.stroke();
+    // Au rouge, une barre d'arrêt en travers de la base : le feu ne se lit pas qu'à la couleur
+    if (f.couleur === PALETTE.selection) {
+      const [a1, a2] = [versEcran2d(f.barre[0]), versEcran2d(f.barre[1])];
+      ctx2d.beginPath(); ctx2d.moveTo(...a1); ctx2d.lineTo(...a2);
+      ctx2d.strokeStyle = PALETTE.selection; ctx2d.lineWidth = Math.max(2, 0.5 * pxParM); ctx2d.stroke();
+    }
+  }
+  if (!lots) return;
   for (const [m, t] of Object.entries(lots)) {
     const G = VEHICULES[m], L = Math.max(G.longueur, 2 / pxParM) / 2, W = Math.max(G.largeur, 1.5 / pxParM) / 2;
     ctx2d.fillStyle = TEINTE_2D[m];
@@ -944,6 +973,127 @@ function dessiner2d(lots) {
   }
 }
 
+// ─── Outils de la barre (v0.7) : un clic (ou un glisser) sur une voie la transforme ──
+let outil = null, trait = null, versEcran2d = null; // trait : tronçons déjà peints pendant ce glisser
+function majBarre() {
+  for (const b of document.querySelectorAll('#barre-outils [data-outil]')) b.setAttribute('aria-pressed', String(b.dataset.outil === (outil ?? '')));
+  $('barre-outils').classList.toggle('active', !!outil);
+  $('carte').classList.toggle('peinture', !!outil);
+}
+function choisirOutil(o) {
+  outil = o && o !== outil ? o : null;
+  if (outil) carte.dragPan.disable(); else carte.dragPan.enable();
+  scene?.definirPeinture(outil ? peindre : null);
+  majBarre();
+  if (outil) toast(t('outil.aide', { outil: t(`outil.${outil}`) }));
+  window.__jeu?.log('outil', { outil });
+}
+function construireBarre() {
+  $('barre-outils').replaceChildren(...[null, ...OUTILS].map(o => {
+    const b = el('button', { type: 'button', className: `outil${o ? '' : ' outil-aucun'}`, textContent: t(`outil.${o ?? 'aucun'}`), onclick: () => choisirOutil(o) });
+    b.dataset.outil = o ?? '';
+    b.title = t(`outil.${o ?? 'aucun'}.titre`);
+    return b;
+  }));
+  $('barre-outils').setAttribute('aria-label', t('outil.libelle'));
+  majBarre();
+}
+construireBarre();
+/** Le tronçon dont la section couvre ce point (Lambert 72), et le décalage du point à l'axe (positif à gauche). */
+function voieSous(p) {
+  let meilleur = null;
+  for (const s of segments.values()) {
+    const l = ligneDe(s.id);
+    if (!l || s.niveau !== 0) continue; // un clic touche la surface, jamais un tunnel dessous (ni un pont)
+    const r = distancePointLigne(p, l);
+    const sec = sectionDe(s.id);
+    const demi = sec ? Math.max(sec.axe, sec.emprise - sec.axe) + 0.5 : 4;
+    if (r.distance > demi || (meilleur && r.distance >= meilleur.distance)) continue;
+    const a = l[r.segment], b = l[r.segment + 1];
+    const cote = Math.sign((b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])) || 1;
+    meilleur = { troncon: s.id, distance: r.distance, decalage: cote * r.distance };
+  }
+  return meilleur;
+}
+/** Pose l'outil actif au point p (Lambert 72) ; un même glisser ne repasse pas sur un tronçon. */
+function poserOutil(p) {
+  const v = voieSous(p);
+  if (!v || trait?.has(v.troncon)) return null;
+  trait?.add(v.troncon);
+  const seg = segments.get(v.troncon);
+  const r = appliquerOutil(sectionDe(v.troncon), v.decalage, outil, { sensSource: seg.sourceAttributes?.oneway ?? null });
+  if (r.refus) { if (r.refus !== 'deja' || trait?.size === 1) toast(t(`refus.${r.refus}`, r.valeurs)); return r; }
+  const sections = { ...etat.scenario.sections };
+  if (memeSection(r.section, sectionMesuree(seg))) delete sections[v.troncon]; else sections[v.troncon] = r.section;
+  etat.scenario = historique.faire({ ...etat.scenario, sections });
+  apresChangement();
+  if (r.decoupee) toast(t('outil.decoupee', { n: r.decoupee }));
+  window.__jeu?.log('outil-pose', { outil, troncon: v.troncon, decalage: Math.round(v.decalage * 10) / 10 });
+  return r;
+}
+function peindre(phase, p) {
+  if (phase === 'debut') { trait = new Set(); poserOutil(p); } else if (phase === 'glisse' && trait) poserOutil(p); else trait = null;
+}
+// En 2D : le bouton gauche peint quand un outil est actif (la carte ne se déplace plus qu'au clavier)
+const pointCarte = e => { const r = carte.getCanvas().getBoundingClientRect(); return wgs84VersLambert(carte.unproject([e.clientX - r.left, e.clientY - r.top]).toArray()); };
+carte.getCanvas().addEventListener('pointerdown', e => { if (outil && e.button === 0 && !e.shiftKey) peindre('debut', pointCarte(e)); });
+carte.getCanvas().addEventListener('pointermove', e => { if (outil && trait && e.buttons & 1) peindre('glisse', pointCarte(e)); });
+window.addEventListener('pointerup', () => { if (trait) peindre('fin'); });
+
+// ─── Flèches de direction au sol (v0.7) : sur le carrefour choisi ─────────
+let fleches = [], noeudFleches = null, scenarioFleches = null;
+const LONG = 3.2, TETE = 1.2, DEMI_TETE = 0.6, DEMI_TIGE = 0.18, RECUL_FLECHE = 4.5; // m (dessin)
+function construireFleches(id) {
+  const c = etatCarrefour(id);
+  if (c.branches.length < 2) return [];
+  const geo = geometrieCarrefour(c.branches, c.raccords, [], DESSIN_CARREFOUR);
+  const feux = c.carrefour?.regulation === 'feux' ? phasesDe(c.branches, c.carrefour) : null;
+  const out = [];
+  for (const v of c.voies.values()) {
+    if (!v.entrante) continue;
+    const a = geo.ancres.get(v.id);
+    if (!a) continue;
+    const cap0 = Math.atan2(a.direction[1], a.direction[0]); // sens de marche, vers le nœud
+    const base = [a.point[0] - a.direction[0] * RECUL_FLECHE, a.point[1] - a.direction[1] * RECUL_FLECHE];
+    for (const d of directionsDe(c.branches, c.raccords, v.id)) {
+      const cap = cap0 + Math.max(-1.2, Math.min(1.2, d.virage * 0.8));
+      const u = [Math.cos(cap), Math.sin(cap)], n = [-u[1], u[0]];
+      const P = (l, w) => [base[0] + u[0] * l + n[0] * w, base[1] + u[1] * l + n[1] * w];
+      out.push({
+        noeud: id, voie: v.id, troncon: d.troncon, direction: d.direction, actif: d.actif, mouvement: `${v.troncon}>${d.troncon}`,
+        pointe: P(LONG, 0), milieu: P(LONG / 2, 0), barre: [P(-0.4, DEMI_TETE * 1.2), P(-0.4, -DEMI_TETE * 1.2)],
+        anneau: [P(0, DEMI_TIGE), P(LONG - TETE, DEMI_TIGE), P(LONG - TETE, DEMI_TETE), P(LONG, 0), P(LONG - TETE, -DEMI_TETE), P(LONG - TETE, -DEMI_TIGE), P(0, -DEMI_TIGE)],
+      });
+    }
+  }
+  return out.map(f => ({ ...f, feux }));
+}
+// Recalculées quand le carrefour ou le scénario change ; leur teinte suit le feu à chaque image
+function majFleches() {
+  const id = etat && etat.couches.sections !== false ? editeCarrefour ?? (estNoeud(etat.selection) ? etat.selection : null) : null;
+  // Le scénario est un nouvel objet à chaque modification (historique.faire) : il suffit de comparer
+  if (etat?.scenario !== scenarioFleches || id !== noeudFleches) { scenarioFleches = etat?.scenario; noeudFleches = id; fleches = id && lignesRues ? construireFleches(id) : []; }
+  const temps = trafic?.temps ?? 0;
+  for (const f of fleches) {
+    f.couleur = !f.actif ? PALETTE.bord : f.feux ? (auVert(f.feux, temps, f.mouvement) ? PALETTE.cyclable : PALETTE.selection) : PALETTE.encre;
+  }
+}
+/** Un clic (point de la vue, en pixels) sur une flèche allume ou éteint sa direction. → vrai si une flèche a été touchée. */
+function cliquerFleche(x, y) {
+  if (!fleches.length) return false;
+  const ecranDe = p => (mode === '3d' && scene ? (q => [q.x, q.y])(scene.versEcran(repere.versLocal(p))) : versEcran2d?.(p) ?? [Infinity, Infinity]);
+  let meilleur = null, dMin = R.selection.toleranceFlechePx;
+  for (const f of fleches) {
+    for (const p of [f.pointe, f.milieu]) { const [X, Y] = ecranDe(p); const d = Math.hypot(X - x, Y - y); if (d < dMin) { dMin = d; meilleur = f; } }
+  }
+  if (!meilleur) return false;
+  const r = opererSurNoeud(meilleur.noeud, 'basculerDirection', [meilleur.voie, meilleur.troncon]);
+  if (r?.refus) toast(t(`refus.${r.refus}`, { ...r.valeurs, de: r.valeurs?.de ? t(`mode.${r.valeurs.de}`) : undefined }));
+  else if (editeCarrefour) editeurCarrefour.afficher(infoCarrefour(editeCarrefour));
+  scenarioFleches = null;
+  return true;
+}
+
 // ─── Réglages ──────────────────────────────────────────────────────────────
 $('langue').value = i18n.lang;
 $('langue').onchange = e => {
@@ -954,6 +1104,7 @@ $('langue').onchange = e => {
   editeur.langue(t, i18n.lang);
   editeurCarrefour.langue(t, i18n.lang);
   editeurFlux.langue(t, i18n.lang);
+  construireBarre();
   if (etat) { construireCouches(); afficherInspecteur(objetChoisi()); majBascule(); if (edite) editeur.afficher(sectionDe(edite), infoEditeur(edite)); if (editeCarrefour) editeurCarrefour.afficher(infoCarrefour(editeCarrefour)); if (editeFlux) editeurFlux.afficher(infoFlux(editeFlux)); majCarrefours(); }
 };
 $('exporter').onclick = () => { sauvegarder(); downloadJSON(store.exportAll(), `${JEU}-sauvegarde.json`); };
@@ -1028,7 +1179,7 @@ createKeys({
 window.addEventListener('keydown', e => {
   if (e.key !== 'Escape' || e.repeat || !enCarte()) return;
   e.preventDefault();
-  if (edite) fermerEditeur(); else if (editeCarrefour) fermerCarrefour(); else if (editeFlux) fermerFlux(); else if (etat.selection) selectionner(null); else { $('dialogue-pause').showModal(); majBoucle(); }
+  if (outil) choisirOutil(null); else if (edite) fermerEditeur(); else if (editeCarrefour) fermerCarrefour(); else if (editeFlux) fermerFlux(); else if (etat.selection) selectionner(null); else { $('dialogue-pause').showModal(); majBoucle(); }
 });
 // Annuler / rétablir : Ctrl+Z, Ctrl+Y ou Ctrl+Maj+Z (Cmd sur Mac) ; dans un champ, le champ garde son propre annuler
 window.addEventListener('keydown', e => {
@@ -1118,7 +1269,7 @@ startUpdateCheck({ isBusy: () => enCarte() && !pauseJoueur, beforeReload: sauveg
 
 // ─── Mode debug (section 18) : chargé seulement avec ?debug=1 ──────────────
 if (DEBUG) {
-  const { installDebug } = await import('./lib/debug.js?v=0.6.0');
+  const { installDebug } = await import('./lib/debug.js?v=0.7.0');
   const stations = Object.fromEntries((await couche('infra')).features
     .filter(f => f.properties.famille === 'station').map(f => [f.properties.nom.toLowerCase(), { x: f.geometry.coordinates[0], y: f.geometry.coordinates[1] }]));
   installDebug({
@@ -1216,6 +1367,12 @@ if (DEBUG) {
       pauseTrafic: oui => { pauseJoueur = oui; majBoucle(); return pauseJoueur; },
       reconstruireTrafic: () => reconstruireTrafic(),
       // Repart de 8 h, en pause : le trafic ne dépend alors que de la graine et du nombre de pas
+      // Outils et flèches (v0.7)
+      outil: o => { choisirOutil(o ?? null); return outil; },
+      poserOutil: lonlat => { trait = new Set(); const r = poserOutil(wgs84VersLambert(lonlat)); trait = null; return r?.refus ? { refus: r.refus } : r ? { ok: true, decoupee: r.decoupee ?? null } : null; },
+      voieSous: lonlat => voieSous(wgs84VersLambert(lonlat)),
+      fleches: () => { majFleches(); return fleches.map(f => ({ voie: f.voie, troncon: f.troncon, direction: f.direction, actif: f.actif, couleur: f.couleur, pointe: lambertVersWgs84(f.pointe), milieu: lambertVersWgs84(f.milieu) })); },
+      etatFeux: id => { const c = etatCarrefour(id); return c.carrefour?.regulation === 'feux' ? etatFeux(phasesDe(c.branches, c.carrefour), trafic?.temps ?? 0) : null; },
       relancerTrafic: () => { pauseJoueur = true; demarrerTrafic(); return trafic.temps; },
       entrees: () => reseauTrafic?.entrees.map(e => ({ troncon: e.troncon, sens: e.sens, hierarchie: e.hierarchie })) ?? [],
       vehicules: () => trafic?.vehicules().map(v => ({ id: v.id, mode: v.mode, chemin: v.chemin.cle, s: v.s, v: v.v })) ?? [],

@@ -59,6 +59,16 @@ Statuts : **à l'étude** · **validé** (Jérôme a tranché) · **en cours** �
 - [ ] Taux d'occupation des voitures et des bus : aucune source citée (hypothèse du joueur, « Non renseigné » au départ)
 - [ ] Flux en 3D ; légende de la couche Flux
 
+### Construire sur la carte — v0.7
+
+**Statut** : à mesurer (livré en 0.7.0, attend la validation de Jérôme)
+
+- [x] Barre d'outils (voie auto, bus, piste, trottoir, stationnement, planté, sens, retirer) : clic ou glisser sur une voie, en 2D et en 3D ; chaussée inconnue découpée en voies (proposition)
+- [x] Flèches au sol du carrefour choisi : un clic allume ou éteint une direction ; couleur du feu
+- [x] Feux : modèle proposé, durée de vert par phase, frise ; le trafic s'arrête au rouge pour son mouvement ; critère `node outils/critere-v07.mjs`
+- [ ] Profils de rue (écartés pour l'instant au profit de l'outil voie par voie) ; outil au clavier sur la carte
+- [ ] Simulation statique (v0.5) : part de vert tirée des phases réglées
+
 ### Le trafic bouge — v0.6
 
 **Statut** : à mesurer (livré en 0.6.0, attend la validation de Jérôme)

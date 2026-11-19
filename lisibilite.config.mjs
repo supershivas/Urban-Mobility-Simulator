@@ -58,6 +58,11 @@ export default {
     { avant: 'voirie', fond: 'encre', role: 'signe', ou: 'cerne blanc d\'une voiture sur un axe principal' },
     { avant: 'bus', fond: 'encre', role: 'signe', ou: 'bus (et son cerne) sur un axe principal' },
     { avant: 'encre', fond: 'voirie', role: 'signe', ou: 'cerne d\'un bus ou d\'un vélo sur la chaussée' },
+    // v0.7 : flèches au sol (filet blanc en 2D) — allumée encre, éteinte bord, au feu vert cyclable, au rouge sélection
+    { avant: 'bord', fond: 'voirie', role: 'signe', ou: 'flèche éteinte sur la chaussée' },
+    { avant: 'selection', fond: 'voirie', role: 'signe', ou: 'flèche au rouge sur la chaussée' },
+    { avant: 'cyclable', fond: 'voirie', role: 'signe', ou: 'flèche au vert sur la chaussée' },
+    { avant: 'voirie', fond: 'bord', role: 'signe', ou: 'filet blanc d\'une flèche sur un axe secondaire' },
   ],
   groupes: {},
   poses: [],

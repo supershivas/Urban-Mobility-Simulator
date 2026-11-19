@@ -21,5 +21,30 @@
 | Couches | 1 à 9, 0 (Flux) | cases à cocher |
 | Trafic : pause / reprendre | Espace | bouton en haut à gauche de la vue |
 | Trafic : vitesse ×1, ×2, ×4, ×8 | X | bouton en haut à gauche de la vue |
+| Outil de voie (v0.7) | Tab jusqu'à la barre d'outils, Entrée ; Échap rend la main (au clavier, le détail : M) | bouton de la barre du bas, puis clic sur une voie ou glisser le long d'une rue |
+| Allumer / éteindre une direction | M sur le carrefour : raccords de l'éditeur | clic sur une flèche au sol du carrefour choisi |
+| Feux d'un carrefour | M : régulation « Feux », modèle, curseurs (← →) | mêmes commandes du bandeau |
 | Menu | Échap (sans sélection) | roue crantée |
 
+## Palette « Plan d'urbaniste » (Jérôme, v0.1.0)
+
+Source unique : `js/palette.js` (variables CSS `--jeu-*` posées au lancement, style MapLibre construit depuis elle ; un test vérifie que la carte n'emploie que ces couleurs et que le CSS n'en contient aucune).
+
+| Nom | Valeur | Rôle |
+|---|---|---|
+| `papier` | `#F2EFE8` | fond de carte et d'interface |
+| `bati` | `#D3CBBE` | bâtiments |
+| `voirie` | `#FFFFFF` | chaussées, en-tête, barre d'état |
+| `trottoir` | `#E6E0D5` | trottoirs, terre-pleins, places (ajoutée : sans elle, trottoir et chaussée se confondent) |
+| `bord` | `#9A9284` | contours, axes secondaires |
+| `encre` | `#22262B` | texte, axes principaux, emprise, boutons |
+| `noeud` | `#2E5A88` | nœuds, rails, liens |
+| `selection` | `#D9442B` | tronçon choisi et ses nœuds |
+| `cyclable` · `bus` · `stationnement` · `plante` | `#5E9E95` · `#D9A441` · `#A9B4C2` · `#A3BC86` | bandes de section [À VALIDER] (Jérôme a choisi « teintes douces + motifs », v0.3.0) ; toujours doublées d'un motif (carte) et d'un sigle (éditeur) |
+| `inconnu` | `#696969` | « Non renseigné » (#8C8C8C proposé : 3,0 de contraste sur papier, assombri à 4,8) ; contour des bâtiments sans hauteur (3D) |
+
+La 3D n'a pas de lumière : toits en `bati` exact, façades mêlées vers `bord` selon leur orientation (réglages `scene.ombreMur*`). Bâtiment choisi : plein `selection` **cerné d'encre** (selection sur bati ne vaut que 2,71).
+
+Police : police système (aucune police distante). Les aplats (bâti, trottoir) ne sont pas des signes : contours `bord` dès le zoom 15–16.
+
+Trafic (v0.6) : voitures `noeud` [À VALIDER], bus `bus`, vélos `cyclable`. Flèches au sol (v0.7) : allumée `encre`, éteinte `bord`, au feu `cyclable` (vert) ou `selection` (rouge, avec barre d'arrêt en 2D).

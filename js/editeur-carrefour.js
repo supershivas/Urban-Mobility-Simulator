@@ -5,8 +5,8 @@
 // sortantes à raccorder ou à détacher. Ce module dessine et écoute : il ne modifie
 // jamais le carrefour, il demande à main.js (surOperation), qui applique les règles
 // de js/carrefour.js et tient l'historique.
-import { REGULATIONS, ANGLES } from './data/carrefours.js?v=0.6.0';
-import { normaliser } from './carrefour.js?v=0.6.0';
+import { REGULATIONS, ANGLES, VERTS } from './data/carrefours.js?v=0.7.0';
+import { normaliser } from './carrefour.js?v=0.7.0';
 
 export const lettre = i => String.fromCharCode(65 + i);
 
@@ -125,10 +125,38 @@ export function creerEditeurCarrefour({ racine, t: tr, lang: langue, rappels }) 
     return c;
   }
 
+  // Feux (v0.7) : le modèle proposé, une frise du cycle, un curseur de vert par phase
+  function rangeeFeux() {
+    const f = info.feux;
+    const lettreDe = troncon => lettre(info.branches.findIndex(b => b.troncon === troncon));
+    const qui = (ph, i) => {
+      const origines = [...new Set([...ph.mouvements].map(m => lettreDe(m.split('>')[0])))].join(', ');
+      const quoi = f.modele === 'tag-protege' ? (i % 2 ? 'feux.gauche' : 'feux.droit-droite') : 'feux.tous';
+      return `${origines || '—'} (${t(quoi)})`;
+    };
+    const modele = el('select', { className: 'editeur-choix', onchange: e => { const r = operer('definirModeleFeux', [e.target.value]); if (r?.refus) e.target.value = f.modele; } });
+    modele.append(...f.modeles.map(m => el('option', { value: m, textContent: t(`feux.modele.${m}`) })));
+    modele.value = f.modele;
+    modele.setAttribute('aria-label', t('feux.modele'));
+    const frise = el('div', { className: 'feux-frise', title: t('feux.cycle', { c: f.cycle, p: f.perte * f.phases.length }) },
+      ...f.phases.flatMap(ph => [el('span', { className: 'vert', style: `flex: ${ph.vert}` }), el('span', { className: 'perte', style: `flex: ${f.perte}` })]));
+    const phases = f.phases.map((ph, i) => {
+      const valeur = el('b', { textContent: `${ph.vert} s` });
+      const curseur = el('input', { type: 'range', min: String(VERTS.minS), max: String(VERTS.maxS), step: String(VERTS.pasS), value: String(ph.vert) });
+      curseur.setAttribute('aria-label', t('feux.vert', { n: i + 1 }));
+      curseur.oninput = () => { valeur.textContent = `${curseur.value} s`; };
+      curseur.onchange = () => operer('definirVert', [i, Number(curseur.value)]);
+      curseur.dataset.phase = String(i);
+      return el('label', { className: 'feux-phase' }, el('span', { textContent: t('feux.phase', { n: i + 1, qui: qui(ph, i) }) }), curseur, valeur);
+    });
+    return el('div', { className: 'feux' }, el('label', { className: 'carrefour-regulation' }, el('span', { textContent: t('feux.modele') }), modele),
+      el('span', { textContent: t('feux.cycle', { c: f.cycle, p: f.perte * f.phases.length }) }), ...phases, frise);
+  }
+
   function dessiner() {
     if (!info) return;
-    const focus = document.activeElement && racine.contains(document.activeElement) && document.activeElement.dataset.voie
-      ? `[data-voie="${CSS.escape(document.activeElement.dataset.voie)}"]` : null;
+    const actif = document.activeElement && racine.contains(document.activeElement) ? document.activeElement : null;
+    const focus = actif?.dataset.voie ? `[data-voie="${CSS.escape(actif.dataset.voie)}"]` : actif?.dataset.phase ? `[data-phase="${actif.dataset.phase}"]` : null;
     const fermer = el('button', { type: 'button', className: 'icone', onclick: rappels.surFermer });
     fermer.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
     fermer.setAttribute('aria-label', t('carrefour.fermer'));
@@ -153,6 +181,7 @@ export function creerEditeurCarrefour({ racine, t: tr, lang: langue, rappels }) 
       el('div', { className: 'carrefour-ligne' },
         el('span', { className: 'carrefour-compte', textContent: t('carrefour.compte', { n: info.raccords.length, p: proposes }), title: t('valeur.methode-raccords') }),
         el('p', { className: `editeur-message carrefour-message${dernier.refus ? ' refus' : ''}`, role: 'status', textContent: dernier.texte || resume() })),
+      ...(info.feux ? [rangeeFeux()] : []),
       el('div', { className: 'carrefour-branches' }, ...info.branches.map(carteBranche)),
     );
     if (focus) racine.querySelector(focus)?.focus();

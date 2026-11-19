@@ -4,17 +4,17 @@
 // Ce module dessine et vise : il ne modifie jamais l'état du jeu (main.js décide).
 // Une image n'est calculée que sur demande (le trafic, v0.6, en demande une à chaque pas
 // de la boucle), et jamais quand la vue est inactive ou l'onglet caché.
-import * as THREE from '../../vendor/three/three.module.js?v=0.6.0';
-import { versScene, depuisScene } from '../geo/repere.js?v=0.6.0';
-import { distancePointLigne, boite } from '../geo/geometrie.js?v=0.6.0';
-import { decalerLigne } from '../geo/decalage.js?v=0.6.0';
-import { pose, contraindre, deplacer, tourner, zoomer, cadrer, metresParPixel, interpoler } from './camera.js?v=0.6.0';
+import * as THREE from '../../vendor/three/three.module.js?v=0.7.0';
+import { versScene, depuisScene } from '../geo/repere.js?v=0.7.0';
+import { distancePointLigne, boite } from '../geo/geometrie.js?v=0.7.0';
+import { decalerLigne } from '../geo/decalage.js?v=0.7.0';
+import { pose, contraindre, deplacer, tourner, zoomer, cadrer, metresParPixel, interpoler } from './camera.js?v=0.7.0';
 import {
   maillerSurfaces, maillerBatiments, maillerAxes, maillerRuban, maillerSections, maillerPolygones, segmentsDeLignes, lignesLocales, rangDuTriangle,
-} from './geometrie3d.js?v=0.6.0';
-import { BANDES } from '../data/bandes.js?v=0.6.0';
-import { VEHICULES } from '../data/trafic.js?v=0.6.0';
-import { HIERARCHIE_PRINCIPALE, SURFACE_PIETONNE, SURFACE_SOUTERRAINE } from '../carte/style.js?v=0.6.0';
+} from './geometrie3d.js?v=0.7.0';
+import { BANDES } from '../data/bandes.js?v=0.7.0';
+import { VEHICULES } from '../data/trafic.js?v=0.7.0';
+import { HIERARCHIE_PRINCIPALE, SURFACE_PIETONNE, SURFACE_SOUTERRAINE } from '../carte/style.js?v=0.7.0';
 
 const rad = deg => (deg * Math.PI) / 180;
 
@@ -111,6 +111,20 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
     new THREE.LineDashedMaterial({ color: P.encre, dashSize: S.tiretsEmpriseM[0], gapSize: S.tiretsEmpriseM[1] }));
   contour.computeLineDistances();
   groupe('emprise', contour);
+
+  // ─── Flèches de direction (v0.7) : polygones au sol, posés sur le carrefour ──
+  const groupeFleches = scene.add(new THREE.Group()).children.at(-1);
+  let signatureFleches = '';
+  // fleches : [{ anneau (local), couleur (palette) }] ; ne refait le maillage que si elles ont changé
+  function definirFleches(fleches) {
+    const sig = JSON.stringify(fleches.map(f => [f.couleur, f.anneau[0]]));
+    if (sig === signatureFleches) return;
+    signatureFleches = sig;
+    vider(groupeFleches);
+    const m = maillerPolygones(fleches.map(f => ({ anneau: f.anneau, couleur: rvb(f.couleur) })), S.hauteurLignesM / 2);
+    if (m.indices.length) groupeFleches.add(new THREE.Mesh(geometrie(m), aplat(-3, { vertexColors: true })));
+    demander();
+  }
 
   // ─── Trafic (v0.6) : un bloc par véhicule, des instances par mode (couche « flux ») ──
   // Voitures en `noeud` [À VALIDER] : l'encre se perdait sur les axes principaux, le blanc sur la chaussée.
@@ -353,14 +367,27 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
   }
 
   // ─── Souris : glisser = déplacer, clic droit ou Maj + glisser = tourner, molette = zoom ─
-  let prise = null;
+  let prise = null, peinture = null;
+  // Le point du sol sous un point de l'écran, en Lambert 72 (null : la caméra ne voit pas le sol là)
+  function solSous(x, y) {
+    camera.updateMatrixWorld();
+    rayon.setFromCamera(new THREE.Vector2((x / largeur) * 2 - 1, -(y / hauteur) * 2 + 1), camera);
+    const p = rayon.ray.intersectPlane(planSol, v3);
+    if (!p) return null;
+    const l = depuisScene(p.toArray());
+    return [l[0] + repere.origine[0], l[1] + repere.origine[1]];
+  }
+  const ici = e => { const r = canvas.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
   canvas.addEventListener('contextmenu', e => e.preventDefault());
   canvas.addEventListener('pointerdown', e => {
     canvas.setPointerCapture(e.pointerId);
     prise = { x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY, tourne: e.button === 2 || e.shiftKey || e.ctrlKey, bouton: e.button, bouge: false };
+    // Outil actif (v0.7) : le bouton gauche peint ; tourner reste au clic droit ou à Maj
+    if (peinture && e.button === 0 && !prise.tourne) { prise.peint = true; const p = solSous(...ici(e)); if (p) peinture('debut', p); }
   });
   canvas.addEventListener('pointermove', e => {
     if (!prise) return;
+    if (prise.peint) { prise.bouge = true; const p = solSous(...ici(e)); if (p) peinture?.('glisse', p); return; }
     const dx = e.clientX - prise.x, dy = e.clientY - prise.y;
     if (!prise.bouge && Math.hypot(e.clientX - prise.x0, e.clientY - prise.y0) < S.seuilClicPx) return;
     prise.bouge = true; prise.x = e.clientX; prise.y = e.clientY;
@@ -369,8 +396,10 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
   const lacher = e => {
     if (!prise) return;
     const clic = !prise.bouge && prise.bouton === 0 && e.type === 'pointerup';
+    const peint = prise.peint;
     prise = null;
-    if (clic) { const r = canvas.getBoundingClientRect(); surChoix?.(viser(e.clientX - r.left, e.clientY - r.top)); }
+    if (peint) { peinture?.('fin', null); return; }
+    if (clic) { const [x, y] = ici(e); surChoix?.(viser(x, y), { x, y }); }
   };
   canvas.addEventListener('pointerup', lacher);
   canvas.addEventListener('pointercancel', lacher);
@@ -415,6 +444,11 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
     definirSections(entrees, bande = null) { bandeChoisie = bande; dessinerSections(entrees); demander(); },
     /** Les carrefours à dessiner (v0.4) : [{ noeud, zone, traversees, raccords, complet }] en local ; voie : la voie entrante choisie. */
     definirCarrefours(entrees, voie = null) { dessinerCarrefours(entrees, voie); demander(); },
+    /** Flèches de direction au sol (v0.7) : [{ anneau (local), couleur }]. */
+    definirFleches,
+    /** Outil actif (v0.7) : rappel(phase 'debut' | 'glisse' | 'fin', point Lambert 72) pendant un glisser au bouton gauche ; null : rien. */
+    definirPeinture(rappel) { peinture = rappel; canvas.classList.toggle('peinture', !!rappel); },
+    solSous,
     /** Les blocs du trafic (v0.6) : { mode → Float32Array [x, y, cap, …] } en Lambert 72. */
     definirTrafic,
     blocs: () => Object.fromEntries(Object.entries(blocs).map(([m, b]) => [m, { n: b.count, visible: b.visible && b.parent?.visible, premier: b.count ? [...b.instanceMatrix.array.slice(12, 15)] : null }])),

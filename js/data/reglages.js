@@ -12,7 +12,8 @@ export const REGLAGES = {
   },
   selection: {
     toleranceClicPx: 8,     // un clic à moins de 8 px d'un axe le sélectionne
-    toleranceNoeudPx: 7,    // un clic à moins de 7 px d'un nœud choisit le carrefour (avant l'axe, qui y aboutit)
+    toleranceNoeudPx: 7,
+    toleranceFlechePx: 14,  // v0.7 : un clic à moins de 14 px de la pointe ou du milieu d'une flèche au sol    // un clic à moins de 7 px d'un nœud choisit le carrefour (avant l'axe, qui y aboutit)
   },
   scene: {                  // vue 3D (v0.2) : caméra orbitale, épaisseurs de dessin en mètres
     fovDegres: 40,          // champ vertical de la caméra

@@ -1,9 +1,9 @@
 {
-  "version": "0.6.0",
+  "version": "0.7.0",
   "date": "2026-11-19",
   "changes": [
-    "Le trafic roule : voitures, bus et vélos circulent sur les vraies voies du corridor, entrent par ses bords et choisissent leur route aux carrefours ; la partie s'ouvre en 3D",
-    "Chaque modification se voit tout de suite : une voie retirée, un raccord détaché ou un feu posé changent ce qui roule (files au rouge comprises)",
-    "Pause (Espace) et vitesse du temps (X, jusqu'à ×8) en haut à gauche ; l'inspecteur d'une rue montre ce qui y passe en ce moment"
+    "Construire à la main : une barre d'outils en bas de la vue (voie auto, bus, piste, trottoir, stationnement, planté, sens, retirer) ; un clic ou un glisser sur une voie la transforme, en 2D comme en 3D",
+    "Flèches au sol sur le carrefour choisi : un clic allume ou éteint une direction ; aux feux, elles passent au vert ou au rouge, et le trafic s'arrête au rouge pour sa direction",
+    "Feux réglables dans l'éditeur de carrefour (M) : modèle de phases et durée de vert de chaque phase ; si le jeu ne démarre pas, l'écran de chargement dit pourquoi"
   ]
 }
