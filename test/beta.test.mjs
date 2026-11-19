@@ -1,7 +1,7 @@
 // Le jeu beta « Carte blanche » : réseau (tracé en arc, découpe, refus), géométrie, trafic.
-import { reseauDepart, tracerArc, projetRoute, construireRoute, viser, accroche, basculerVoies, basculerVelo, branches, longueur, relireReseau } from '../js/beta/reseau.js';
+import { reseauDepart, tracerArc, projetRoute, construireRoute, viser, accroche, basculerVoies, basculerVelo, demolir, branches, longueur, relireReseau } from '../js/beta/reseau.js';
 import { geometrieReseau, enveloppe } from '../js/beta/geometrie.js';
-import { preparerTrafic, creerTrafic, avancer, reconcilier, compter, sources } from '../js/beta/trafic.js';
+import { preparerTrafic, creerTrafic, avancer, reconcilier, compter, sources } from '../js/beta/roulage.js';
 import { pointA } from '../js/beta/reseau.js';
 import { ROUTE, TRACE, TRAFIC, VEHICULES } from '../js/beta/donnees.js';
 
@@ -68,6 +68,31 @@ test('doubler les voies et ajouter une piste cyclable, puis revenir', () => {
   assert.ok(g.pistes);
   assert.equal(g.demi, 2 * 3 + 0.5 + 1.75);
   assert.ok(basculerVoies(r0, 'inconnu', ROUTE).refus);
+});
+test('démolir une impasse referme le carrefour : la route de départ redevient un seul tronçon', () => {
+  const r0 = depart();
+  const { reseau, troncon } = construireRoute(r0, tirer(r0, [0, 0], [0, 120]), TRACE);
+  const r = demolir(reseau, troncon).reseau;
+  assert.equal(Object.keys(r.troncons).length, 1);
+  assert.equal(Object.keys(r.noeuds).length, 2);
+  const t = Object.values(r.troncons)[0];
+  assert.ok(Math.abs(longueur(t.points) - 1100) < 0.01);
+  assert.equal(demolir(r, Object.keys(r.troncons)[0]).refus, 'bordDemolir', 'la route qui mène au bord reste');
+});
+test('démolir un tronçon entre deux carrefours referme les deux ; des voies différentes ne se recollent pas', () => {
+  let r = depart();
+  r = construireRoute(r, tirer(r, [0, 0], [0, 150]), TRACE).reseau;
+  r = construireRoute(r, tirer(r, [200, 0], [3, 100]), TRACE).reseau;
+  const milieu = Object.entries(r.troncons).find(([, t]) => t.points.every(p => p[1] === 0) && t.points.every(p => p[0] >= -1 && p[0] <= 201))[0];
+  const avant = Object.keys(r.troncons).length;
+  const apres = demolir(r, milieu).reseau;
+  assert.equal(Object.keys(apres.troncons).length, avant - 3, 'un tronçon démoli, deux paires recollées');
+  assert.equal(Object.values(apres.noeuds).filter(n => branches(apres, Object.keys(apres.noeuds).find(k => apres.noeuds[k] === n)).length === 2).length, 0, 'plus aucun nœud de passage');
+  // Sur la route nouvelle : une moitié en 2 × 2, l'autre non → le nœud reste quand on démolit la diagonale
+  const diag = Object.keys(r.troncons).at(-1);
+  const nord = Object.entries(r.troncons).find(([id, t]) => id !== diag && t.points.at(-1)[1] > 140)[0];
+  const r2 = basculerVoies(r, nord, ROUTE).reseau;
+  assert.ok(Object.keys(demolir(r2, diag).reseau.troncons).length === Object.keys(r2.troncons).length - 2, 'la route de départ se recolle, pas la route nord');
 });
 test('la sauvegarde relue est le même réseau', () => {
   let r = depart();
@@ -151,4 +176,14 @@ test('2 × 2 voies avec pistes et deux carrefours : le trafic tourne sans se che
   assert.ok(etat.sortis.voiture > 30, `${etat.sortis.voiture}`);
   assert.ok(etat.sortis.velo > 5);
   sansChevauchement(etat);
+});
+
+group('noms de fichiers');
+test('aucun module servi au joueur ne porte un nom que les bloqueurs de publicités refusent', async () => {
+  // Vu deux fois : js/trafic.js (0.6.0) puis js/beta/trafic.js (0.9.0), « main.js introuvable » chez Jérôme
+  const { readdirSync, statSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const interdits = /trafic|traffic|stats|analytic|track|counter|(^|[-_.])ads?([-_.]|$)|beacon|pixel/i;
+  const parcourir = d => readdirSync(d).flatMap(f => { const p = join(d, f); return statSync(p).isDirectory() ? parcourir(p) : [p]; });
+  for (const f of [...parcourir('js'), ...parcourir('css')]) assert.ok(!interdits.test(f.split('/').pop()), f);
 });

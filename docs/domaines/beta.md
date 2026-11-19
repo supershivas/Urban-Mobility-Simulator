@@ -10,13 +10,14 @@ Un second jeu, ouvert par le bouton « Bêta : carte blanche » de l'écran titr
 | Tracé | 1 clic sur n'importe quel point d'une route = départ ; au survol, la route nouvelle part **perpendiculairement puis tourne en arc** jusqu'au pointeur ; 1 clic = construire. Arrivée près d'une route : raccord (carrefour) ; sinon impasse. Au bout d'une impasse, la route se prolonge |
 | Trafic | Les voitures empruntent les routes nouvelles, **branche au hasard** à chaque carrefour (graine fixe) ; elles naissent et disparaissent aux bouts de carte et aux impasses |
 | Doubler, piste | S'appliquent au **tronçon entre deux carrefours** ; 1 ↔ 2 voies par sens ; piste verte de chaque côté, picto vélo blanc tous les 30 m |
+| Démolir | Outil 4 (ou Suppr), au tronçon : un nœud resté seul disparaît, un nœud qui ne relie plus que deux tronçons pareils (mêmes voies, même piste) se referme ; un tronçon qui touche le bord de la carte reste (Jérôme, v0.9.1) |
 | Vélos | Quelques vélos roulent sur les pistes, plus lents ; ils naissent et sortent aux bouts du réseau cyclable |
 
 ## Modules
 
-- `js/beta/reseau.js` — nœuds, tronçons, tracé en arc (`tracerArc`), projet (`projetRoute` → refus éventuel), `construireRoute`, `basculerVoies`, `basculerVelo`. Pur, rend `{ reseau }` ou `{ refus }`.
+- `js/beta/reseau.js` — nœuds, tronçons, tracé en arc (`tracerArc`), projet (`projetRoute` → refus éventuel), `construireRoute`, `basculerVoies`, `basculerVelo`, `demolir`. Pur, rend `{ reseau }` ou `{ refus }`.
 - `js/beta/geometrie.js` — reculs, voies décalées (conduite à droite), zones de carrefour (enveloppe convexe), raccords (Bézier). Lu par le dessin et par le trafic.
-- `js/beta/trafic.js` — IDM, apparitions, admission aux carrefours, `reconcilier` après une modification. Pur, à graine.
+- `js/beta/roulage.js` — IDM, apparitions, admission aux carrefours, `reconcilier` après une modification. Pur, à graine.
 - `js/beta/scene.js` — three.js (ne modifie rien) ; `js/beta/main.js` — cycle de vie, outils, commandes, sauvegarde ; `js/beta/textes.js`, `js/beta/donnees.js`.
 - Palette : `PALETTE_BETA` dans `js/palette.js`. CSS : `css/beta.css` (aucune couleur).
 - Sauvegarde : clé `urban-mobility-simulator:beta` (`{ reseau, camera }`, `v: 1`) ; la langue vient des `prefs` du jeu principal (jamais écrites ici). Le trafic n'est pas sauvegardé : à l'ouverture, 100 s sont simulées d'avance.
@@ -31,13 +32,15 @@ Un second jeu, ouvert par le bouton « Bêta : carte blanche » de l'écran titr
 
 ## Commandes
 
-Clic : selon l'outil (1 route, 2 doubler, 3 piste). Glisser : déplacer ; clic droit glissé (ou Maj + glisser) : tourner ; molette, + / − : zoom ; flèches / WASD : déplacer ; Q / E : tourner. Clic droit ou Échap : renoncer à la route en projet (Échap sinon : menu). Ctrl Z / Ctrl Y : annuler / rétablir. Espace : pause ; X : vitesse ×1 / ×2 / ×4. Origine : recentrer.
+Clic : selon l'outil (1 route, 2 doubler, 3 piste, 4 ou Suppr démolir). Glisser : déplacer ; clic droit glissé (ou Maj + glisser) : tourner ; molette, + / − : zoom ; flèches / WASD : déplacer ; Q / E : tourner. Clic droit ou Échap : renoncer à la route en projet (Échap sinon : menu). Ctrl Z / Ctrl Y : annuler / rétablir. Espace : pause ; X : vitesse ×1 / ×2 / ×4. Origine : recentrer.
 
 ## Vérification
 
 `node outils/test-run.mjs test/beta.test.mjs` ; `node outils/critere-beta.mjs --sortie <dossier>` (à la souris dans le vrai jeu : départ, refus, aperçu, construction, raccord, doubler, piste, trafic, console).
 
 ## Pièges
+
+- **Nom de fichier** : `js/beta/trafic.js` (0.9.0) était refusé par un bloqueur de publicités (« main.js » non chargé chez Jérôme) : c'est le piège déjà noté en 0.7.1 (`docs/domaines/outillage.md`). Renommé `roulage.js` ; un test de `test/beta.test.mjs` refuse désormais ces noms dans `js/` et `css/`. Le filet de secours de `beta.html` suit les imports et nomme le fichier refusé.
 
 - Calque d'ombres (`ShadowMaterial`, transparent) : sans `depthWrite: false`, il masquait les pictos et le surlignage dessinés après lui.
 - `InstancedMesh` des pictos : `frustumCulled = false`, sinon la sphère englobante est celle d'un picto à l'origine et tout disparaît loin de (0, 0).

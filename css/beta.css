@@ -49,6 +49,7 @@
 @media (hover: hover) { .beta-outil:hover { background: var(--jeu-fond); } }
 .beta-outil[aria-pressed="true"] { background: var(--jeu-encre); color: var(--jeu-surface); }
 .beta-outil[data-outil="velo"] svg { stroke: var(--beta-velo); }
+.beta-outil[data-outil="demolir"][aria-pressed="true"] { background: var(--beta-refus); }
 .beta-outil[data-outil="velo"][aria-pressed="true"] { background: var(--beta-velo); }
 .beta-outil[data-outil="velo"][aria-pressed="true"] svg { stroke: var(--jeu-surface); }
 

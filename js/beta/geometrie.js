@@ -1,12 +1,12 @@
 // La géométrie du réseau beta, lue à la fois par le dessin (scene.js) et par le
-// trafic (trafic.js) : les deux voient exactement les mêmes voies. Pur, testé.
+// trafic (roulage.js) : les deux voient exactement les mêmes voies. Pur, testé.
 //
 // Conduite à droite. Pour un tronçon a → b, le sens +1 roule à droite de l'axe
 // (décalage négatif), le sens −1 sur la ligne inversée, à droite elle aussi.
 // Voie 0 = la plus proche de l'axe. Les tronçons s'arrêtent au recul de chaque
 // carrefour ; la zone du carrefour est dessinée par-dessus, les raccords y passent.
-import { longueur, pointA, sousLigne, branches } from './reseau.js?v=0.9.0';
-import { decalerLigne } from '../geo/decalage.js?v=0.9.0';
+import { longueur, pointA, sousLigne, branches } from './reseau.js?v=0.9.1';
+import { decalerLigne } from '../geo/decalage.js?v=0.9.1';
 
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 

@@ -264,6 +264,40 @@ export function basculerVelo(reseau, id) {
   return { reseau: { ...reseau, troncons: { ...reseau.troncons, [id]: { ...t, velo: !t.velo } } } };
 }
 
+/**
+ * Démolit un tronçon. Un nœud resté seul disparaît ; un nœud qui ne relie plus que deux
+ * tronçons pareils (mêmes voies, même piste) n'est plus un carrefour : les deux se recollent.
+ * Un tronçon qui touche le bord de la carte ne se démolit pas (la route de départ reste reliée au monde).
+ */
+export function demolir(reseau, id) {
+  const t = reseau.troncons[id];
+  if (!t) return { refus: 'perdu' };
+  if (reseau.noeuds[t.a].bord || reseau.noeuds[t.b].bord) return { refus: 'bordDemolir' };
+  let res = { ...reseau, noeuds: { ...reseau.noeuds }, troncons: { ...reseau.troncons } };
+  delete res.troncons[id];
+  for (const n of new Set([t.a, t.b])) res = nettoyerNoeud(res, n);
+  return { reseau: res };
+}
+
+function nettoyerNoeud(reseau, idNoeud) {
+  if (!reseau.noeuds[idNoeud]) return reseau;
+  const br = branches(reseau, idNoeud);
+  if (br.length === 0) { const noeuds = { ...reseau.noeuds }; delete noeuds[idNoeud]; return { ...reseau, noeuds }; }
+  if (br.length !== 2 || br[0].troncon === br[1].troncon || reseau.noeuds[idNoeud].bord) return reseau;
+  const [b1, b2] = br, t1 = reseau.troncons[b1.troncon], t2 = reseau.troncons[b2.troncon];
+  if (t1.voies !== t2.voies || t1.velo !== t2.velo) return reseau;
+  // t1 parcouru vers le nœud, puis t2 depuis le nœud
+  const avant = b1.sens === -1 ? t1.points : t1.points.slice().reverse();
+  const apres = b2.sens === 1 ? t2.points : t2.points.slice().reverse();
+  const a = b1.sens === -1 ? t1.a : t1.b, b = b2.sens === 1 ? t2.b : t2.a;
+  if (a === b) return reseau; // les deux tronçons formeraient une boucle sur elle-même : on garde le nœud
+  const troncons = { ...reseau.troncons }, noeuds = { ...reseau.noeuds };
+  delete troncons[b1.troncon]; delete troncons[b2.troncon]; delete noeuds[idNoeud];
+  const nouveau = `t${reseau.suivant}`;
+  troncons[nouveau] = { ...t1, a, b, points: [...avant, ...apres.slice(1)] };
+  return { ...reseau, suivant: reseau.suivant + 1, noeuds, troncons };
+}
+
 /** Relit un réseau sauvegardé : rend null s'il est incohérent (le jeu repart alors de la carte vierge). */
 export function relireReseau(d) {
   if (!d || typeof d !== 'object' || !d.noeuds || !d.troncons) return null;

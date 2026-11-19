@@ -2,19 +2,19 @@
 // double sens où passent des voitures, et trois outils — tirer une route depuis
 // n'importe quel point d'une autre (en arc), doubler les voies d'un tronçon,
 // lui ajouter une piste cyclable. Cycle de vie, commandes, sauvegarde.
-// Les règles sont dans reseau.js et trafic.js (purs) ; le dessin dans scene.js.
-import { createStore, autosave } from '../lib/save.js?v=0.9.0';
-import { createI18n } from '../lib/i18n.js?v=0.9.0';
-import { createLoop } from '../lib/loop.js?v=0.9.0';
-import { startUpdateCheck, loadVersion } from '../lib/app-update.js?v=0.9.0';
-import { creerHistorique } from '../historique.js?v=0.9.0';
-import { ROLES, PALETTE_BETA } from '../palette.js?v=0.9.0';
-import { contraindre, deplacer, tourner, zoomer } from '../scene/camera.js?v=0.9.0';
-import { TEXTES_BETA } from './textes.js?v=0.9.0';
-import { ROUTE, TRACE, DEPART, VEHICULES, TRAFIC, CAMERA } from './donnees.js?v=0.9.0';
-import { reseauDepart, relireReseau, viser, accroche, projetRoute, construireRoute, basculerVoies, basculerVelo } from './reseau.js?v=0.9.0';
-import { preparerTrafic, creerTrafic, avancer, reconcilier, poseVehicule, compter } from './trafic.js?v=0.9.0';
-import { creerSceneBeta } from './scene.js?v=0.9.0';
+// Les règles sont dans reseau.js et roulage.js (purs ; jamais « trafic.js » : les bloqueurs de publicités le refusent) ; le dessin dans scene.js.
+import { createStore, autosave } from '../lib/save.js?v=0.9.1';
+import { createI18n } from '../lib/i18n.js?v=0.9.1';
+import { createLoop } from '../lib/loop.js?v=0.9.1';
+import { startUpdateCheck, loadVersion } from '../lib/app-update.js?v=0.9.1';
+import { creerHistorique } from '../historique.js?v=0.9.1';
+import { ROLES, PALETTE_BETA } from '../palette.js?v=0.9.1';
+import { contraindre, deplacer, tourner, zoomer } from '../scene/camera.js?v=0.9.1';
+import { TEXTES_BETA } from './textes.js?v=0.9.1';
+import { ROUTE, TRACE, DEPART, VEHICULES, TRAFIC, CAMERA } from './donnees.js?v=0.9.1';
+import { reseauDepart, relireReseau, viser, accroche, projetRoute, construireRoute, basculerVoies, basculerVelo, demolir } from './reseau.js?v=0.9.1';
+import { preparerTrafic, creerTrafic, avancer, reconcilier, poseVehicule, compter } from './roulage.js?v=0.9.1';
+import { creerSceneBeta } from './scene.js?v=0.9.1';
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -124,6 +124,13 @@ function majSurvol() {
     return;
   }
   const tr = reseau.troncons[v.troncon], g = ctx.geo.troncons[v.troncon];
+  if (outil === 'demolir') {
+    // Ce qui partirait, en rouge ; un tronçon du bord ne se démolit pas : l'étiquette dit pourquoi
+    const r = demolir(reseau, v.troncon);
+    scene.majSurvol({ troncon: { ligne: g.axe, demi: g.demi, demolir: true } });
+    etiquette(r.refus ? t(`refus.${r.refus}`) : t('survol.demolir'), true);
+    return;
+  }
   scene.majSurvol({ troncon: { ligne: g.axe, demi: g.demi } });
   etiquette(outil === 'voies' ? t(tr.voies > 1 ? 'survol.simple' : 'survol.doubler') : t(tr.velo ? 'survol.sansvelo' : 'survol.velo'));
 }
@@ -152,7 +159,10 @@ function cliquer(p) {
     }
   } else {
     const v = viser(reseau, p, rayonVisee());
-    if (v) faire(outil === 'voies' ? basculerVoies(reseau, v.troncon, ROUTE) : basculerVelo(reseau, v.troncon));
+    if (v) {
+      if (outil === 'demolir') faire(demolir(reseau, v.troncon), t('toast.demolie'));
+      else faire(outil === 'voies' ? basculerVoies(reseau, v.troncon, ROUTE) : basculerVelo(reseau, v.troncon));
+    }
   }
   majSurvol();
 }
@@ -206,7 +216,7 @@ vue.addEventListener('wheel', e => {
 
 // ─── Clavier ───────────────────────────────────────────────────────────────
 const tenues = new Set();
-const OUTILS = { Digit1: 'route', Digit2: 'voies', Digit3: 'velo', Numpad1: 'route', Numpad2: 'voies', Numpad3: 'velo' };
+const OUTILS = { Digit1: 'route', Digit2: 'voies', Digit3: 'velo', Digit4: 'demolir', Numpad1: 'route', Numpad2: 'voies', Numpad3: 'velo', Numpad4: 'demolir', Delete: 'demolir' };
 document.addEventListener('keydown', e => {
   if (document.querySelector('dialog[open]')) return;
   if (e.ctrlKey || e.metaKey) {
@@ -317,7 +327,7 @@ vue.focus();
 
 // ─── Mode debug (section 18) ───────────────────────────────────────────────
 if (DEBUG) {
-  const { installDebug } = await import('../lib/debug.js?v=0.9.0');
+  const { installDebug } = await import('../lib/debug.js?v=0.9.1');
   installDebug({
     state: () => ({
       outil, depart: depart && { ...depart }, projet: projet && { refus: projet.refus ?? null, longueur: projet.longueur, libre: !!projet.fin.libre },

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.1 — 2026-11-19
+- La bêta « Carte blanche » s'ouvre même avec un bloqueur de publicités : son module de trafic, refusé à cause de son nom, s'appelle autrement
+- Nouvel outil Démolir (touche 4 ou Suppr) : le tronçon survolé passe en rouge, un clic le retire et les carrefours qui n'en sont plus se referment
+
 ## 0.9.0 — 2026-11-19
 - Nouveau sur l'écran titre : « Bêta : carte blanche », une carte vierge en 3D avec une route à double sens où passent des voitures
 - Un clic sur une route, puis la nouvelle route se courbe sous le pointeur ; un clic la construit, en impasse ou raccordée à une autre (carrefour), et les voitures l'empruntent

@@ -9,9 +9,9 @@
 // déjà engagé, et si la voie de sortie a de la place. Qui attend depuis
 // longtemps se réserve le carrefour. Les bouts de carte et les impasses font
 // naître et disparaître les voitures ; les bouts de piste, les vélos.
-import { createRng } from '../lib/rng.js?v=0.9.0';
-import { longueur, pointA, projeterSurLigne } from './reseau.js?v=0.9.0';
-import { geometrieReseau, ligneVoie, raccord, seGenent } from './geometrie.js?v=0.9.0';
+import { createRng } from '../lib/rng.js?v=0.9.1';
+import { longueur, pointA, projeterSurLigne } from './reseau.js?v=0.9.1';
+import { geometrieReseau, ligneVoie, raccord, seGenent } from './geometrie.js?v=0.9.1';
 
 const cleVoie = v => `${v.troncon}|${v.sens}|${v.voie}`;
 

@@ -1,9 +1,8 @@
 {
-  "version": "0.9.0",
+  "version": "0.9.1",
   "date": "2026-11-19",
   "changes": [
-    "Nouveau sur l'écran titre : « Bêta : carte blanche », une carte vierge en 3D avec une route à double sens où passent des voitures",
-    "Un clic sur une route, puis la nouvelle route se courbe sous le pointeur ; un clic la construit, en impasse ou raccordée à une autre (carrefour), et les voitures l'empruntent",
-    "Doubler les voies d'un tronçon (2 × 2) ou lui ajouter des pistes cyclables vertes, avec picto vélo et quelques vélos"
+    "La bêta « Carte blanche » s'ouvre même avec un bloqueur de publicités : son module de trafic, refusé à cause de son nom, s'appelle autrement",
+    "Nouvel outil Démolir (touche 4 ou Suppr) : le tronçon survolé passe en rouge, un clic le retire et les carrefours qui n'en sont plus se referment"
   ]
 }

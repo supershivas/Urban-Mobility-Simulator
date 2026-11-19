@@ -2,7 +2,7 @@
 // Pur, en mètres (Lambert 72). Le résultat est une ESTIMATION : il porte sa
 // méthode et sa confiance, et n'invente jamais une valeur absente d'OSM
 // (pilier 6 : sens, voies, vitesse restent null si OSM ne les donne pas).
-import { distancePointLigne, pointA, cap, ecartAngle } from './geometrie.js?v=0.9.0';
+import { distancePointLigne, pointA, cap, ecartAngle } from './geometrie.js?v=0.9.1';
 
 export const REGLES_APPARIEMENT = {
   echantillons: [0.2, 0.5, 0.8], // points du tronçon UrbIS testés

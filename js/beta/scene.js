@@ -2,10 +2,10 @@
 // cyclables, carrefours, véhicules en blocs, et l'aperçu de la route en projet.
 // Ce module dessine et vise : il ne modifie jamais l'état (main.js décide).
 // Repère : x est, y nord (mètres) → scène X = x, Y = haut, Z = −y.
-import * as THREE from '../../vendor/three/three.module.js?v=0.9.0';
-import { pose, metresParPixel } from '../scene/camera.js?v=0.9.0';
-import { decalerLigne } from '../geo/decalage.js?v=0.9.0';
-import { longueur, pointA, sousLigne } from './reseau.js?v=0.9.0';
+import * as THREE from '../../vendor/three/three.module.js?v=0.9.1';
+import { pose, metresParPixel } from '../scene/camera.js?v=0.9.1';
+import { decalerLigne } from '../geo/decalage.js?v=0.9.1';
+import { longueur, pointA, sousLigne } from './reseau.js?v=0.9.1';
 
 const COUCHE = { sol: 6, limite: 5, bordure: 4, asphalte: 3, velo: 2, marquage: 1, picto: 0, surlignage: -1, apercu: -2, ombre: -3 };
 
@@ -174,7 +174,7 @@ export function creerSceneBeta({ conteneur, P, R, C }) {
   // ─── Survol : tronçon surligné, route en projet, anneaux ─────────────────
   function majSurvol({ troncon = null, projet = null, point = null, refus = false } = {}) {
     vider(groupeSurvol);
-    if (troncon) { const out = []; ruban(out, troncon.ligne, troncon.demi + 0.8, -troncon.demi - 0.8); groupeSurvol.add(maillage(out, materiaux.surlignage)); }
+    if (troncon) { const out = []; ruban(out, troncon.ligne, troncon.demi + 0.8, -troncon.demi - 0.8); groupeSurvol.add(maillage(out, troncon.demolir ? materiaux.refus : materiaux.surlignage)); }
     if (projet) {
       const out = [], demi = R.largeurVoie;
       ruban(out, projet.points, demi, -demi);
