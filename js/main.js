@@ -3,45 +3,49 @@
 // lisent les mêmes données locales de data/ (aucun service distant) et partagent
 // la sélection et l'inspecteur. Le style est dans carte/style.js, la scène dans
 // scene/scene3d.js (chargée à la première bascule), l'inspecteur dans inspecteur.js.
-import * as maplibregl from '../vendor/maplibre-gl/maplibre-gl.mjs?v=0.7.1';
-import { createKeys, stopTypeahead } from './lib/keys.js?v=0.7.1';
-import { lockBrowserGestures } from './lib/pointer.js?v=0.7.1';
-import { createStore, autosave, pickJSONFile } from './lib/save.js?v=0.7.1';
-import { createI18n } from './lib/i18n.js?v=0.7.1';
-import { startUpdateCheck, loadVersion, loadChangelog, downloadJSON } from './lib/app-update.js?v=0.7.1';
-import { PALETTE, ROLES } from './palette.js?v=0.7.1';
-import { TEXTES } from './data/textes.js?v=0.7.1';
-import { COMMANDES_AIDE } from './data/aide.js?v=0.7.1';
-import { styleCarte, COUCHES, COUCHES_ACTIVES, COUCHES_SELECTIONNABLES } from './carte/style.js?v=0.7.1';
-import { lignesInspecteur, lignesInspecteurBatiment, lignesInspecteurNoeud } from './inspecteur.js?v=0.7.1';
-import { creerRepere } from './geo/repere.js?v=0.7.1';
-import { boite } from './geo/geometrie.js?v=0.7.1';
-import { distancePourZoom, zoomPourDistance } from './scene/camera.js?v=0.7.1';
-import { lireJSON, couche, couchesScene } from './donnees.js?v=0.7.1';
-import { chargerContenu } from './design-store.js?v=0.7.1';
-import { sectionMesuree, OPERATIONS, memeSection, decalages, verifier } from './section.js?v=0.7.1';
-import { creerHistorique } from './historique.js?v=0.7.1';
-import { featuresSections } from './carte/sections.js?v=0.7.1';
-import { ajouterImages } from './carte/motifs.js?v=0.7.1';
-import { wgs84VersLambert, lambertVersWgs84 } from './geo/coordonnees.js?v=0.7.1';
-import { creerEditeur } from './editeur.js?v=0.7.1';
-import { creerEditeurCarrefour, lettre } from './editeur-carrefour.js?v=0.7.1';
-import { branchesDe, toutesLesVoies, raccordsDe, verifierCarrefour, traverseesDe, OPERATIONS_CARREFOUR } from './carrefour.js?v=0.7.1';
-import { geometrieCarrefour, pointSurLigne } from './geo/raccords.js?v=0.7.1';
-import { featuresCarrefours } from './carte/carrefours.js?v=0.7.1';
-import { DESSIN_CARREFOUR } from './data/carrefours.js?v=0.7.1';
-import { etatTroncon, niveau, bilan, conflits, definirDemande, definirHypothese } from './simulation.js?v=0.7.1';
-import { HYPOTHESES } from './data/simulation.js?v=0.7.1';
-import { lignesSimulation, lignesConflits } from './inspecteur.js?v=0.7.1';
-import { creerEditeurFlux } from './editeur-flux.js?v=0.7.1';
-import { createLoop } from './lib/loop.js?v=0.7.1';
-import { construireReseau, creerTrafic } from './circulation.js?v=0.7.1';
-import { SIMULATION, VEHICULES } from './data/circulation.js?v=0.7.1';
-import { lignesTrafic } from './inspecteur.js?v=0.7.1';
-import { appliquerOutil } from './outils.js?v=0.7.1';
-import { OUTILS } from './data/bandes.js?v=0.7.1';
-import { directionsDe, phasesDe, auVert, etatFeux } from './carrefour.js?v=0.7.1';
-import { distancePointLigne } from './geo/geometrie.js?v=0.7.1';
+import * as maplibregl from '../vendor/maplibre-gl/maplibre-gl.mjs?v=0.8.0';
+import { createKeys, stopTypeahead } from './lib/keys.js?v=0.8.0';
+import { lockBrowserGestures } from './lib/pointer.js?v=0.8.0';
+import { createStore, autosave, pickJSONFile } from './lib/save.js?v=0.8.0';
+import { createI18n } from './lib/i18n.js?v=0.8.0';
+import { startUpdateCheck, loadVersion, loadChangelog, downloadJSON } from './lib/app-update.js?v=0.8.0';
+import { PALETTE, ROLES } from './palette.js?v=0.8.0';
+import { TEXTES } from './data/textes.js?v=0.8.0';
+import { COMMANDES_AIDE } from './data/aide.js?v=0.8.0';
+import { styleCarte, COUCHES, COUCHES_ACTIVES, COUCHES_SELECTIONNABLES } from './carte/style.js?v=0.8.0';
+import { lignesInspecteur, lignesInspecteurBatiment, lignesInspecteurNoeud } from './inspecteur.js?v=0.8.0';
+import { creerRepere } from './geo/repere.js?v=0.8.0';
+import { boite } from './geo/geometrie.js?v=0.8.0';
+import { distancePourZoom, zoomPourDistance } from './scene/camera.js?v=0.8.0';
+import { lireJSON, couche, couchesScene } from './donnees.js?v=0.8.0';
+import { chargerContenu } from './design-store.js?v=0.8.0';
+import { sectionMesuree, OPERATIONS, memeSection, decalages, verifier } from './section.js?v=0.8.0';
+import { creerHistorique } from './historique.js?v=0.8.0';
+import { featuresSections } from './carte/sections.js?v=0.8.0';
+import { ajouterImages } from './carte/motifs.js?v=0.8.0';
+import { wgs84VersLambert, lambertVersWgs84 } from './geo/coordonnees.js?v=0.8.0';
+import { creerEditeur } from './editeur.js?v=0.8.0';
+import { creerEditeurCarrefour, lettre } from './editeur-carrefour.js?v=0.8.0';
+import { branchesDe, toutesLesVoies, raccordsDe, verifierCarrefour, traverseesDe, OPERATIONS_CARREFOUR } from './carrefour.js?v=0.8.0';
+import { geometrieCarrefour, pointSurLigne } from './geo/raccords.js?v=0.8.0';
+import { featuresCarrefours } from './carte/carrefours.js?v=0.8.0';
+import { DESSIN_CARREFOUR } from './data/carrefours.js?v=0.8.0';
+import { etatTroncon, niveau, bilan, conflits, definirDemande, definirHypothese } from './simulation.js?v=0.8.0';
+import { HYPOTHESES } from './data/simulation.js?v=0.8.0';
+import { lignesSimulation, lignesConflits } from './inspecteur.js?v=0.8.0';
+import { creerEditeurFlux } from './editeur-flux.js?v=0.8.0';
+import { createLoop } from './lib/loop.js?v=0.8.0';
+import { construireReseau, creerTrafic } from './circulation.js?v=0.8.0';
+import { SIMULATION, VEHICULES } from './data/circulation.js?v=0.8.0';
+import { lignesTrafic } from './inspecteur.js?v=0.8.0';
+import { appliquerOutil } from './outils.js?v=0.8.0';
+import { OUTILS } from './data/bandes.js?v=0.8.0';
+import { directionsDe, phasesDe, auVert, etatFeux } from './carrefour.js?v=0.8.0';
+import { distancePointLigne } from './geo/geometrie.js?v=0.8.0';
+import { contourBande } from './geo/decalage.js?v=0.8.0';
+import { bandeAuDecalage } from './outils.js?v=0.8.0';
+import { MISSIONS } from './data/missions.js?v=0.8.0';
+import { mission, suivante, suivi, evaluer, progressionVide } from './missions.js?v=0.8.0';
 
 const JEU = 'urban-mobility-simulator';
 const $ = id => document.getElementById(id);
@@ -57,11 +61,14 @@ const store = createStore({
   debug: DEBUG,
   entries: {
     partie: { version: 1 }, // { vue, vue3d, mode, selection, couches, scenario: { sections: { [tronçon]: section }, carrefours: { [nœud]: choix } } }
-    prefs: { version: 1, debugWrites: false, defaults: { langue: (navigator.language || 'fr').startsWith('fr') ? 'fr' : 'en' } },
+    prefs: { version: 1, debugWrites: false, defaults: { langue: (navigator.language || 'fr').startsWith('fr') ? 'fr' : 'en', expert: false } },
+    progression: { version: 1 }, // v0.8 : { reussies: [id], enCours: id | null, etape, departs: [id] } — à part de la partie (section 11)
   },
   secret: ['gh-token'],
 });
 const prefs = store.load('prefs');
+// Mode debug : &expert=1 ouvre en mode expert (les critères des versions 0.1 à 0.7 visent l'inspecteur et les couches)
+if (DEBUG && new URLSearchParams(location.search).get('expert') === '1') prefs.expert = true;
 const i18n = createI18n(TEXTES, { lang: prefs.langue });
 const t = (k, v) => i18n.t(k, v);
 document.documentElement.lang = i18n.lang;
@@ -146,11 +153,13 @@ pret.then(() => {
 });
 
 // Étiquettes des stations (DOM : pas de glyphes à charger)
+const stationsCarte = [];
 couche('infra').then(infra => {
   for (const f of infra.features.filter(f => f.properties.famille === 'station')) {
     const m = new maplibregl.Marker({ element: el('div', { className: 'etiquette-station', textContent: f.properties.nom }), anchor: 'bottom' })
       .setLngLat(f.geometry.coordinates).addTo(carte);
     m.getElement().dataset.couche = 'stations';
+    stationsCarte.push(m);
   }
   appliquerCouches();
 });
@@ -185,8 +194,18 @@ function appliquerCouches() {
   }
   const lisibles = carte.getZoom() >= R.carte.zoomEtiquettes; // en dessous, les étiquettes se chevauchent
   document.querySelectorAll('[data-couche="stations"]').forEach(e => { e.style.display = etat.couches.stations && lisibles ? '' : 'none'; });
+  etiquettesDansLaVue();
 }
 carte.on('zoomend', appliquerCouches);
+// Une étiquette hors de la carte est masquée : sinon elle déborde de la vue (vu par l'audit quand la mission zoome sur sa rue)
+function etiquettesDansLaVue() {
+  const r = $('carte').getBoundingClientRect();
+  for (const m of stationsCarte) {
+    const p = carte.project(m.getLngLat()), dedans = p.x > 0 && p.y > 0 && p.x < r.width && p.y < r.height;
+    m.getElement().classList.toggle('hors-vue', !dedans);
+  }
+}
+carte.on('move', () => etiquettesDansLaVue());
 
 // ─── Sélection d'un tronçon ou d'un bâtiment : une seule, pour les deux vues ─
 const estBatiment = id => typeof id === 'string' && id.startsWith('bld-');
@@ -326,7 +345,7 @@ function chargerScene() {
   return (chargementScene ??= (async () => {
     $('scene-attente').hidden = false;
     await new Promise(res => setTimeout(res, 30)); // laisse le message s'afficher : la construction occupe le fil
-    const [{ creerScene }, couches] = await Promise.all([import('./scene/scene3d.js?v=0.7.1'), couchesScene(), chargerBatiments()]);
+    const [{ creerScene }, couches] = await Promise.all([import('./scene/scene3d.js?v=0.8.0'), couchesScene(), chargerBatiments()]);
     scene = creerScene({
       conteneur: $('scene'), repere, P: PALETTE, R, donnees: { ...couches, emprise }, mouvementReduit: reduit,
       surChoix: (c, pt) => { if (!enCarte()) return; if (pt && cliquerFleche(pt.x, pt.y)) return; selectionner(c?.id ?? null); },
@@ -348,7 +367,8 @@ function habillerScene() {
   const lisibles = etat?.couches.stations && zoomPourDistance(e.distance, repere.localVersLonLat(e.cible)[1], hauteurVue(), R.scene.fovDegres) >= R.carte.zoomEtiquettes;
   scene.stations.forEach((s, i) => {
     const p = scene.versEcran(s.local);
-    etiquettes3d[i].style.display = lisibles && p.visible ? '' : 'none';
+    const dedans = p.x > 0 && p.y > 0 && p.x < $('scene').clientWidth && p.y < $('scene').clientHeight;
+    etiquettes3d[i].style.display = lisibles && p.visible && dedans ? '' : 'none';
     etiquettes3d[i].style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -100%) translateY(-12px)`;
   });
   for (const b of etiquettesBranches) {
@@ -432,6 +452,7 @@ function montrerTitre() {
   $('titre').hidden = false;
   scene?.activer(false); // derrière l'écran titre, la scène ne calcule rien
   majBoucle();
+  majMission();
   $('continuer').hidden = !store.has('partie');
   ($('continuer').hidden ? $('nouvelle') : $('continuer')).focus();
 }
@@ -458,6 +479,9 @@ async function jouer(partie) {
   // Le trafic repart à 8 h à chaque partie ouverte : seul le scénario est sauvegardé, pas les blocs
   demarrerTrafic();
   if (partie.mode === '3d') await definirMode('3d', { reprise: true });
+  // Première partie : la première mission commence (vol jusqu'à son lieu) ; sinon la mission en cours reprend
+  if (progression.enCours && !partie.vue) demarrerMission(progression.enCours);
+  majMission();
 }
 function sauvegarder() {
   if (!etat) return;
@@ -604,7 +628,7 @@ function revenirMesure() {
 
 // Les sections dessinées : toutes celles du scénario, plus celle qu'on édite (même inchangée)
 let lignesRues = null; // Map(id → ligne WGS84), une fois streets.geojson lu
-couche('rues').then(g => { lignesRues = new Map(g.features.map(f => [f.properties.id, f.geometry.coordinates])); majSections(); if (etat && !trafic) demarrerTrafic(); });
+couche('rues').then(g => { lignesRues = new Map(g.features.map(f => [f.properties.id, f.geometry.coordinates])); majSections(); if (etat && !trafic) demarrerTrafic(); if (volEnAttente) allerAuLieu(); });
 function sectionsDessinees() {
   if (!etat) return [];
   const ids = new Set(Object.keys(etat.scenario.sections));
@@ -847,6 +871,8 @@ function demarrerTrafic() {
   reseauTrafic = nouveauReseau();
   trafic = creerTrafic(reseauTrafic, { graine: SIMULATION.graine, demandeDe: id => etat?.scenario.demande?.[id] ?? null });
   window.__jeu?.log('trafic', { chemins: reseauTrafic.chemins.size, entrees: reseauTrafic.entrees.length, ms: Math.round(performance.now() - t) });
+  suiviM = suivi(trafic.temps); secondeM = -1; // le trafic repart : la mission se mesure de nouveau
+  majMission();
   boucle.start();
   majBoucle();
 }
@@ -892,6 +918,7 @@ function majHud(force = true) {
   $('trafic-pause-texte').textContent = t(pauseJoueur ? 'trafic.reprendre' : 'trafic.pause');
   $('trafic-pause').setAttribute('aria-pressed', String(pauseJoueur));
   $('trafic-vitesse-texte').textContent = `×${SIMULATION.vitesses[rangVitesse]}`;
+  $('hud-vue-texte').textContent = mode === '3d' ? '2D' : '3D';
   $('trafic-vitesse').title = t('trafic.vitesse');
   const b = trafic.bilan();
   $('trafic-horloge').textContent = t('trafic.horloge', { h: heure(trafic.temps), n: b.enCirculation });
@@ -909,12 +936,13 @@ const TEINTE_2D = { voiture: PALETTE.noeud, bus: PALETTE.bus, velo: PALETTE.cycl
 function dessinerTrafic(alpha) {
   if (!trafic) return;
   majHud(false);
+  suivreMission();
   const visible = etat?.couches.flux !== false;
   majFleches();
   if (mode === '3d') {
     if (calque.width) { ctx2d.clearRect(0, 0, calque.width, calque.height); }
     if (scene && (trafic.temps !== dernierTemps3d || !visible)) { scene.definirTrafic(trafic.positions(alpha)); dernierTemps3d = trafic.temps; }
-    scene?.definirFleches(fleches.map(f => ({ anneau: f.anneau.map(p => repere.versLocal(p)), couleur: f.couleur })));
+    scene?.definirFleches([...fleches, ...marquesMission()].map(f => ({ anneau: f.anneau.map(p => repere.versLocal(p)), couleur: f.couleur })));
     return;
   }
   dessiner2d(visible ? trafic.positions(alpha) : null);
@@ -947,6 +975,15 @@ function dessiner2d(lots) {
       ctx2d.beginPath(); ctx2d.moveTo(...a1); ctx2d.lineTo(...a2);
       ctx2d.strokeStyle = PALETTE.selection; ctx2d.lineWidth = Math.max(2, 0.5 * pxParM); ctx2d.stroke();
     }
+  }
+  // La voie sous l'outil et la voie que la mission désigne : un contour (la voie reste lisible dessous)
+  for (const f of marquesMission()) {
+    ctx2d.beginPath();
+    f.anneau.forEach((p, k) => { const [X, Y] = versEcran2d(p); if (k) ctx2d.lineTo(X, Y); else ctx2d.moveTo(X, Y); });
+    ctx2d.closePath();
+    ctx2d.setLineDash(f.tirets ? [6, 4] : []);
+    ctx2d.strokeStyle = f.couleur; ctx2d.lineWidth = 3; ctx2d.stroke();
+    ctx2d.setLineDash([]);
   }
   if (!lots) return;
   for (const [m, t] of Object.entries(lots)) {
@@ -984,6 +1021,8 @@ function choisirOutil(o) {
   outil = o && o !== outil ? o : null;
   if (outil) carte.dragPan.disable(); else carte.dragPan.enable();
   scene?.definirPeinture(outil ? peindre : null);
+  scene?.definirSurvol(outil ? majSurvol : null);
+  if (!outil) majSurvol(null);
   majBarre();
   if (outil) toast(t('outil.aide', { outil: t(`outil.${outil}`) }));
   window.__jeu?.log('outil', { outil });
@@ -1037,8 +1076,53 @@ function peindre(phase, p) {
 // En 2D : le bouton gauche peint quand un outil est actif (la carte ne se déplace plus qu'au clavier)
 const pointCarte = e => { const r = carte.getCanvas().getBoundingClientRect(); return wgs84VersLambert(carte.unproject([e.clientX - r.left, e.clientY - r.top]).toArray()); };
 carte.getCanvas().addEventListener('pointerdown', e => { if (outil && e.button === 0 && !e.shiftKey) peindre('debut', pointCarte(e)); });
-carte.getCanvas().addEventListener('pointermove', e => { if (outil && trait && e.buttons & 1) peindre('glisse', pointCarte(e)); });
+carte.getCanvas().addEventListener('pointermove', e => {
+  if (outil && trait && e.buttons & 1) peindre('glisse', pointCarte(e));
+  if (outil && !(e.buttons & 1)) { const r = carte.getCanvas().getBoundingClientRect(); majSurvol(pointCarte(e), e.clientX - r.left, e.clientY - r.top); }
+});
+carte.getCanvas().addEventListener('pointerleave', () => majSurvol(null));
 window.addEventListener('pointerup', () => { if (trait) peindre('fin'); });
+
+// ─── Survol (v0.8) : la voie sous l'outil est surlignée, une étiquette dit ce que fera le clic ──
+let survol = null; // { anneau (Lambert 72), texte }
+function majSurvol(p, x, y) {
+  const etiquette = $('survol');
+  if (!p || !outil) { survol = null; etiquette.hidden = true; return; }
+  const v = voieSous(p);
+  const sec = v ? sectionDe(v.troncon) : null;
+  let texte;
+  if (!v) { survol = null; texte = t('survol.rien'); }
+  else if (!sec) { survol = null; texte = t('survol.non-mesuree'); }
+  else {
+    const i = bandeAuDecalage(sec, v.decalage);
+    if (i === null) { survol = null; texte = t('survol.rien'); }
+    else {
+      // L'aperçu est le résultat exact du clic : l'outil est essayé sur une copie, la bande qui changera est surlignée
+      const b = sec.bandes[i];
+      const r = appliquerOutil(sec, v.decalage, outil, { sensSource: segments.get(v.troncon).sourceAttributes?.oneway ?? null });
+      const nom = x => `${t(`bande.${x.type}`)}${x.sens ? ` ${t(`sens.${x.sens}.signe`)}` : ''}`;
+      const avant = b.type === 'chaussee' ? t('survol.chaussee') : nom(b);
+      const d = r.section && outil !== 'supprimer' ? decalages(r.section)[r.indice] : decalages(sec)[i];
+      survol = { anneau: contourBande(ligneDe(v.troncon), d.gauche, d.droite) };
+      if (r.refus) texte = t(`refus.${r.refus}`, r.valeurs);
+      else if (outil === 'supprimer') texte = t('survol.retirer', { avant });
+      else if (r.decoupee) texte = t('survol.decoupe', { n: r.decoupee, apres: nom(r.section.bandes[r.indice]) });
+      else texte = t('survol.devient', { avant, apres: nom(r.section.bandes[r.indice]) });
+    }
+  }
+  etiquette.textContent = texte;
+  etiquette.hidden = false;
+  etiquette.style.left = `${x + 16}px`;
+  etiquette.style.top = `${y + 16}px`;
+}
+/** Ce que la vue surligne pour le joueur : la voie sous l'outil, la voie que la mission guidée désigne. */
+function marquesMission() {
+  const out = [];
+  if (survol) out.push({ anneau: survol.anneau, couleur: PALETTE.selection });
+  const c = cibleGuidee();
+  if (c) out.push({ anneau: c, couleur: PALETTE.encre, tirets: true });
+  return out;
+}
 
 // ─── Flèches de direction au sol (v0.7) : sur le carrefour choisi ─────────
 let fleches = [], noeudFleches = null, scenarioFleches = null;
@@ -1094,6 +1178,153 @@ function cliquerFleche(x, y) {
   return true;
 }
 
+// ─── Mode expert (v0.8) : l'écran de jeu est épuré par défaut ─────────────
+function appliquerExpert() {
+  $('ecran').classList.toggle('mode-jeu', !prefs.expert);
+  $('bascule-expert').setAttribute('aria-pressed', String(!!prefs.expert));
+  $('bascule-expert').title = t(prefs.expert ? 'expert.titre-quitter' : 'expert.titre');
+  carte.resize();
+}
+function basculerExpert() { prefs.expert = !prefs.expert; store.save('prefs', prefs); appliquerExpert(); window.__jeu?.log('expert', { expert: prefs.expert }); }
+$('bascule-expert').onclick = basculerExpert;
+$('hud-vue').onclick = () => definirMode(mode === '3d' ? '2d' : '3d');
+appliquerExpert();
+
+// ─── Missions (v0.8) : des lieux réels, jugés sur le trafic simulé ────────
+// La progression vit à part de la partie (clé « progression ») : une nouvelle partie ne la perd pas.
+const progression = { ...progressionVide(), departs: [], ...store.load('progression') };
+// Mode debug : &mission=0 coupe les missions (les critères des versions 0.1 à 0.7 visent la carte, la vue ne doit pas voler)
+const SANS_MISSION = DEBUG && new URLSearchParams(location.search).get('mission') === '0';
+if (SANS_MISSION) progression.enCours = null;
+let suiviM = null, secondeM = -1;
+const sauverProgression = () => store.save('progression', progression);
+const missionCourante = () => (progression.enCours ? mission(progression.enCours) : null);
+const etapeCourante = () => missionCourante()?.etapes?.[progression.etape] ?? null;
+/** Le point du lieu d'une mission (Lambert 72) : le milieu du tronçon, sinon le nœud. */
+function pointDuLieu(m) {
+  const l = m.lieu.troncon ? ligneDe(m.lieu.troncon) : null;
+  if (l) return pointSurLigne(l, l.reduce((a, p, i) => a + (i ? Math.hypot(p[0] - l[i - 1][0], p[1] - l[i - 1][1]) : 0), 0) / 2).p;
+  return m.lieu.noeud ? noeuds.get(m.lieu.noeud)?.positionLambert72 ?? null : null;
+}
+let volEnAttente = false; // le lieu d'une mission sur un tronçon attend la lecture des axes
+function allerAuLieu(m = missionCourante()) {
+  const p = m && pointDuLieu(m);
+  volEnAttente = !!m && !p;
+  if (!p) return;
+  if (mode === '3d' && scene) scene.definirEtat({ cible: repere.versLocal(p), distance: R.mission.distanceM, inclinaison: rad(R.mission.inclinaisonDegres) }, { anime: true });
+  else carte.flyTo({ center: lambertVersWgs84(p), zoom: m.lieu.zoom, duration: duree() });
+  if (m.lieu.noeud && !m.guidee) selectionner(m.lieu.noeud); // les flèches au sol du carrefour visé
+}
+/** Commence (ou recommence) une mission : sa situation de départ entre dans le scénario (Ctrl+Z la défait). */
+function demarrerMission(id, { recommencer = false } = {}) {
+  if (SANS_MISSION) return;
+  const m = mission(id);
+  progression.enCours = m ? id : null;
+  progression.etape = 0;
+  if (m?.depart && (recommencer || !progression.departs.includes(id))) {
+    etat.scenario = historique.faire({ ...etat.scenario, carrefours: { ...etat.scenario.carrefours, ...m.depart.carrefours } });
+    apresChangement();
+    progression.departs = [...new Set([...progression.departs, id])];
+  }
+  sauverProgression();
+  suiviM = trafic ? suivi(trafic.temps) : null;
+  if (m) allerAuLieu(m);
+  majMission();
+  window.__jeu?.log('mission', { id, recommencer });
+}
+function avancerEtape() {
+  progression.etape++;
+  sauverProgression();
+  const e = etapeCourante();
+  // L'étape d'attente accélère le temps : le résultat se voit en quelques secondes
+  if (e?.vitesse) { rangVitesse = Math.max(0, SIMULATION.vitesses.indexOf(e.vitesse)); boucle.setTimeScale(SIMULATION.vitesses[rangVitesse]); if (pauseJoueur) basculerPause(); }
+  majMission();
+}
+/** Une fois par image : les étapes guidées ; une fois par seconde simulée : l'objectif. */
+function suivreMission() {
+  const m = missionCourante();
+  if (!m || !trafic) return;
+  suiviM ??= suivi(trafic.temps);
+  const e = etapeCourante();
+  if (e) {
+    const fini = e.fin === 'outil-cyclable' ? outil === 'cyclable'
+      : e.fin === 'piste-posee' ? (sectionDe(m.objectif.troncon)?.bandes ?? []).some(b => b.type === 'cyclable')
+        : e.fin === 'objectif' ? suiviM.reussie : false;
+    if (fini) avancerEtape();
+  }
+  const sec = Math.floor(trafic.temps);
+  if (sec === secondeM || suiviM.reussie) return;
+  secondeM = sec;
+  const avant = suiviM.reussie;
+  suiviM = evaluer(m, suiviM, { temps: trafic.temps, trafic });
+  if (suiviM.reussie && !avant) {
+    progression.reussies = [...new Set([...progression.reussies, m.id])];
+    sauverProgression();
+    toast(t('mission.reussie-toast', { titre: t(`mission.${m.id}.titre`) }));
+    window.__jeu?.log('mission-reussie', { id: m.id });
+  }
+  majMission();
+}
+/** La voie que la mission guidée désigne (étape « poser ») : la chaussée de son tronçon. */
+function cibleGuidee() {
+  const m = missionCourante(), e = etapeCourante();
+  if (!m?.guidee || !['regarder', 'outil', 'poser'].includes(e?.id)) return null;
+  const sec = sectionDe(m.objectif.troncon), l = ligneDe(m.objectif.troncon);
+  const d = sec && l ? decalages(sec).find(b => b.type === 'chaussee' || b.type === 'voiture') : null;
+  return d ? contourBande(l, d.gauche, d.droite) : null;
+}
+function majMission() {
+  const boite = $('mission');
+  for (const b of document.querySelectorAll('#barre-outils .outil')) b.classList.remove('conseille', 'guide');
+  const m = missionCourante();
+  if (!etat || !$('titre').hidden || SANS_MISSION) { boite.replaceChildren(); return; }
+  if (!m) {
+    boite.className = 'mission';
+    boite.replaceChildren(el('h2', { textContent: t('mission.libre.titre') }), el('p', { textContent: t('mission.libre.texte') }), listeMissions(),
+      el('div', { className: 'mission-boutons' }, bouton('mission.rejouer', () => demarrerMission(MISSIONS[0].id, { recommencer: true }))));
+    return;
+  }
+  const e = etapeCourante(), s = suiviM, n = MISSIONS.indexOf(m) + 1;
+  for (const o of m.outils ?? []) {
+    const b = document.querySelector(`#barre-outils [data-outil="${o}"]`);
+    b?.classList.add('conseille');
+    if (e?.id === 'outil') b?.classList.add('guide');
+  }
+  const o = m.objectif;
+  const jauge = [];
+  if (s && s.valeur !== null && s.valeur !== undefined) {
+    const part = o.tenirS ? Math.min(1, s.tenuS / o.tenirS) : Math.min(1, s.valeur / Math.max(1, s.cible));
+    jauge.push(el('p', { className: 'mission-valeur', textContent: t(`mission.mesure.${o.type}`, { v: s.valeur, c: s.cible }) }));
+    if (o.tenirS) jauge.push(el('p', { textContent: s.ok ? t('mission.tenu', { s: Math.floor(s.tenuS), c: o.tenirS }) : t('mission.pas-encore') }));
+    const j = el('div', { className: 'mission-jauge', role: 'progressbar' }, el('span', { style: `width: ${Math.round(part * 100)}%` }));
+    j.setAttribute('aria-valuenow', String(Math.round(part * 100))); j.setAttribute('aria-valuemin', '0'); j.setAttribute('aria-valuemax', '100');
+    jauge.push(j);
+  }
+  if (pauseJoueur && !s?.reussie) jauge.push(el('p', { textContent: t('mission.en-pause') }));
+  const prochaine = suivante(m.id);
+  const boutons = s?.reussie
+    ? [prochaine ? bouton('mission.suivante', () => demarrerMission(prochaine.id)) : bouton('mission.fin', () => demarrerMission(null))]
+    : [...(e?.fin === 'compris' ? [bouton('mission.compris', avancerEtape)] : []), bouton('mission.voir', () => allerAuLieu(m)), bouton('mission.recommencer', () => demarrerMission(m.id, { recommencer: true }))];
+  boite.className = `mission${s?.reussie ? ' reussie' : ''}`;
+  boite.replaceChildren(
+    el('p', { className: 'mission-num', textContent: t('mission.numero', { n, total: MISSIONS.length }) }),
+    el('h2', { textContent: t(`mission.${m.id}.titre`) }),
+    el('p', { textContent: s?.reussie ? t('mission.bravo', { texte: t(`mission.${m.id}.bravo`) }) : t(`mission.${m.id}.intro`) }),
+    ...(!s?.reussie && e ? [el('p', { className: 'mission-etape', textContent: t(`mission.${m.id}.etape.${e.id}`) })] : []),
+    ...(!s?.reussie && !e && !m.guidee ? [el('p', { className: 'mission-etape', textContent: t(`mission.${m.id}.indice`) })] : []),
+    ...jauge,
+    el('div', { className: 'mission-boutons' }, ...boutons),
+    listeMissions(),
+  );
+}
+const bouton = (cle, onclick) => el('button', { type: 'button', className: 'bouton', textContent: t(cle), onclick });
+function listeMissions() {
+  return el('ol', { className: 'mission-liste' }, ...MISSIONS.map((x, i) => el('li', {
+    className: `${progression.reussies.includes(x.id) ? 'faite' : ''}${x.id === progression.enCours ? ' courante' : ''}`,
+    textContent: `${i + 1}. ${t(`mission.${x.id}.titre`)}`,
+  })));
+}
+
 // ─── Réglages ──────────────────────────────────────────────────────────────
 $('langue').value = i18n.lang;
 $('langue').onchange = e => {
@@ -1105,6 +1336,8 @@ $('langue').onchange = e => {
   editeurCarrefour.langue(t, i18n.lang);
   editeurFlux.langue(t, i18n.lang);
   construireBarre();
+  appliquerExpert();
+  majMission();
   if (etat) { construireCouches(); afficherInspecteur(objetChoisi()); majBascule(); if (edite) editeur.afficher(sectionDe(edite), infoEditeur(edite)); if (editeCarrefour) editeurCarrefour.afficher(infoCarrefour(editeCarrefour)); if (editeFlux) editeurFlux.afficher(infoFlux(editeFlux)); majCarrefours(); }
 };
 $('exporter').onclick = () => { sauvegarder(); downloadJSON(store.exportAll(), `${JEU}-sauvegarde.json`); };
@@ -1151,7 +1384,7 @@ function toast(texte) {
 const enCarte = () => !!etat && $('titre').hidden && !document.querySelector('dialog[open]');
 createKeys({
   actions: {
-    recentrer: 'r', troncon: 't', batiment: 'b', noeud: 'n', carrefour: 'c', vue: 'v', aide: 'i', editer: 'm', flux: 'f', pause: ' ', vitesse: 'x', zoomPlus: ['+', '='], zoomMoins: ['-', '_'],
+    recentrer: 'r', troncon: 't', batiment: 'b', noeud: 'n', carrefour: 'c', vue: 'v', aide: 'i', editer: 'm', flux: 'f', pause: ' ', vitesse: 'x', expert: 'o', zoomPlus: ['+', '='], zoomMoins: ['-', '_'],
     ...Object.fromEntries(TOUCHES_COUCHES.map(([c, touche]) => [`couche:${c}`, touche])),
   },
   onAction: nom => {
@@ -1164,6 +1397,7 @@ createKeys({
     else if (nom === 'flux') basculerFlux();
     else if (nom === 'pause') basculerPause();
     else if (nom === 'vitesse') changerVitesse();
+    else if (nom === 'expert') basculerExpert();
     else if (nom === 'batiment') choisirBatimentProche();
     else if (nom === 'noeud') selectionner(noeudPlusProche());
     else if (nom === 'carrefour') basculerCarrefour();
@@ -1269,7 +1503,7 @@ startUpdateCheck({ isBusy: () => enCarte() && !pauseJoueur, beforeReload: sauveg
 
 // ─── Mode debug (section 18) : chargé seulement avec ?debug=1 ──────────────
 if (DEBUG) {
-  const { installDebug } = await import('./lib/debug.js?v=0.7.1');
+  const { installDebug } = await import('./lib/debug.js?v=0.8.0');
   const stations = Object.fromEntries((await couche('infra')).features
     .filter(f => f.properties.famille === 'station').map(f => [f.properties.nom.toLowerCase(), { x: f.geometry.coordinates[0], y: f.geometry.coordinates[1] }]));
   installDebug({
@@ -1373,6 +1607,10 @@ if (DEBUG) {
       voieSous: lonlat => voieSous(wgs84VersLambert(lonlat)),
       fleches: () => { majFleches(); return fleches.map(f => ({ voie: f.voie, troncon: f.troncon, direction: f.direction, actif: f.actif, couleur: f.couleur, pointe: lambertVersWgs84(f.pointe), milieu: lambertVersWgs84(f.milieu) })); },
       etatFeux: id => { const c = etatCarrefour(id); return c.carrefour?.regulation === 'feux' ? etatFeux(phasesDe(c.branches, c.carrefour), trafic?.temps ?? 0) : null; },
+      // Missions (v0.8)
+      mission: () => ({ ...progression, etapeId: etapeCourante()?.id ?? null, suivi: suiviM && { valeur: suiviM.valeur, cible: suiviM.cible, ok: suiviM.ok, tenuS: suiviM.tenuS, reussie: suiviM.reussie } }),
+      demarrerMission: (id, recommencer = false) => demarrerMission(id, { recommencer }),
+      expert: oui => { if (!!prefs.expert !== !!oui) basculerExpert(); return prefs.expert; },
       relancerTrafic: () => { pauseJoueur = true; demarrerTrafic(); return trafic.temps; },
       entrees: () => reseauTrafic?.entrees.map(e => ({ troncon: e.troncon, sens: e.sens, hierarchie: e.hierarchie })) ?? [],
       vehicules: () => trafic?.vehicules().map(v => ({ id: v.id, mode: v.mode, chemin: v.chemin.cle, s: v.s, v: v.v })) ?? [],

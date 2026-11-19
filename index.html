@@ -10,9 +10,9 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta property="og:title" content="Urban Mobility Simulator">
 <meta property="og:image" content="og.png">
-<link rel="stylesheet" href="vendor/maplibre-gl/maplibre-gl.css?v=0.7.1">
-<link rel="stylesheet" href="js/lib/game.css?v=0.7.1">
-<link rel="stylesheet" href="css/style.css?v=0.7.1">
+<link rel="stylesheet" href="vendor/maplibre-gl/maplibre-gl.css?v=0.8.0">
+<link rel="stylesheet" href="js/lib/game.css?v=0.8.0">
+<link rel="stylesheet" href="css/style.css?v=0.8.0">
 </head>
 <body>
 <div class="jeu-ecran app" id="ecran">
@@ -20,6 +20,8 @@
     <a class="entete-nom" id="nom-jeu" href="./" data-i18n-aria="entete.retour-titre">Urban Mobility Simulator</a>
     <span class="entete-corridor" data-i18n="entete.corridor"></span>
     <span class="entete-version" id="entete-version"></span>
+    <!-- v0.8 : l'écran de jeu est épuré ; le mode expert rend les couches, l'inspecteur et les bandeaux de détail -->
+    <button class="bouton entete-expert" id="bascule-expert" aria-pressed="false"><span data-i18n="expert.bouton"></span> <kbd>O</kbd></button>
     <button class="icone" id="ouvrir-menu" data-i18n-aria="pause.titre">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.3 4.3c.4-1.8 2.9-1.8 3.4 0a1.7 1.7 0 0 0 2.6 1.1c1.5-.9 3.3.8 2.4 2.4a1.7 1.7 0 0 0 1 2.5c1.8.5 1.8 3 0 3.4a1.7 1.7 0 0 0-1 2.6c.9 1.5-.9 3.3-2.4 2.4a1.7 1.7 0 0 0-2.6 1c-.5 1.8-3 1.8-3.4 0a1.7 1.7 0 0 0-2.5-1c-1.6.9-3.3-.9-2.4-2.4a1.7 1.7 0 0 0-1.1-2.6c-1.8-.4-1.8-2.9 0-3.4a1.7 1.7 0 0 0 1.1-2.5c-.9-1.6.8-3.3 2.4-2.4 1 .6 2.3.1 2.5-1.1z"/><circle cx="12" cy="12" r="3"/></svg>
     </button>
@@ -46,9 +48,13 @@
     </div>
     <!-- Outils (v0.7) : un clic ou un glisser sur une voie la transforme -->
     <div class="barre-outils" id="barre-outils" role="toolbar"></div>
+    <!-- Missions (v0.8) : la carte de la mission en cours, et l'étiquette de la voie sous l'outil -->
+    <section class="mission" id="mission" aria-live="polite" data-i18n-aria="mission.libelle"></section>
+    <div class="survol" id="survol" hidden></div>
     <div class="trafic-hud" id="trafic-hud" role="group" data-i18n-aria="trafic.libelle" hidden>
       <button class="bouton trafic-bouton" id="trafic-pause" aria-pressed="false"><span id="trafic-pause-texte"></span> <kbd data-i18n="trafic.touche-pause"></kbd></button>
       <button class="bouton trafic-bouton" id="trafic-vitesse"><span id="trafic-vitesse-texte"></span> <kbd>X</kbd></button>
+      <button class="bouton trafic-bouton" id="hud-vue"><span id="hud-vue-texte"></span> <kbd>V</kbd></button>
       <span class="trafic-horloge" id="trafic-horloge" role="status"></span>
     </div>
   </main>
@@ -182,6 +188,6 @@
     }, 30000);
   })();
 </script>
-<script type="module" src="js/main.js?v=0.7.1"></script>
+<script type="module" src="js/main.js?v=0.8.0"></script>
 </body>
 </html>

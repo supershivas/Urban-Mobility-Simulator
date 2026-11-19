@@ -14,7 +14,7 @@ for (const cible of o.cibles.split(',')) {
   page.on('pageerror', e => erreurs.push(e.message));
   page.on('console', m => { if (m.type() === 'error') erreurs.push(m.text()); });
   const J = (f, ...a) => page.evaluate(f, ...a);
-  await page.goto(`${serveur.base}index.html?debug=1`);
+  await page.goto(`${serveur.base}index.html?debug=1&expert=1&mission=0`);
   await page.waitForFunction(() => window.__jeu?.pret);
   await J(() => window.__jeu.pret());
   if (o.langue !== 'fr') await J(l => { const s = document.getElementById('langue'); s.value = l; s.dispatchEvent(new Event('change')); }, o.langue);

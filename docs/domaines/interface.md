@@ -24,6 +24,7 @@
 | Outil de voie (v0.7) | Tab jusqu'à la barre d'outils, Entrée ; Échap rend la main (au clavier, le détail : M) | bouton de la barre du bas, puis clic sur une voie ou glisser le long d'une rue |
 | Allumer / éteindre une direction | M sur le carrefour : raccords de l'éditeur | clic sur une flèche au sol du carrefour choisi |
 | Feux d'un carrefour | M : régulation « Feux », modèle, curseurs (← →) | mêmes commandes du bandeau |
+| Mode expert (couches, inspecteur, bandeaux) | O | bouton « Mode expert » de l'en-tête |
 | Menu | Échap (sans sélection) | roue crantée |
 
 ## Palette « Plan d'urbaniste » (Jérôme, v0.1.0)

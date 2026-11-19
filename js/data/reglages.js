@@ -52,6 +52,10 @@ export const REGLAGES = {
     planLointainMinM: 6000,
     echelleMaxPx: 120,      // barre d'échelle, valable au point visé
   },
+  mission: {                // v0.8 : la caméra 3D sur le lieu d'une mission
+    distanceM: 150,
+    inclinaisonDegres: 50,
+  },
   trafic: {                 // v0.6
     delaiReconstructionMs: 150, // une rafale de modifications ne reconstruit le réseau du trafic qu'une fois
   },

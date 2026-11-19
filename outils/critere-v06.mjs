@@ -28,7 +28,7 @@ const point = (ok, texte, details = []) => { bilan.push(ok); console.log(`${ok ?
 const attendre = ms => page.waitForTimeout(ms);
 
 async function nouvelle() {
-  await page.goto(`${serveur.base}index.html?debug=1`);
+  await page.goto(`${serveur.base}index.html?debug=1&expert=1&mission=0`);
   await page.waitForFunction(() => window.__jeu?.pret);
   await J(() => window.__jeu.pret());
   await page.evaluate(() => localStorage.clear());

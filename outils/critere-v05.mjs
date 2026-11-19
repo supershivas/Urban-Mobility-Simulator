@@ -38,7 +38,7 @@ const J = (f, ...a) => page.evaluate(f, ...a);
 const bilan = [];
 const point = (ok, texte, details = []) => { bilan.push(ok); console.log(`${ok ? '✓' : '✗'} ${texte}`); for (const d of details.slice(0, 12)) console.log(`    ${d}`); };
 
-await page.goto(`${serveur.base}index.html?debug=1&vue=2d`);
+await page.goto(`${serveur.base}index.html?debug=1&vue=2d&expert=1&mission=0`);
 await page.waitForFunction(() => window.__jeu?.pret);
 await J(() => window.__jeu.pret());
 await page.click('#nouvelle');

@@ -4,17 +4,17 @@
 // Ce module dessine et vise : il ne modifie jamais l'état du jeu (main.js décide).
 // Une image n'est calculée que sur demande (le trafic, v0.6, en demande une à chaque pas
 // de la boucle), et jamais quand la vue est inactive ou l'onglet caché.
-import * as THREE from '../../vendor/three/three.module.js?v=0.7.1';
-import { versScene, depuisScene } from '../geo/repere.js?v=0.7.1';
-import { distancePointLigne, boite } from '../geo/geometrie.js?v=0.7.1';
-import { decalerLigne } from '../geo/decalage.js?v=0.7.1';
-import { pose, contraindre, deplacer, tourner, zoomer, cadrer, metresParPixel, interpoler } from './camera.js?v=0.7.1';
+import * as THREE from '../../vendor/three/three.module.js?v=0.8.0';
+import { versScene, depuisScene } from '../geo/repere.js?v=0.8.0';
+import { distancePointLigne, boite } from '../geo/geometrie.js?v=0.8.0';
+import { decalerLigne } from '../geo/decalage.js?v=0.8.0';
+import { pose, contraindre, deplacer, tourner, zoomer, cadrer, metresParPixel, interpoler } from './camera.js?v=0.8.0';
 import {
   maillerSurfaces, maillerBatiments, maillerAxes, maillerRuban, maillerSections, maillerPolygones, segmentsDeLignes, lignesLocales, rangDuTriangle,
-} from './geometrie3d.js?v=0.7.1';
-import { BANDES } from '../data/bandes.js?v=0.7.1';
-import { VEHICULES } from '../data/circulation.js?v=0.7.1';
-import { HIERARCHIE_PRINCIPALE, SURFACE_PIETONNE, SURFACE_SOUTERRAINE } from '../carte/style.js?v=0.7.1';
+} from './geometrie3d.js?v=0.8.0';
+import { BANDES } from '../data/bandes.js?v=0.8.0';
+import { VEHICULES } from '../data/circulation.js?v=0.8.0';
+import { HIERARCHIE_PRINCIPALE, SURFACE_PIETONNE, SURFACE_SOUTERRAINE } from '../carte/style.js?v=0.8.0';
 
 const rad = deg => (deg * Math.PI) / 180;
 
@@ -367,7 +367,8 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
   }
 
   // ─── Souris : glisser = déplacer, clic droit ou Maj + glisser = tourner, molette = zoom ─
-  let prise = null, peinture = null;
+  let prise = null, peinture = null, survol = null;
+  canvas.addEventListener('pointerleave', () => survol?.(null));
   // Le point du sol sous un point de l'écran, en Lambert 72 (null : la caméra ne voit pas le sol là)
   function solSous(x, y) {
     camera.updateMatrixWorld();
@@ -386,7 +387,7 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
     if (peinture && e.button === 0 && !prise.tourne) { prise.peint = true; const p = solSous(...ici(e)); if (p) peinture('debut', p); }
   });
   canvas.addEventListener('pointermove', e => {
-    if (!prise) return;
+    if (!prise) { if (survol) { const [x, y] = ici(e); survol(solSous(x, y), x, y); } return; } // v0.8 : la voie sous l'outil
     if (prise.peint) { prise.bouge = true; const p = solSous(...ici(e)); if (p) peinture?.('glisse', p); return; }
     const dx = e.clientX - prise.x, dy = e.clientY - prise.y;
     if (!prise.bouge && Math.hypot(e.clientX - prise.x0, e.clientY - prise.y0) < S.seuilClicPx) return;
@@ -449,6 +450,8 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
     /** Outil actif (v0.7) : rappel(phase 'debut' | 'glisse' | 'fin', point Lambert 72) pendant un glisser au bouton gauche ; null : rien. */
     definirPeinture(rappel) { peinture = rappel; canvas.classList.toggle('peinture', !!rappel); },
     solSous,
+    /** Survol (v0.8) : rappel(point Lambert 72 | null, x, y) quand la souris bouge sans bouton ; null : rien. */
+    definirSurvol(rappel) { survol = rappel; },
     /** Les blocs du trafic (v0.6) : { mode → Float32Array [x, y, cap, …] } en Lambert 72. */
     definirTrafic,
     blocs: () => Object.fromEntries(Object.entries(blocs).map(([m, b]) => [m, { n: b.count, visible: b.visible && b.parent?.visible, premier: b.count ? [...b.instanceMatrix.array.slice(12, 15)] : null }])),

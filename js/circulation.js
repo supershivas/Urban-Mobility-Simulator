@@ -16,14 +16,14 @@
 // et al. 2000), s'arrête au rouge pour SON mouvement (phases du scénario, js/carrefour.js phasesDe :
 // modèle proposé et durées de vert ; v0.7).
 // Les blocs ne se gênent pas dans la zone d'un carrefour (exclu : priorités, conflits).
-import { branchesDe, raccordsDe, phasesDe, auVert } from './carrefour.js?v=0.7.1';
-import { geometrieCarrefour, recul, reculBranche, extraire, pointSurLigne } from './geo/raccords.js?v=0.7.1';
-import { decalerLigne } from './geo/decalage.js?v=0.7.1';
-import { decalages } from './section.js?v=0.7.1';
-import { longueur } from './geo/geometrie.js?v=0.7.1';
-import { MODE_DE_BANDE } from './data/carrefours.js?v=0.7.1';
-import { DEBITS_JEU, VOIES_DU_MODE, DEMANDE_DU_MODE, VEHICULES, VITESSES, SIMULATION } from './data/circulation.js?v=0.7.1';
-import { createRng } from './lib/rng.js?v=0.7.1';
+import { branchesDe, raccordsDe, phasesDe, auVert } from './carrefour.js?v=0.8.0';
+import { geometrieCarrefour, recul, reculBranche, extraire, pointSurLigne } from './geo/raccords.js?v=0.8.0';
+import { decalerLigne } from './geo/decalage.js?v=0.8.0';
+import { decalages } from './section.js?v=0.8.0';
+import { longueur } from './geo/geometrie.js?v=0.8.0';
+import { MODE_DE_BANDE } from './data/carrefours.js?v=0.8.0';
+import { DEBITS_JEU, VOIES_DU_MODE, DEMANDE_DU_MODE, VEHICULES, VITESSES, SIMULATION } from './data/circulation.js?v=0.8.0';
+import { createRng } from './lib/rng.js?v=0.8.0';
 
 const SENS_SOURCE = { 'unique-direct': 'aller', 'unique-inverse': 'retour' };
 const LARGEUR_INCONNUE = 3; // m, dessin seulement : décale les deux sens d'une voie inconnue
@@ -135,7 +135,8 @@ export function creerTrafic(reseau, { graine = SIMULATION.graine, demandeDe = ()
   let R = reseau, temps = 0, prochainId = 1, numeroPas = 0;
   const vehicules = new Set();
   const bilan = { entres: 0, sortis: 0, sansIssue: 0, refuses: 0 };
-  const passages = new Map(); // troncon → { mode → [temps d'entrée] }
+  const passages = new Map(); // troncon → { mode → [temps d'entrée] } (et « mode@type de voie »)
+  const perdus = new Map(); // nœud → [temps] des blocs sortis « sans issue » à ce carrefour (v0.8)
   const vitesseMode = mode => (mode === 'velo' ? kmh(R.vitesseVeloKmh ?? VITESSES.veloDefautKmh) : Infinity);
 
   function choisirSuite(veh) {
@@ -153,6 +154,7 @@ export function creerTrafic(reseau, { graine = SIMULATION.graine, demandeDe = ()
     if (compter && c.type === 'voie') {
       const p = passages.get(c.troncon) ?? passages.set(c.troncon, {}).get(c.troncon);
       (p[veh.mode] ??= []).push(temps);
+      (p[`${veh.mode}@${c.mode}`] ??= []).push(temps); // par type de voie (v0.8 : des vélos sur la piste)
     }
   }
   const retirerDe = veh => { const l = veh.chemin.vehicules, i = l.indexOf(veh); if (i >= 0) l.splice(i, 1); };
@@ -230,7 +232,8 @@ export function creerTrafic(reseau, { graine = SIMULATION.graine, demandeDe = ()
       if (veh.prochain) placer(veh, veh.prochain, Math.min(reste, veh.prochain.longueur * 0.5));
       else {
         vehicules.delete(veh);
-        if (c.sortie) bilan.sortis++; else bilan.sansIssue++; // bord du corridor, ou carrefour sans raccord pour lui
+        if (c.sortie) bilan.sortis++;
+        else { bilan.sansIssue++; (perdus.get(c.arrivee) ?? perdus.set(c.arrivee, []).get(c.arrivee)).push(temps); } // carrefour sans raccord pour lui
       }
     }
     temps += dt;
@@ -238,6 +241,7 @@ export function creerTrafic(reseau, { graine = SIMULATION.graine, demandeDe = ()
     if (numeroPas % 200 === 0) {
       const t0 = temps - SIMULATION.fenetreS;
       for (const p of passages.values()) for (const m of Object.keys(p)) { const l = p[m]; let k = 0; while (k < l.length && l[k] < t0) k++; if (k) l.splice(0, k); }
+      for (const l of perdus.values()) { let k = 0; while (k < l.length && l[k] < t0) k++; if (k) l.splice(0, k); }
     }
   }
 
@@ -295,6 +299,16 @@ export function creerTrafic(reseau, { graine = SIMULATION.graine, demandeDe = ()
       return out;
     },
     /** Ce qui passe sur un tronçon : débit mesuré (véh./h, sur la fenêtre), blocs présents, vitesse moyenne (km/h), à l'arrêt. */
+    /** Un carrefour (v0.8) : blocs perdus « sans issue » depuis t0, blocs arrêtés sur ses voies d'approche (maintenant). */
+    mesuresNoeud(noeud, t0 = 0) {
+      let arretes = 0, approche = 0;
+      for (const v of vehicules) if (v.chemin.type === 'voie' && v.chemin.arrivee === noeud) { approche++; if (v.v < 1) arretes++; }
+      return { perdus: (perdus.get(noeud) ?? []).filter(x => x >= t0).length, arretes, approche };
+    },
+    /** Passages sur un tronçon depuis t0 : { mode, ou « mode@type de voie » → nombre }. */
+    passagesDepuis(troncon, t0 = 0) {
+      return Object.fromEntries(Object.entries(passages.get(troncon) ?? {}).map(([k, l]) => [k, l.filter(x => x >= t0).length]));
+    },
     mesures(troncon) {
       const p = passages.get(troncon) ?? {};
       const fenetre = Math.min(SIMULATION.fenetreS, Math.max(temps, 1));

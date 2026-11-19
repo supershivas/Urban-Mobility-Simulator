@@ -235,3 +235,31 @@ dialog form { margin-top: calc(var(--pas) * 2); }
 .feux-phase input[type="range"] { width: 8em; min-height: var(--jeu-cible); }
 /* Le message de l'écran de chargement se sélectionne et se copie (« impossible de copier le code erreur », v0.7.0) */
 #chargement-texte { user-select: text; -webkit-user-select: text; cursor: text; }
+
+/* ─── Prise en main (v0.8) : écran épuré, carte de mission, étiquette de survol ─ */
+.app.mode-jeu { grid-template-columns: 0 minmax(0, 1fr) 0; }
+.app.mode-jeu .outils, .app.mode-jeu .inspecteur { display: none; }
+.entete-expert { padding: 0 calc(var(--pas) * 1.5); }
+.entete-expert[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--jeu-surface); }
+.mission { position: absolute; right: 10px; top: 10px; z-index: 3; width: min(320px, calc(100% - 20px)); max-height: calc(100% - 90px); overflow: auto; box-sizing: border-box; padding: calc(var(--pas) * 1.5); display: grid; gap: var(--pas); background: var(--jeu-surface); border: 2px solid var(--jeu-encre); }
+.mission:empty { display: none; }
+.mission h2 { margin: 0; font-size: var(--t-titre); }
+.mission p { margin: 0; line-height: 1.45; }
+.mission-num { font-size: var(--t-petit); letter-spacing: .08em; text-transform: uppercase; }
+.mission-etape { padding: var(--pas); border-left: 4px solid var(--jeu-encre); background: var(--jeu-fond); }
+.mission-jauge { height: 12px; border: var(--trait) solid var(--jeu-encre); }
+.mission-jauge span { display: block; height: 100%; background: var(--jeu-encre); }
+.mission-valeur { font-variant-numeric: tabular-nums; font-weight: 600; }
+.mission-boutons { display: flex; flex-wrap: wrap; gap: var(--pas); }
+.mission-boutons .bouton { padding: 0 calc(var(--pas) * 1.5); }
+.mission-liste { margin: 0; padding: 0; list-style: none; font-size: var(--t-petit); display: grid; gap: 2px; }
+.mission-liste .faite::before { content: '✓ '; font-weight: 700; }
+.mission-liste .courante { font-weight: 700; }
+.mission.reussie { border-width: 4px; }
+/* L'outil conseillé par la mission : un cerne qui se voit sans la couleur */
+.outil.conseille { box-shadow: inset 0 0 0 3px var(--jeu-encre), inset 0 0 0 5px var(--jeu-surface); font-weight: 700; }
+.outil.conseille.guide { text-decoration: underline 3px var(--jeu-encre); text-underline-offset: 4px; }
+/* Pas d'animation : un bouton qui bouge se clique mal (vu par critere-v08) ; l'outil désigné est cerné épais */
+.outil.conseille.guide { box-shadow: inset 0 0 0 4px var(--jeu-encre), inset 0 0 0 7px var(--jeu-surface); }
+.survol { position: absolute; z-index: 4; pointer-events: none; max-width: 260px; padding: 2px 6px; background: var(--jeu-encre); color: var(--jeu-surface); font-size: var(--t-petit); line-height: 1.4; }
+.etiquette-station.hors-vue { display: none; } /* hors de la carte : rien ne déborde de la vue */

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.0 — 2026-11-19
+- La partie s'ouvre sur une mission guidée : une piste cyclable rue de la Loi, pas à pas ; puis deux missions sur de vrais lieux (Cortenbergh, rue de Trèves), jugées sur le trafic qui roule
+- Écran épuré : la vue, les outils, le temps et la mission ; le mode expert (O) rend les couches, l'inspecteur et les chiffres
+- Avec un outil, la voie survolée est surlignée et une étiquette dit ce que fera le clic, ou pourquoi il ne marchera pas
+
 ## 0.7.1 — 2026-11-19
 - Le jeu démarre même avec un bloqueur de publicités : le module du trafic, qu'il pouvait refuser à cause de son nom, s'appelle autrement
 - Si le jeu ne démarre pas, l'écran de chargement nomme le fichier qui manque, et le message se sélectionne pour être copié

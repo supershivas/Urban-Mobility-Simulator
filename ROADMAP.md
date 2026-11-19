@@ -59,6 +59,15 @@ Statuts : **à l'étude** · **validé** (Jérôme a tranché) · **en cours** �
 - [ ] Taux d'occupation des voitures et des bus : aucune source citée (hypothèse du joueur, « Non renseigné » au départ)
 - [ ] Flux en 3D ; légende de la couche Flux
 
+### Prise en main et missions — v0.8
+
+**Statut** : à mesurer (livré en 0.8.0, attend la validation de Jérôme)
+
+- [x] Écran épuré par défaut, mode expert (O) ; carte de mission ; survol des voies (résultat exact du clic, refus dits avant)
+- [x] Mission guidée (rue de la Loi), puis Cortenbergh (sens d'une avenue) et Trèves (réglage d'un feu), jugées sur le trafic tenu ; faisabilité prouvée par `test/missions.test.mjs`
+- [ ] D'autres missions (personnes / h avec l'occupation de jeu, conflits, bus) ; récompense (étoiles ?) à redéfinir
+- [ ] Les bandeaux experts restent denses (section, carrefour, flux)
+
 ### Construire sur la carte — v0.7
 
 **Statut** : à mesurer (livré en 0.7.0, attend la validation de Jérôme)

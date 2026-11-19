@@ -29,7 +29,7 @@ const erreurs = [];
 page.on('pageerror', e => erreurs.push(e.message));
 page.on('console', m => { if (m.type() === 'error') erreurs.push(m.text()); });
 
-await page.goto(`${serveur.base}index.html?debug=1&vue=2d`);
+await page.goto(`${serveur.base}index.html?debug=1&vue=2d&expert=1&mission=0`);
 await page.waitForFunction(() => window.__jeu?.pret);
 const msPret = await page.evaluate(() => window.__jeu.pret());
 await page.evaluate(() => window.__jeu.jouer());
