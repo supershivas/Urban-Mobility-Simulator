@@ -2,7 +2,8 @@
 // et ne dessine une hauteur que si la source en donne une.
 import { readFileSync } from 'node:fs';
 import { creerRepere } from '../js/geo/repere.js';
-import { maillerBatiments, maillerBatiment, maillerSurfaces, maillerAxes, maillerRuban, segmentsDeLignes, polygonesLocaux, lignesLocales, rangDuTriangle } from '../js/scene/geometrie3d.js';
+import { maillerBatiments, maillerBatiment, maillerSurfaces, maillerAxes, maillerRuban, maillerRubans, segmentsDeLignes, polygonesLocaux, lignesLocales, rangDuTriangle, tirets, marquagesSection } from '../js/scene/geometrie3d.js';
+import { positionSoleil, directionSoleil, partDeJour } from '../js/scene/soleil.js';
 import { hauteurDepuisSolides, etenduesVerticales } from '../outils/donnees/urbis3d.mjs';
 
 const lire = f => JSON.parse(readFileSync(new URL(`../${f}`, import.meta.url), 'utf8'));
@@ -130,4 +131,44 @@ test('polygones et lignes : anneau fermé sans point répété, trous gardés', 
   assert.deepEqual(poly.map(a => a.length), [3, 3]);
   assert.equal(lignesLocales(g, repere).length, 2);
   assert.equal(segmentsDeLignes([[[0, 0], [1, 0], [1, 1]]], 0.3).length, 12);
+});
+
+group('scène 3D — semi-réaliste (v0.10)');
+const deg = r => (r * 180) / Math.PI;
+test('le soleil de Bruxelles le 15 mai : se lève à l\'est vers 6 h, au plus haut au sud vers 13 h 40, couché à 21 h 30', () => {
+  const S = h => positionSoleil(h, 135, 50.84, 4.4, 2);
+  assert.ok(S(5.5).elevation < 0 && S(6.5).elevation > 0, 'lever entre 5 h 30 et 6 h 30');
+  assert.ok(S(21).elevation > 0 && S(22).elevation < 0, 'coucher entre 21 h et 22 h');
+  const midi = S(13.7);
+  assert.ok(Math.abs(deg(midi.azimut) - 180) < 5, `au sud à midi solaire (${deg(midi.azimut).toFixed(1)}°)`);
+  assert.ok(Math.abs(deg(midi.elevation) - 58) < 3, `hauteur ${deg(midi.elevation).toFixed(1)}° (≈ 90 − 50,8 + 18,8)`);
+  assert.ok(deg(S(8).azimut) > 70 && deg(S(8).azimut) < 110, 'à l\'est le matin');
+  const d = directionSoleil(midi);
+  assert.ok(Math.abs(Math.hypot(...d) - 1) < 1e-9 && d[2] > 0.4 && d[1] > 0.8, 'au sud (Z = −nord) et haut');
+  assert.equal(partDeJour(-0.3, -0.1, 0.17), 0);
+  assert.equal(partDeJour(0.3, -0.1, 0.17), 1);
+});
+test('façades : chaque mur porte sa position (abscisse, hauteur, hauteur du bâtiment, longueur) ; toits et emprises à plat n\'en ont pas', () => {
+  assert.equal(mb.facades.length / 4, mb.positions.length / 3);
+  let murs = 0;
+  for (let v = 0; v < mb.facades.length / 4; v++) {
+    const [u, y, h, L] = mb.facades.slice(v * 4, v * 4 + 4);
+    if (u < 0) { assert.ok(y === -1 && h === -1 && L === -1); continue; }
+    murs++;
+    assert.ok(u >= 0 && u <= L + 1e-6 && (y === 0 || y === h) && h > 0);
+    assert.ok(Math.abs(mb.positions[v * 3 + 1] - y) < 1e-4, 'la hauteur sur le mur est celle du sommet');
+  }
+  assert.ok(murs > 0);
+});
+test('marquages : tirets entre deux voies d\'un même sens, ligne continue entre deux sens et le long d\'une piste, rien sur une chaussée non découpée', () => {
+  const sect = (...bandes) => ({ troncon: 't', axe: bandes.reduce((a, b) => a + b.largeur, 0) / 2, bandes: bandes.map((b, i) => ({ id: `b${i}`, ...b })) });
+  const ligne = [[0, 0], [100, 0]];
+  const m = marquagesSection(ligne, sect({ type: 'trottoir', largeur: 2 }, { type: 'cyclable', largeur: 2, sens: 'retour' }, { type: 'voiture', largeur: 3, sens: 'retour' },
+    { type: 'voiture', largeur: 3, sens: 'aller' }, { type: 'voiture', largeur: 3, sens: 'aller' }, { type: 'trottoir', largeur: 2 }));
+  assert.deepEqual(m.map(x => x.style), ['continu', 'continu', 'tirets']);
+  assert.ok(Math.abs(m[2].ligne[0][1] - (7.5 - 2 - 2 - 3 - 3)) < 1e-9, 'entre les deux voies « aller »');
+  assert.deepEqual(marquagesSection(ligne, sect({ type: 'trottoir', largeur: 2 }, { type: 'chaussee', largeur: 9 }, { type: 'trottoir', largeur: 2 })), []);
+  const t = tirets([[0, 0], [10, 0], [20, 0]], 3, 5);
+  assert.deepEqual(t.map(l => [l[0][0], l.at(-1)[0]]), [[0, 3], [8, 11], [16, 19]]);
+  assert.equal(maillerRubans(t, 0.15).indices.length / 3, 8, 'le tiret qui passe un sommet a deux morceaux');
 });

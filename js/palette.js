@@ -32,6 +32,24 @@ export const ROLES = {
   bati: PALETTE.bati,
 };
 
+// La vue 3D semi-réaliste (v0.10) : pierre de Bruxelles, asphalte, toits gris, ciel qui suit l'heure.
+// Les couleurs qui portent un sens (pistes, bus, sélection, trafic) restent celles de PALETTE.
+export const PALETTE_3D = {
+  sol: '#D9D4C8',        // le terrain entre les surfaces de voirie
+  asphalte: '#5B5F66',   // chaussées (surfaces UrbIS, voies des sections, zones de carrefour)
+  trottoir: '#C8C1B4',   // trottoirs, places, terre-pleins
+  bordure: '#A39B8E',    // bords des bandes qui n'ont pas de marquage
+  facade: '#D8CBB5',     // murs (pierre claire)
+  toit: '#8A8782',       // toits plats (zinc, roofing)
+  corniche: '#6E6A64',   // contour des toits
+  vitre: '#3D4753',      // fenêtres (hypothèse de jeu : un étage tous les 3 m)
+  lueur: '#F2C46D',      // fenêtres éclairées, la nuit
+  marquage: '#F3F1EA',   // lignes et passages piétons au sol
+  ciel: '#C7D4DE', cielNuit: '#1C2331', // fond et brume, de jour et de nuit
+  lumiereSoleil: '#FFF3DE', lumiereCouchant: '#FFB774', // le soleil, haut puis bas sur l'horizon
+  lumiereCiel: '#E4ECF2', lumiereSol: '#8C8273', lumiereNuit: '#5C6C8C', // la lumière diffuse (ciel / sol / nuit)
+};
+
 // Le jeu beta « Carte blanche » (Jérôme, v0.9.0) : minimalisme à la Traffic City.
 // Sol clair, chaussée grise, marquages blancs, pistes vertes, voitures en couleurs franches.
 export const PALETTE_BETA = {

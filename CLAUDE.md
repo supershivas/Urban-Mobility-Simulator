@@ -20,7 +20,7 @@ Jeu de conception urbaine inspiré des city builders, limité à l'espace public
 | Décision | Valeur |
 |---|---|
 | Genre | City / colonie builder · Gestion / automatisation · Simulation |
-| Vue | Carte 2D MapLibre **et** vue 3D three.js à caméra **orbitale** (Jérôme, v0.2.0), bascule par bouton ou V ; la partie s'ouvrira **en 3D** à partir de la v0.6 (Jérôme, v0.5.0) |
+| Vue | Carte 2D MapLibre **et** vue 3D three.js à caméra **orbitale** (Jérôme, v0.2.0), bascule par bouton ou V ; la partie s'ouvre **en 3D** (Jérôme, v0.5.0) |
 | Public | Joueur averti |
 | Session | Partie longue continue |
 | Cible | **Ordinateur uniquement** (≈ 1440 × 900), toutes tailles de fenêtre ; pas de version téléphone (Jérôme, v0.1.4) |
@@ -48,6 +48,7 @@ Jeu de conception urbaine inspiré des city builders, limité à l'espace public
 | Trafic (v0.6) | Blocs par mode sur les voies et raccords réels, route **au hasard aux carrefours**, **entrées aux bords** à **débit de jeu par hiérarchie UrbIS** (« hypothèse de jeu », assouplissement du pilier 6, Jérôme, v0.5.0). `docs/domaines/trafic.md` |
 | Édition (v0.7) | **Outil + clic** sur une voie, **flèches au sol** cliquables, **feux : phases proposées + durées** (Jérôme, v0.6.0). `docs/domaines/edition.md` |
 | Prise en main (v0.8) | **Mission guidée + écran épuré** (mode expert : O) ; **missions sur lieux réels**, jugées sur le **trafic tenu** (Jérôme, v0.7.1). `docs/domaines/missions.md` |
+| 3D (v0.10) | Soleil à l'heure du trafic, fenêtres en hypothèse, marquages du scénario, axes discrets (Jérôme) |
 | Onglet caché | Trafic en pause (aussi : Espace, menu, titre) ; le trafic n'est pas sauvegardé (repart à 8 h) |
 
 - **Production** : https://supershivas.github.io/Urban-Mobility-Simulator/
@@ -96,16 +97,16 @@ Table complète (clavier et souris) : `docs/domaines/interface.md` ; textes de l
 
 | Version | Contenu | État |
 |---|---|---|
-| 0.1 | Carte 2D réelle : rues, intersections, bâtiments, couches, sélection d'un tronçon, inspecteur, retour à l'emprise | livrée en 0.1.0, à valider |
-| 0.2 | Rendu 3D three.js, bâtiments à leur hauteur, caméra orbitale, sélection synchronisée, bâtiments sélectionnables | livrée en 0.2.0, à valider |
-| 0.3 | Éditeur de section transversale, contraintes de largeur, undo/redo | livrée en 0.3.0, à valider |
-| 0.4 | Éditeur de carrefours : raccords voie à voie, traversées, régulation | livrée en 0.4.0, à valider |
-| 0.5 | Simulation simplifiée et indicateurs | livrée en 0.5.0, à valider |
-| 0.6 | Le trafic bouge : boucle de simulation, blocs qui circulent (2D et 3D), files, feux ; modifications visibles en direct | livrée en 0.6.0, à valider |
-| 0.7 | Construire sur la carte : outils de voie, flèches de direction, phases de feux | livrée en 0.7.0, à valider |
-| 0.8 | Prise en main : écran épuré, mission guidée, missions sur le corridor, survol des voies | livrée en 0.8.0, à valider |
-| 0.9 | Bêta « Carte blanche » (`beta.html`, bouton de l'écran titre) : carte vierge 3D, routes en arc, voies doublées, pistes cyclables, trafic (`docs/domaines/beta.md`) | livrée en 0.9.0, à valider |
-| 0.10 | Vue 3D semi-réaliste (toits, façades, marquages) | prochaine |
+| 0.1 | Carte 2D réelle : rues, intersections, bâtiments, couches, sélection d'un tronçon, inspecteur, retour à l'emprise | livrée, à valider |
+| 0.2 | Rendu 3D three.js, bâtiments à leur hauteur, caméra orbitale, sélection synchronisée, bâtiments sélectionnables | livrée, à valider |
+| 0.3 | Éditeur de section transversale, contraintes de largeur, undo/redo | livrée, à valider |
+| 0.4 | Éditeur de carrefours : raccords voie à voie, traversées, régulation | livrée, à valider |
+| 0.5 | Simulation simplifiée et indicateurs | livrée, à valider |
+| 0.6 | Le trafic bouge : boucle de simulation, blocs qui circulent (2D et 3D), files, feux ; modifications visibles en direct | livrée, à valider |
+| 0.7 | Construire sur la carte : outils de voie, flèches de direction, phases de feux | livrée, à valider |
+| 0.8 | Prise en main : écran épuré, mission guidée, missions sur le corridor, survol des voies | livrée, à valider |
+| 0.9 | Bêta « Carte blanche » (`beta.html`, écran titre) : carte vierge 3D, réseau, trafic (`docs/domaines/beta.md`) | livrée, à valider |
+| 0.10 | Vue 3D semi-réaliste (`docs/domaines/scene3d.md`) | livrée, à valider |
 | plus tard | Scénarios nommés, export CSV + JSON (Jérôme, v0.5.0) | — |
 
 Une bande s'arrête toujours au bout de son axe : la zone de carrefour est dessinée par-dessus, les raccords partent du recul.
@@ -124,7 +125,7 @@ Forme des carrefours (oreilles, îlots), raccords hors des carrefours, affectati
 
 - `index.html`, `css/style.css` — chargement, en-tête, outils | carte | inspecteur, bandeau d'édition, barre d'état ; titre, menu, réglages.
 - `js/main.js` — cycle de vie, carte, bascule 2D / 3D, sélection unique (tronçon, nœud ou bâtiment), éditeurs, clavier, sauvegarde, debug.
-- `js/scene/` — `scene3d.js` (three.js, chargé à la première bascule, ne modifie jamais l'état), `camera.js` (orbite), `geometrie3d.js` (maillages en tableaux typés) : purs sauf la scène.
+- `js/scene/` — `scene3d.js` (three.js, chargé à la première bascule, ne modifie jamais l'état), `camera.js` (orbite), `geometrie3d.js` (maillages en tableaux typés), `soleil.js` (v0.10) : purs sauf la scène.
 - `js/donnees.js` — lecture paresseuse et mémorisée des GeoJSON (3D, inspecteur des bâtiments).
 - `js/carte/style.js` — style MapLibre et couches activables (pur, testé).
 - `js/section.js` — section transversale (bandes, opérations qui rendent `{ section }` ou `{ refus }`, `decalages`), `js/historique.js` — annuler / rétablir ; `js/data/bandes.js` — types de bande (contenu). Purs, testés (`test/section.test.mjs`).

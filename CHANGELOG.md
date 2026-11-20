@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.10.0 — 2026-11-20
+- Vue 3D semi-réaliste : le soleil suit l'heure du trafic, avec ses ombres ; le soir tombe, des fenêtres s'allument
+- Façades à fenêtres (un étage tous les 3 m, une hypothèse de jeu), toits plats, asphalte et trottoirs de pierre
+- Marquages au sol là où vos voies sont définies ; en 3D, axes et nœuds discrets (touches 3 et 4)
+
 ## 0.9.10 — 2026-11-20
 - Bêta : les carrefours se dessinent sans incohérence — bordures arrondies comme les trottoirs, chaussée qui s'élargit en douceur, pistes qui longent la rue au lieu de faire un détour
 - Bêta : un rond-point ne se pose plus là où une rue est trop courte ; les routes trop proches et les coudes en pointe sont refusés

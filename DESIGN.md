@@ -97,7 +97,7 @@ en tirets).
 ## Ce que le jeu refuse
 
 - **Pas de fond de carte en ligne** : tout ce qui est dessiné vient de `data/` et est sourcé (porte ouverte vers Steam, pilier 6). (Choix par défaut, v0.1.0 : Jérôme n'a pas tranché.)
-- **Pas de décor décoratif** : rien d'inventé pour faire joli (pilier 6). Les blocs qui circulent (v0.6) ne sont pas un décor : ils représentent la demande (comptage, ou hypothèse de jeu affichée comme telle). Les arbres de la v0.9 viendront d'une source (à trouver), pas d'un semis au hasard.
+- **Pas de décor décoratif** : rien d'inventé pour faire joli (pilier 6). Les blocs qui circulent (v0.6) ne sont pas un décor : ils représentent la demande (comptage, ou hypothèse de jeu affichée comme telle). Les arbres de la v0.9 viendront d'une source (à trouver), pas d'un semis au hasard. Exception (Jérôme, v0.10.0) : les fenêtres des façades 3D, un étage tous les 3 m, sont une hypothèse de jeu (aucune source ne donne les étages).
 - **Pas de prédiction d'accidents** : on montre l'exposition aux conflits (pilier 3).
 - **Pas d'élargissement de la rue, pas de construction de bâtiments** (pilier 2).
 

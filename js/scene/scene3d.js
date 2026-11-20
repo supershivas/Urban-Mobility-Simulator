@@ -1,20 +1,25 @@
 // La vue 3D du corridor (three.js) : sol, surfaces de voirie, bâtiments, axes,
-// nœuds, rails, emprise. Elle lit les mêmes GeoJSON que la carte MapLibre et
+// nœuds, rails, emprise. Semi-réaliste depuis la v0.10 : un soleil qui suit l'heure du
+// trafic (ombres portées), des façades à fenêtres (hypothèse de jeu), des marquages au
+// sol là où le scénario définit les voies. Elle lit les mêmes GeoJSON que la carte MapLibre et
 // garde les mêmes identifiants ; tout est en mètres dans le repère local.
 // Ce module dessine et vise : il ne modifie jamais l'état du jeu (main.js décide).
 // Une image n'est calculée que sur demande (le trafic, v0.6, en demande une à chaque pas
 // de la boucle), et jamais quand la vue est inactive ou l'onglet caché.
-import * as THREE from '../../vendor/three/three.module.js?v=0.9.10';
-import { versScene, depuisScene } from '../geo/repere.js?v=0.9.10';
-import { distancePointLigne, boite } from '../geo/geometrie.js?v=0.9.10';
-import { decalerLigne } from '../geo/decalage.js?v=0.9.10';
-import { pose, contraindre, deplacer, tourner, zoomer, cadrer, metresParPixel, interpoler } from './camera.js?v=0.9.10';
+import * as THREE from '../../vendor/three/three.module.js?v=0.10.0';
+import { versScene, depuisScene } from '../geo/repere.js?v=0.10.0';
+import { distancePointLigne, boite } from '../geo/geometrie.js?v=0.10.0';
+import { decalerLigne } from '../geo/decalage.js?v=0.10.0';
+import { pose, contraindre, deplacer, tourner, zoomer, cadrer, metresParPixel, interpoler } from './camera.js?v=0.10.0';
 import {
-  maillerSurfaces, maillerBatiments, maillerAxes, maillerRuban, maillerSections, maillerPolygones, segmentsDeLignes, lignesLocales, rangDuTriangle,
-} from './geometrie3d.js?v=0.9.10';
-import { BANDES } from '../data/bandes.js?v=0.9.10';
-import { VEHICULES } from '../data/circulation.js?v=0.9.10';
-import { HIERARCHIE_PRINCIPALE, SURFACE_PIETONNE, SURFACE_SOUTERRAINE } from '../carte/style.js?v=0.9.10';
+  maillerSurfaces, maillerBatiments, maillerAxes, maillerRuban, maillerRubans, maillerSections, maillerPolygones, segmentsDeLignes, lignesLocales, rangDuTriangle,
+  marquagesSection, tirets,
+} from './geometrie3d.js?v=0.10.0';
+import { positionSoleil, directionSoleil, partDeJour } from './soleil.js?v=0.10.0';
+import { PALETTE_3D as P3 } from '../palette.js?v=0.10.0';
+import { BANDES } from '../data/bandes.js?v=0.10.0';
+import { VEHICULES } from '../data/circulation.js?v=0.10.0';
+import { HIERARCHIE_PRINCIPALE, SURFACE_PIETONNE, SURFACE_SOUTERRAINE } from '../carte/style.js?v=0.10.0';
 
 const rad = deg => (deg * Math.PI) / 180;
 
@@ -30,7 +35,8 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
 
   const rendu = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   rendu.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  rendu.setClearColor(P.papier);
+  rendu.setClearColor(P3.ciel);
+  rendu.shadowMap.enabled = true;
   const canvas = rendu.domElement;
   canvas.className = 'scene-canvas';
   conteneur.prepend(canvas);
@@ -38,15 +44,19 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
   const camera = new THREE.PerspectiveCamera(S.fovDegres, 1, 1, 10000);
 
   // ─── Maillages ───────────────────────────────────────────────────────────
-  const geometrie = ({ positions, couleurs, indices }) => {
+  const geometrie = ({ positions, couleurs, indices }, eclairee = false) => {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     if (couleurs) g.setAttribute('color', new THREE.BufferAttribute(couleurs, 3));
     if (indices) g.setIndex(new THREE.BufferAttribute(indices, 1));
+    if (eclairee) g.computeVertexNormals(); // la lumière a besoin des normales (murs : 4 sommets propres, normales franches)
     return g;
   };
-  // Des aplats coplanaires (sol, surfaces, axes, sélection) : le décalage de profondeur les ordonne sans les déplacer
+  // Des aplats coplanaires (sol, surfaces, axes, sélection) : le décalage de profondeur les ordonne sans les déplacer.
+  // `aplat` : l'interface (axes, nœuds, sélection), sans lumière ; `decor` : le monde, éclairé par le soleil, qui reçoit les ombres.
   const aplat = (decalage, plus = {}) => new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: decalage, polygonOffsetUnits: decalage, ...plus });
+  const decor = (decalage, plus = {}) => new THREE.MeshLambertMaterial({ side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: decalage, polygonOffsetUnits: decalage, ...plus });
+  const auSol = (g, m) => { const o = new THREE.Mesh(g, m); o.receiveShadow = true; return o; };
   const lignes = (positions, couleur) => new THREE.LineSegments(geometrie({ positions }), new THREE.LineBasicMaterial({ color: couleur }));
   const groupes = {};
   const groupe = (couche, ...objets) => { (groupes[couche] ??= scene.add(new THREE.Group()).children.at(-1)).add(...objets); };
@@ -57,24 +67,58 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
 
   // Sol : un rectangle papier plus large que l'emprise (les objets gardés entiers dépassent du bord)
   const marge = S.margeSolM;
-  const sol = new THREE.Mesh(new THREE.PlaneGeometry(boiteEmprise[2] - boiteEmprise[0] + 2 * marge, boiteEmprise[3] - boiteEmprise[1] + 2 * marge), aplat(4, { color: P.papier }));
+  const sol = auSol(new THREE.PlaneGeometry(boiteEmprise[2] - boiteEmprise[0] + 2 * marge, boiteEmprise[3] - boiteEmprise[1] + 2 * marge), decor(4, { color: P3.sol }));
   sol.rotation.x = -Math.PI / 2;
   sol.position.set(...versScene([(boiteEmprise[0] + boiteEmprise[2]) / 2, (boiteEmprise[1] + boiteEmprise[3]) / 2], 0));
   scene.add(sol);
 
-  // Surfaces de voirie : mêmes filtres et mêmes teintes que la carte
-  const teinteTrottoir = rvb(P.trottoir), teinteVoirie = rvb(P.voirie);
+  // Surfaces de voirie : mêmes filtres que la carte ; asphalte et pierre
+  const teinteTrottoir = rvb(P3.trottoir), teinteVoirie = rvb(P3.asphalte);
   const mSurfaces = maillerSurfaces(donnees.surfaces.features, repere,
     p => (p.niveau < 0 || SURFACE_SOUTERRAINE.includes(p.type) ? null : SURFACE_PIETONNE.includes(p.type) ? teinteTrottoir : teinteVoirie));
-  groupe('surfaces', new THREE.Mesh(geometrie(mSurfaces), aplat(2, { vertexColors: true })));
+  groupe('surfaces', auSol(geometrie(mSurfaces, true), decor(2, { vertexColors: true })));
 
-  // Bâtiments : prisme à la hauteur de la source, ou emprise à plat (hauteur inconnue) cernée de la couleur « inconnu »
-  const mBatiments = maillerBatiments(donnees.batiments.features, repere, {
-    toit: rvb(P.bati), plat: rvb(P.bati), mur: o => melange(P.bati, P.bord, S.ombreMurMin + (S.ombreMurMax - S.ombreMurMin) * o),
-  });
-  const batiments = new THREE.Mesh(geometrie(mBatiments), aplat(1, { vertexColors: true }));
+  // Bâtiments : prisme à la hauteur de la source, ou emprise à plat (hauteur inconnue) cernée de la couleur « inconnu ».
+  // Façades à fenêtres (v0.10, Jérôme) : une hypothèse de jeu — un étage tous les S.etageM mètres, aucune source ne les donne.
+  const mBatiments = maillerBatiments(donnees.batiments.features, repere, { toit: rvb(P3.toit), plat: rvb(P.bati), mur: () => rvb(P3.facade) });
+  const gBatiments = geometrie(mBatiments, true);
+  gBatiments.setAttribute('facade', new THREE.BufferAttribute(mBatiments.facades, 4));
+  const facade = {
+    uNuit: { value: 0 }, uVitre: { value: new THREE.Color(P3.vitre) }, uLueur: { value: new THREE.Color(P3.lueur) },
+    uGrille: { value: new THREE.Vector4(S.etageM, S.traveeM, S.fenetreLargeur, S.fenetreHauteur) }, uAllumees: { value: S.fenetresAllumees },
+  };
+  const matBatiments = decor(1, { vertexColors: true });
+  matBatiments.onBeforeCompile = sh => {
+    Object.assign(sh.uniforms, facade);
+    sh.vertexShader = 'attribute vec4 facade;\nvarying vec4 vFacade;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n  vFacade = facade;');
+    sh.fragmentShader = `uniform float uNuit; uniform float uAllumees; uniform vec3 uVitre; uniform vec3 uLueur; uniform vec4 uGrille;
+varying vec4 vFacade;
+float hasard(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+` + sh.fragmentShader
+      .replace('#include <color_fragment>', `#include <color_fragment>
+  float vitreF = 0.0, allumeF = 0.0;
+  if (vFacade.x >= 0.0) {
+    // Les travées sont centrées sur le mur ; seuls les étages entiers ont des fenêtres
+    float et = uGrille.x, tr = uGrille.y, n = floor(vFacade.w / tr), nEt = floor(vFacade.z / et);
+    float x = vFacade.x - (vFacade.w - n * tr) * 0.5, y = vFacade.y;
+    if (n >= 1.0 && nEt >= 1.0 && x > 0.0 && x < n * tr && y < nEt * et) {
+      vec2 c = vec2(x / tr, y / et), f = fract(c), w = max(fwidth(c), vec2(1e-4));
+      float lx = uGrille.z * 0.5, hy = uGrille.w;
+      float mx = smoothstep(0.5 - lx - w.x, 0.5 - lx + w.x, f.x) * (1.0 - smoothstep(0.5 + lx - w.x, 0.5 + lx + w.x, f.x));
+      float my = smoothstep(0.3 - w.y, 0.3 + w.y, f.y) * (1.0 - smoothstep(0.3 + hy - w.y, 0.3 + hy + w.y, f.y));
+      // De loin, la grille se fond dans sa teinte moyenne (pas de moiré)
+      float loin = clamp(max(w.x, w.y) * 3.0 - 0.5, 0.0, 1.0);
+      vitreF = mix(mx * my, uGrille.z * uGrille.w, loin);
+      allumeF = vitreF * step(1.0 - uAllumees, hasard(floor(c) + vec2(vFacade.w, vFacade.z)));
+    }
+  }
+  diffuseColor.rgb = mix(diffuseColor.rgb, uVitre, vitreF * 0.7);`)
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n  totalEmissiveRadiance += uLueur * allumeF * uNuit;');
+  };
+  const batiments = new THREE.Mesh(gBatiments, matBatiments);
+  batiments.castShadow = true; batiments.receiveShadow = true;
   const rangBatiment = new Map(mBatiments.ids.map((id, i) => [id, i]));
-  groupe('batiments', batiments, lignes(mBatiments.contours, P.bord), lignes(mBatiments.contoursPlats, P.inconnu));
+  groupe('batiments', batiments, lignes(mBatiments.contours, P3.corniche), lignes(mBatiments.contoursPlats, P.inconnu));
 
   // Axes de rue : des rubans (épaisseur de dessin en mètres), tunnels plus fins comme sur la carte
   const teinteEncre = rvb(P.encre), teinteBord = rvb(P.bord);
@@ -128,17 +172,15 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
 
   // ─── Trafic (v0.6) : un bloc par véhicule, des instances par mode (couche « flux ») ──
   // Voitures en `noeud` [À VALIDER] : l'encre se perdait sur les axes principaux, le blanc sur la chaussée.
-  // Côtés assombris : la 3D n'a pas de lumière.
+  // Éclairés par le soleil, ils portent leur ombre (v0.10).
   const TEINTE_MODE = { voiture: P.noeud, bus: P.bus, velo: P.cyclable };
   const blocs = {};
   const fantome = new THREE.Object3D();
   for (const [mode, G] of Object.entries(VEHICULES)) {
     const g = new THREE.BoxGeometry(G.longueur, G.hauteur, G.largeur);
     g.translate(0, G.hauteur / 2, 0);
-    const nrm = g.getAttribute('normal'), teintes = new Float32Array(nrm.count * 3);
-    for (let i = 0; i < nrm.count; i++) teintes.fill(nrm.getY(i) > 0.5 ? 1 : nrm.getX(i) !== 0 ? S.ombreMurMax : 1 - S.ombreMurMax / 2, i * 3, i * 3 + 3);
-    g.setAttribute('color', new THREE.BufferAttribute(teintes, 3));
-    const m = new THREE.InstancedMesh(g, new THREE.MeshBasicMaterial({ color: TEINTE_MODE[mode], vertexColors: true }), 4000);
+    const m = new THREE.InstancedMesh(g, new THREE.MeshLambertMaterial({ color: TEINTE_MODE[mode] }), 4000);
+    m.castShadow = true;
     m.count = 0;
     m.frustumCulled = false; // les instances bougent : la boîte englobante du maillage ne les suit pas
     blocs[mode] = m;
@@ -166,23 +208,29 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
   const groupeSections = scene.add(new THREE.Group()).children.at(-1);
   groupes.sections = groupeSections;
   let mSections = { ids: [], bandes: new Map(), indices: [] }, bandeChoisie = null;
+  // Teintes des bandes en 3D : celles qui portent un sens gardent leur couleur de plan, un peu fondue dans l'asphalte
+  const TEINTE_BANDE_3D = { voiture: P3.asphalte, chaussee: P3.asphalte, trottoir: P3.trottoir, 'terre-plein': P3.trottoir, separation: P3.bordure };
+  const teinteBande = type => (TEINTE_BANDE_3D[type] ? rvb(TEINTE_BANDE_3D[type]) : melange(P[BANDES[type]?.couleur ?? 'voirie'], P3.asphalte, type === 'plante' ? 0.15 : 0.3));
   function dessinerSections(entrees) {
     vider(groupeSections);
-    mSections = maillerSections(entrees.map(e => ({ ligne: mAxes.lignes.get(e.section.troncon), section: e.section })).filter(e => e.ligne),
-      type => rvb(P[BANDES[type]?.couleur ?? 'voirie']));
+    const avecLigne = entrees.map(e => ({ ...e, ligne: mAxes.lignes.get(e.section.troncon) })).filter(e => e.ligne);
+    mSections = maillerSections(avecLigne, teinteBande);
     if (!mSections.ids.length) return;
-    groupeSections.add(new THREE.Mesh(geometrie(mSections), aplat(0, { vertexColors: true })));
-    // Les bords de chaque bande, en encre : lisibles sans la couleur
+    groupeSections.add(auSol(geometrie(mSections, true), decor(0, { vertexColors: true })));
+    // Marquages au sol (v0.10) : lignes de voie, bords de piste et de voie bus — là où le scénario définit les voies
+    const continus = [], pointilles = [];
+    for (const e of avecLigne) for (const mq of marquagesSection(e.ligne, e.section)) (mq.style === 'tirets' ? pointilles : continus).push(mq.ligne);
+    const traits = [...continus, ...pointilles.flatMap(l => tirets(l, ...S.tiretsMarquageM))];
+    if (traits.length) groupeSections.add(auSol(geometrie(maillerRubans(traits, S.marquageM), true), decor(-1, { color: P3.marquage })));
+    // Les autres bords des bandes, en filet de bordure : lisibles sans la couleur
     const bords = [];
-    for (const e of entrees) {
-      const ligne = mAxes.lignes.get(e.section.troncon);
-      if (!ligne) continue;
+    for (const e of avecLigne) {
       const choisie = bandeChoisie?.startsWith(`${e.section.troncon}:`) ? bandeChoisie.split(':')[1] : null;
-      for (const b of e.decalages) for (const d of [b.gauche, b.droite]) bords.push({ l: decalerLigne(ligne, d), choisie: b.id === choisie });
+      for (const b of e.decalages) for (const d of [b.gauche, b.droite]) bords.push({ l: decalerLigne(e.ligne, d), choisie: b.id === choisie });
     }
     // (une géométrie vide ferait calculer à three.js une sphère englobante NaN : rien n'est ajouté sans bord)
     const ordinaires = segmentsDeLignes(bords.filter(b => !b.choisie).map(b => b.l), S.hauteurLignesM / 3);
-    if (ordinaires.length) groupeSections.add(lignes(ordinaires, P.encre));
+    if (ordinaires.length) groupeSections.add(lignes(ordinaires, P3.bordure));
     // Bande choisie : ses deux bords en rubans, sélection sur un cerne d'encre (comme sur la carte)
     for (const b of bords.filter(x => x.choisie)) {
       groupeSections.add(new THREE.Mesh(geometrie(maillerRuban(b.l, S.bandeChoisieM * 2.5, 0)), aplat(-3, { color: P.encre })));
@@ -199,17 +247,17 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
     carrefoursDessines = entrees;
     const polys = [];
     for (const e of entrees) {
-      if (e.complet && e.zone) polys.push({ anneau: e.zone, couleur: rvb(P.voirie) });
-      for (const tr of e.traversees) polys.push({ anneau: tr.anneau, couleur: rvb(tr.type === 'velo' ? P.cyclable : P.encre) });
+      if (e.complet && e.zone) polys.push({ anneau: e.zone, couleur: rvb(P3.asphalte) });
+      for (const tr of e.traversees) polys.push({ anneau: tr.anneau, couleur: tr.type === 'velo' ? melange(P.cyclable, P3.asphalte, 0.3) : rvb(P3.asphalte) });
     }
     const m = maillerPolygones(polys);
-    if (m.indices.length) groupeCarrefours.add(new THREE.Mesh(geometrie(m), aplat(-1, { vertexColors: true })));
-    // Passage piéton : bandes de papier sur l'encre, perpendiculaires à la marche (lisible sans la couleur)
+    if (m.indices.length) groupeCarrefours.add(auSol(geometrie(m, true), decor(-1, { vertexColors: true })));
+    // Passage piéton : bandes blanches sur l'asphalte, perpendiculaires à la marche (lisible sans la couleur)
     const zebres = [];
     for (const e of entrees) for (const tr of e.traversees.filter(x => x.type === 'pieton')) zebres.push(...tr.bandes ?? []);
-    if (zebres.length) groupeCarrefours.add(new THREE.Mesh(geometrie(maillerPolygones(zebres.map(a => ({ anneau: a, couleur: rvb(P.voirie) })))), aplat(-2, { vertexColors: true })));
+    if (zebres.length) groupeCarrefours.add(auSol(geometrie(maillerPolygones(zebres.map(a => ({ anneau: a, couleur: rvb(P3.marquage) }))), true), decor(-2, { vertexColors: true })));
     const contours = entrees.filter(e => e.complet && e.zone).map(e => e.zone);
-    if (contours.length) groupeCarrefours.add(lignes(segmentsDeLignes(contours, S.hauteurLignesM / 3), P.encre));
+    if (contours.length) groupeCarrefours.add(lignes(segmentsDeLignes(contours, S.hauteurLignesM / 3), P3.bordure));
     const raccords = entrees.filter(e => e.complet).flatMap(e => e.raccords);
     for (const [origine, tirets] of [['propose', true], ['joueur', false]]) {
       const ls = raccords.filter(r => r.origine === origine && r.de !== voie).map(r => r.ligne);
@@ -275,6 +323,39 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
   const largeurSelection = () => (choisi?.type === 'noeud' ? Math.max(S.noeudRayonM * 1.5, mpp() * S.noeudChoisiPx)
     : fin ? Math.max(S.selectionFinM, mpp() * S.selectionFinPx) : Math.max(S.selectionM, mpp() * S.selectionPx));
 
+  // ─── Lumière (v0.10) : le soleil suit l'heure du trafic, le ciel et la brume avec lui ─
+  const ciel = new THREE.HemisphereLight(P3.lumiereCiel, P3.lumiereSol, S.lumiereCiel);
+  const soleil = new THREE.DirectionalLight(P3.lumiereSoleil, S.lumiereSoleil);
+  soleil.castShadow = true;
+  soleil.shadow.mapSize.set(S.ombreTaillePx, S.ombreTaillePx);
+  soleil.shadow.bias = -0.0004;
+  soleil.shadow.normalBias = 0.6;
+  scene.add(ciel, soleil, soleil.target);
+  scene.fog = new THREE.Fog(P3.ciel, 1000, 10000);
+  const [lonCentre, latCentre] = repere.localVersLonLat([(boiteEmprise[0] + boiteEmprise[2]) / 2, (boiteEmprise[1] + boiteEmprise[3]) / 2]);
+  let directionVersSoleil = [0, 1, 0], heureSoleil = null;
+  const fondJour = new THREE.Color(P3.ciel), fondNuit = new THREE.Color(P3.cielNuit), fond = new THREE.Color();
+  /** Règle le soleil, le ciel, la brume et les fenêtres éclairées pour une heure légale (décimale). */
+  function definirHeure(heure) {
+    if (heureSoleil !== null && Math.abs(heure - heureSoleil) < 1 / 60) return; // au plus une fois par minute de jeu
+    heureSoleil = heure;
+    const pos = positionSoleil(heure, S.soleilJour, latCentre, lonCentre, S.soleilDecalageUTC);
+    const jour = partDeJour(pos.elevation, rad(S.crepusculeDegres), rad(S.pleinJourDegres));
+    directionVersSoleil = directionSoleil(pos);
+    // Bas sur l'horizon, le soleil rougit ; sous l'horizon, il s'éteint et la lumière diffuse bleuit
+    const bas = 1 - Math.max(0, Math.min(1, pos.elevation / rad(25)));
+    soleil.color.set(P3.lumiereSoleil).lerp(new THREE.Color(P3.lumiereCouchant), bas);
+    soleil.intensity = S.lumiereSoleil * jour;
+    soleil.castShadow = jour > 0.05;
+    ciel.intensity = S.lumiereNuit + (S.lumiereCiel - S.lumiereNuit) * jour;
+    ciel.color.set(P3.lumiereNuit).lerp(new THREE.Color(P3.lumiereCiel), jour);
+    fond.copy(fondNuit).lerp(fondJour, jour);
+    rendu.setClearColor(fond);
+    scene.fog.color.copy(fond);
+    facade.uNuit.value = 1 - jour;
+    demander();
+  }
+
   // ─── Caméra orbitale ─────────────────────────────────────────────────────
   let largeur = 1, hauteur = 1, actif = false, image = 0, vol = null, prete = false;
   const defaut = () => cadrer(boiteEmprise, largeur, hauteur, S.fovDegres, { inclinaison: rad(S.inclinaisonDefautDegres), margePx: S.margeEmprisePx });
@@ -296,6 +377,14 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
     camera.near = Math.max(1, etat.distance * S.planProche);
     camera.far = Math.max(S.planLointainMinM, etat.distance * S.planLointain);
     camera.updateProjectionMatrix();
+    // Le soleil éclaire le point visé : la carte d'ombres couvre un carré autour de lui, à la mesure de la vue
+    const demi = Math.min(S.ombreMaxM, Math.max(S.ombreMinM, etat.distance * S.ombreEtendue)) / 2, c = p.cible, loin = demi * 4;
+    soleil.target.position.set(...c);
+    soleil.position.set(c[0] + directionVersSoleil[0] * loin, c[1] + directionVersSoleil[1] * loin, c[2] + directionVersSoleil[2] * loin);
+    Object.assign(soleil.shadow.camera, { left: -demi, right: demi, top: demi, bottom: -demi, near: 1, far: loin * 2 });
+    soleil.shadow.camera.updateProjectionMatrix();
+    scene.fog.near = etat.distance * S.brumeDebut;
+    scene.fog.far = etat.distance * S.brumeFin;
     if ((choisi?.type === 'troncon' || choisi?.type === 'noeud') && Math.abs(largeurSelection() - largeurRuban) > largeurRuban * 0.2) dessinerSelection();
     rendu.render(scene, camera);
     prete = true;
@@ -328,6 +417,9 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
   etat = defaut();
 
   // ─── Viser : quel objet est sous un point de l'écran ? ───────────────────
+  // Une couche « discrète » (v0.10 : axes et nœuds éteints par défaut en 3D) reste visée au clic et au clavier
+  let discretes = new Set();
+  const vise = c => groupes[c].visible || discretes.has(c);
   const rayon = new THREE.Raycaster(), planSol = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), v3 = new THREE.Vector3();
   function viser(x, y) {
     camera.updateMatrixWorld();
@@ -341,9 +433,9 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
     if (sol3) {
       const p = depuisScene(sol3.toArray());
       const mppIci = (2 * camera.position.distanceTo(sol3) * Math.tan(rad(S.fovDegres) / 2)) / hauteur;
-      const n = groupes.intersections.visible ? noeudPres(p, Math.max(S.noeudRayonM * 1.5, mppIci * R.selection.toleranceNoeudPx)) : null;
+      const n = vise('intersections') ? noeudPres(p, Math.max(S.noeudRayonM * 1.5, mppIci * R.selection.toleranceNoeudPx)) : null;
       if (n) return { type: 'noeud', id: n };
-      const id = groupes.rues.visible ? tronconPres(p, mppIci * R.selection.toleranceClicPx) : null;
+      const id = vise('rues') ? tronconPres(p, mppIci * R.selection.toleranceClicPx) : null;
       if (id) return { type: 'troncon', id };
     }
     // 3. Sinon un bâtiment à plat (hauteur non renseignée)
@@ -424,9 +516,13 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
     surbrillance: () => choisi?.id ?? null,
     /** Trait de sélection fin (la section du tronçon choisi est dessinée) ou normal. */
     affinerSelection(v) { if (fin !== v) { fin = v; dessinerSelection(); demander(); } },
-    definirCouches(couches) { for (const [c, g] of Object.entries(groupes)) g.visible = couches[c] !== false; groupeCarrefours.visible = couches.sections !== false; demander(); },
+    /** Couches visibles ; `visees` : couches éteintes qu'on peut tout de même choisir (axes et nœuds discrets, v0.10). */
+    definirCouches(couches, visees = []) { for (const [c, g] of Object.entries(groupes)) g.visible = couches[c] !== false; groupeCarrefours.visible = couches.sections !== false; discretes = new Set(visees); demander(); },
+    /** L'heure légale (décimale) du trafic : place le soleil (v0.10). */
+    definirHeure,
+    soleil: () => ({ heure: heureSoleil, direction: [...directionVersSoleil], intensite: soleil.intensity, nuit: facade.uNuit.value, ombres: soleil.castShadow }),
     viser,
-    tronconAuCentre: () => (groupes.rues.visible ? tronconPres(etat.cible) : null),
+    tronconAuCentre: () => (vise('rues') ? tronconPres(etat.cible) : null),
     /** Position à l'écran (dans le conteneur) d'un point local à une hauteur donnée ; visible : devant la caméra. */
     versEcran(local, h = 0) {
       v3.set(...versScene(local, h)).project(camera);
@@ -458,7 +554,7 @@ export function creerScene({ conteneur, repere, P, R, donnees, surChoix, surRend
     /** Ce que la scène dessine des raccords : { "de>vers": { debut, fin, origine } } (local). */
     raccords: () => Object.fromEntries(carrefoursDessines.filter(e => e.complet).flatMap(e => e.raccords)
       .map(r => [`${r.de}>${r.vers}`, { debut: r.ligne[0], fin: r.ligne.at(-1), origine: r.origine }])),
-    noeudAuCentre: () => (groupes.intersections.visible ? noeudPres(etat.cible) : null),
+    noeudAuCentre: () => (vise('intersections') ? noeudPres(etat.cible) : null),
     /** Ce que la scène dessine des sections : { "troncon:bande": { gauche, droite, type } }. */
     sections: () => Object.fromEntries(mSections.bandes),
     comptes: { batiments: mBatiments.ids.length, surfaces: mSurfaces.ids.length, troncons: mAxes.ids.length, triangles: (mBatiments.indices.length + mSurfaces.indices.length + mAxes.indices.length) / 3 },

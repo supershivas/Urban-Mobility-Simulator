@@ -16,9 +16,9 @@
 // posés là où les trottoirs de deux branches voisines se séparent) : chaque branche recule
 // jusqu'au point où le bord extérieur de son trottoir croise celui de chaque voisine ;
 // plus l'angle est aigu, plus elle recule. Plus jamais deux passages l'un sur l'autre.
-import { longueur, pointA, sousLigne, branches, demiLargeurs, aPiste, nbVoies, giratoireEffectif } from './reseau.js?v=0.9.10';
-import { decalerLigne } from '../geo/decalage.js?v=0.9.10';
-import { GIRATOIRES } from './donnees.js?v=0.9.10';
+import { longueur, pointA, sousLigne, branches, demiLargeurs, aPiste, nbVoies, giratoireEffectif } from './reseau.js?v=0.10.0';
+import { decalerLigne } from '../geo/decalage.js?v=0.10.0';
+import { GIRATOIRES } from './donnees.js?v=0.10.0';
 
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 const cross = (a, b) => a[0] * b[1] - a[1] * b[0];

@@ -9,7 +9,7 @@
 // voisine) ou 'double' (à double sens, chacun tient sa droite).
 // Un nœud peut porter des feux : { verts: [s par branche, dans l'ordre des angles], pietons: s }.
 
-import { GIRATOIRES, ROUTE } from './donnees.js?v=0.9.10';
+import { GIRATOIRES, ROUTE } from './donnees.js?v=0.10.0';
 
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1]];
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1];

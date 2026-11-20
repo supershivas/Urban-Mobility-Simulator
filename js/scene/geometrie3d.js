@@ -3,10 +3,10 @@
 // Pur : des tableaux typés et des tables d'identifiants, aucun objet three.js
 // (seule la triangulation des polygones vient de three : ShapeUtils, earcut).
 // Testé dans Node (test/scene.test.mjs).
-import { ShapeUtils, Vector2 } from '../../vendor/three/three.module.js?v=0.9.10';
-import { versScene } from '../geo/repere.js?v=0.9.10';
-import { decalerLigne } from '../geo/decalage.js?v=0.9.10';
-import { decalages } from '../section.js?v=0.9.10';
+import { ShapeUtils, Vector2 } from '../../vendor/three/three.module.js?v=0.10.0';
+import { versScene } from '../geo/repere.js?v=0.10.0';
+import { decalerLigne } from '../geo/decalage.js?v=0.10.0';
+import { decalages } from '../section.js?v=0.10.0';
 
 /** Les polygones d'une géométrie GeoJSON, en local : [[anneauExtérieur, ...trous]], sans point de fermeture répété. */
 export function polygonesLocaux(geometrie, repere) {
@@ -66,12 +66,15 @@ export function maillerSurfaces(features, repere, couleurDe) {
  * Bâtiments : un prisme par emprise quand la hauteur est connue (properties.hauteur,
  * en mètres), l'emprise à plat quand elle est null — jamais une hauteur supposée.
  * couleurs : { toit, plat, mur(orientation 0..1) } → [r, g, b] linéaires.
- * → { positions, couleurs, indices, ids, debuts, hauteurs, contours, contoursPlats }
+ * → { positions, couleurs, indices, ids, debuts, hauteurs, contours, contoursPlats, facades }
  *   debuts[i] : premier triangle du bâtiment ids[i] (debuts[ids.length] = total) ;
- *   contours : segments [x,y,z, x,y,z, …] des toits ; contoursPlats : ceux des bâtiments sans hauteur.
+ *   contours : segments [x,y,z, x,y,z, …] des toits ; contoursPlats : ceux des bâtiments sans hauteur ;
+ *   facades : 4 nombres par sommet (v0.10) — sur un mur : abscisse le long du mur (m), hauteur (m),
+ *   hauteur du bâtiment (m), longueur du mur (m) ; ailleurs (toits, emprises à plat) : −1 partout.
+ *   Le rendu y dessine les fenêtres (une hypothèse de jeu : aucune source ne donne les étages).
  */
 export function maillerBatiments(features, repere, couleurs) {
-  const pos = tampon(), col = tampon(), ind = tampon(Uint32Array), cont = tampon(), plats = tampon();
+  const pos = tampon(), col = tampon(), ind = tampon(Uint32Array), cont = tampon(), plats = tampon(), fac = tampon();
   const ids = [], hauteurs = [], debuts = [];
   for (const f of features) {
     const h = f.properties.hauteur ?? null;
@@ -80,7 +83,7 @@ export function maillerBatiments(features, repere, couleurs) {
     debuts.push(ind.taille / 3);
     for (const poly of polygonesLocaux(f.geometry, repere)) {
       const base = pos.taille / 3, y = h ?? 0, teinte = h === null ? couleurs.plat : couleurs.toit;
-      for (const a of poly) for (const p of a) { pos.pousser(...versScene(p, y)); col.pousser(...teinte); }
+      for (const a of poly) for (const p of a) { pos.pousser(...versScene(p, y)); col.pousser(...teinte); fac.pousser(-1, -1, -1, -1); }
       for (const [a, b, d] of triangles(poly)) ind.pousser(base + a, base + b, base + d);
       for (const a of poly) {
         for (let i = 0; i < a.length; i++) {
@@ -92,6 +95,8 @@ export function maillerBatiments(features, repere, couleurs) {
           const teinteMur = couleurs.mur(orientation(p, q));
           pos.pousser(...versScene(p, h), ...versScene(q, h), ...versScene(q, 0), ...versScene(p, 0));
           for (let k = 0; k < 4; k++) col.pousser(...teinteMur);
+          const L = Math.hypot(q[0] - p[0], q[1] - p[1]);
+          fac.pousser(0, h, h, L, L, h, h, L, L, 0, h, L, 0, 0, h, L);
           ind.pousser(m, m + 1, m + 2, m, m + 2, m + 3);
         }
       }
@@ -100,7 +105,7 @@ export function maillerBatiments(features, repere, couleurs) {
   debuts.push(ind.taille / 3);
   return {
     positions: pos.fin(), couleurs: col.fin(), indices: ind.fin(), ids, hauteurs,
-    debuts: Uint32Array.from(debuts), contours: cont.fin(), contoursPlats: plats.fin(),
+    debuts: Uint32Array.from(debuts), contours: cont.fin(), contoursPlats: plats.fin(), facades: fac.fin(),
   };
 }
 
@@ -147,6 +152,56 @@ export function maillerRuban(ligne, largeur, y = 0) {
   const pos = tampon(), ind = tampon(Uint32Array);
   ruban(ligne, largeur, y, pos, ind);
   return { positions: pos.fin(), indices: ind.fin() };
+}
+
+/** Plusieurs rubans de même largeur en un seul maillage : { positions, indices } (marquages au sol, v0.10). */
+export function maillerRubans(lignes, largeur, y = 0) {
+  const pos = tampon(), ind = tampon(Uint32Array);
+  for (const l of lignes) if (l.length >= 2) ruban(l, largeur, y, pos, ind);
+  return { positions: pos.fin(), indices: ind.fin() };
+}
+
+/** Une ligne découpée en tirets : des morceaux de `plein` mètres séparés de `vide` mètres. */
+export function tirets(ligne, plein, vide) {
+  const out = [];
+  let cur = null, reste = plein, trace = true;
+  for (let i = 1; i < ligne.length; i++) {
+    let a = ligne[i - 1];
+    const b = ligne[i];
+    let L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    while (L > 1e-9) {
+      const pas = Math.min(L, reste), k = pas / L, q = [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
+      if (trace) { cur ??= [a]; cur.push(q); }
+      reste -= pas; L -= pas; a = q;
+      if (reste <= 1e-9) {
+        if (trace && cur) { out.push(cur); cur = null; }
+        trace = !trace; reste = trace ? plein : vide;
+      }
+    }
+  }
+  if (cur && cur.length >= 2) out.push(cur);
+  return out;
+}
+
+const CHAUSSEE = ['voiture', 'bus'];
+/**
+ * Les marquages au sol d'une section (v0.10, Jérôme : seulement là où le scénario définit les voies) :
+ * entre deux voies du même sens, des tirets ; entre deux sens, ou entre une voie et une voie bus ou une piste,
+ * une ligne continue ; le long d'un stationnement, des tirets. Ailleurs (trottoir, chaussée non découpée), rien.
+ * → [{ ligne (locale), style: 'tirets' | 'continu' }]
+ */
+export function marquagesSection(ligne, section) {
+  const d = decalages(section), out = [];
+  for (let i = 1; i < d.length; i++) {
+    const a = d[i - 1], b = d[i], types = [a.type, b.type];
+    let style = null;
+    if (a.type === 'voiture' && b.type === 'voiture') style = a.sens === b.sens && a.sens !== 'double' ? 'tirets' : 'continu';
+    else if (CHAUSSEE.includes(a.type) && CHAUSSEE.includes(b.type)) style = 'continu';
+    else if (types.includes('cyclable') && types.some(t => CHAUSSEE.includes(t))) style = 'continu';
+    else if (types.includes('stationnement') && types.includes('voiture')) style = 'tirets';
+    if (style) out.push({ ligne: decalerLigne(ligne, a.droite), style });
+  }
+  return out;
 }
 
 /**

@@ -5,7 +5,7 @@
 // (glisser d'une voie qui arrive vers une voie qui part, clic sur une liaison pour la retirer) ;
 // les voitures les suivent ; des flèches au sol les montrent.
 // Clé d'une voie : `tronçon|sens|voie` (sens de circulation sur le tronçon, voie 0 = près de l'axe).
-import { voieBus, nbVoies, extraDe } from './reseau.js?v=0.9.10';
+import { voieBus, nbVoies, extraDe } from './reseau.js?v=0.10.0';
 
 export const cle = v => `${v.troncon}|${v.sens}|${v.voie}`;
 export const deCle = k => { const [troncon, sens, voie] = k.split('|'); return { troncon, sens: +sens, voie: +voie }; };

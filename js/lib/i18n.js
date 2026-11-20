@@ -5,7 +5,7 @@
    entrée dans chaque langue, sous une clé stable.
 
    Module ES sans dépendance :
-     import { createI18n } from './lib/i18n.js?v=0.9.10'
+     import { createI18n } from './lib/i18n.js?v=0.10.0'
      const i18n = createI18n({
        fr: { 'titre.jouer': 'Jouer', 'pv': '{n} points de vie' },
        en: { 'titre.jouer': 'Play', 'pv': '{n} hit points' },

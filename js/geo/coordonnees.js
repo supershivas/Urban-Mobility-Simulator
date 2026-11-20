@@ -2,7 +2,7 @@
 // toujours par proj4js. Travail métrique en EPSG:31370 (Belgian Lambert 72),
 // affichage en WGS84 longitude/latitude (RFC 7946).
 // Ce module sert au jeu, au pipeline de données (outils/donnees/) et aux tests.
-import proj4 from '../../vendor/proj4/proj4.mjs?v=0.9.10';
+import proj4 from '../../vendor/proj4/proj4.mjs?v=0.10.0';
 
 // Définition publiée par epsg.io/31370 (transformation BD72 → WGS84 à 7 paramètres).
 // Vérifiée contre la reprojection du serveur UrbIS (test/coordonnees.test.mjs).

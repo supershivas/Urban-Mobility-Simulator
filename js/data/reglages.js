@@ -51,6 +51,28 @@ export const REGLAGES = {
     planLointain: 8,
     planLointainMinM: 6000,
     echelleMaxPx: 120,      // barre d'échelle, valable au point visé
+    // Vue semi-réaliste (v0.10) : le soleil suit l'heure du trafic (Jérôme) ; jour de l'année et heure d'été : un choix de jeu
+    soleilJour: 135,        // le 15 mai
+    soleilDecalageUTC: 2,   // heure d'été à Bruxelles
+    lumiereSoleil: 2.6,     // intensités (three.js, unités physiques)
+    lumiereCiel: 1.7,
+    lumiereNuit: 0.6,
+    crepusculeDegres: -6,   // la nuit tombe entre ces deux hauteurs du soleil
+    pleinJourDegres: 10,
+    ombreTaillePx: 4096,    // carte d'ombres
+    ombreEtendue: 1.6,      // côté du carré des ombres autour du point visé, en distance de caméra
+    ombreMinM: 120,
+    ombreMaxM: 3000,
+    brumeDebut: 2.5,        // brume, en distances de caméra
+    brumeFin: 9,
+    etageM: 3,              // fenêtres : un étage tous les 3 m (hypothèse de jeu : aucune source ne donne les étages)
+    traveeM: 2.8,           // une fenêtre tous les 2,8 m le long du mur
+    fenetreLargeur: 0.4,   // part de la travée
+    fenetreHauteur: 0.45,    // part de l'étage
+    fenetresAllumees: 0.45, // la nuit, part des fenêtres éclairées
+    marquageM: 0.15,        // largeur des lignes au sol
+    tiretsMarquageM: [3, 5],
+    zebreM: 0.5,
   },
   mission: {                // v0.8 : la caméra 3D sur le lieu d'une mission
     distanceM: 150,
