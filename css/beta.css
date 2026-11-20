@@ -147,3 +147,8 @@ dialog form { margin-top: calc(var(--pas) * 2); }
   .beta-groupe-nom { display: none; }
   .beta-camera { display: none; }
 }
+
+/* Dix outils : sous 1800 px, plus aucun nom (l'icône, l'infobulle et l'aide du bas suffisent) — le choisi débordait à 1536 px (v0.9.5) */
+@media (max-width: 1800px) {
+  .beta-outils .beta-outil span { display: none; }
+}

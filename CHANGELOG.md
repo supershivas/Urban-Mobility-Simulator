@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.9.6 — 2026-11-20
+- Bêta : la barre d'outils tient dans toutes les fenêtres (icônes seules sous 1800 px, nom au survol)
+
 ## 0.9.5 — 2026-11-20
 - Bêta : ronds-points en trois tailles (mini, urbain, grand à deux voies) — on cède à qui tourne, la piste cyclable fait le tour en cercle
 - Bêta : une flèche au sol sur chaque voie, et une vue Mouvements pour tirer ou couper les liaisons voie à voie ; les voitures les suivent

@@ -1,7 +1,7 @@
 // Le style MapLibre de la carte, construit depuis la palette et les réglages.
 // Pur (aucun DOM) : testé dans Node. Aucune source distante : pas de fond de
 // carte en ligne, pas de glyphes (les noms passent par le DOM, pas par MapLibre).
-import { BANDES } from '../data/bandes.js?v=0.9.5';
+import { BANDES } from '../data/bandes.js?v=0.9.6';
 
 export const COUCHES = {
   // id de couche activable → couches MapLibre qu'elle commande

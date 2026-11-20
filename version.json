@@ -1,9 +1,7 @@
 {
-  "version": "0.9.5",
+  "version": "0.9.6",
   "date": "2026-11-20",
   "changes": [
-    "Bêta : ronds-points en trois tailles (mini, urbain, grand à deux voies) — on cède à qui tourne, la piste cyclable fait le tour en cercle",
-    "Bêta : une flèche au sol sur chaque voie, et une vue Mouvements pour tirer ou couper les liaisons voie à voie ; les voitures les suivent",
-    "Bêta : îlots centraux (refuges où l'on traverse en deux fois, ou terre-plein planté) ; les virages à angle droit se courbent"
+    "Bêta : la barre d'outils tient dans toutes les fenêtres (icônes seules sous 1800 px, nom au survol)"
   ]
 }
