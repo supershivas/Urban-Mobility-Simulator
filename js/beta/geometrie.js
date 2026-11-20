@@ -11,34 +11,40 @@
 //
 // Les branches d'un nœud sont rangées par angle croissant (sens trigonométrique) :
 // c'est l'ordre des phases de feux et des coins de trottoir.
-import { longueur, pointA, sousLigne, branches } from './reseau.js?v=0.9.2';
-import { decalerLigne } from '../geo/decalage.js?v=0.9.2';
+//
+// Recul (v0.9.3, d'après la pratique des urbanistes : passages perpendiculaires à la rue,
+// posés là où les trottoirs de deux branches voisines se séparent) : chaque branche recule
+// jusqu'au point où le bord extérieur de son trottoir croise celui de chaque voisine ;
+// plus l'angle est aigu, plus elle recule. Plus jamais deux passages l'un sur l'autre.
+import { longueur, pointA, sousLigne, branches, demiLargeurs, aPiste } from './reseau.js?v=0.9.3';
+import { decalerLigne } from '../geo/decalage.js?v=0.9.3';
 
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 const cross = (a, b) => a[0] * b[1] - a[1] * b[0];
 
 /** Demi-largeurs de la chaussée à gauche et à droite de l'axe (vu de a vers b), pistes comprises. */
-export function largeurs(t, R) {
-  const voiture = t.voies * R.largeurVoie, x0 = voiture + R.separateurPiste;
-  const g = t.piste === 'deux' ? x0 + R.largeurPiste : t.piste === 'gauche' ? x0 + R.largeurPisteDouble : voiture;
-  const d = t.piste === 'deux' ? x0 + R.largeurPiste : t.piste === 'droite' ? x0 + R.largeurPisteDouble : voiture;
-  return { g, d, voiture, x0 };
-}
+export const largeurs = demiLargeurs;
 export const demiLargeur = (t, R) => { const l = largeurs(t, R); return Math.max(l.g, l.d); };
 
+/** Décalage (positif à gauche du sens de marche) du milieu d'une voie automobile. */
+export const decalageVoie = (t, voie, R) => -(voie + 0.5) * R.largeurVoie;
+
 /**
- * Décalage (positif à gauche du sens de marche) du milieu d'une voie, ou de la piste
- * (voie = 'velo'), sur la ligne de ce sens (l'axe pour +1, l'axe retourné pour −1).
- * Piste à double sens : chacun tient sa droite sur la même piste.
+ * Les files vélo d'un sens, sur la ligne de ce sens (l'axe pour +1, l'axe retourné pour −1) :
+ * d'abord la piste à sa droite (simple, ou moitié extérieure d'une double), puis, s'il y en a
+ * une, la moitié intérieure de la piste à double sens d'en face. Décalages positifs à gauche.
  */
-export function decalageVoie(t, voie, R, sens = 1) {
-  if (voie !== 'velo') return -(voie + 0.5) * R.largeurVoie;
+export function decalagesVelo(t, R, sens) {
   const { x0 } = largeurs(t, R), Ld = R.largeurPisteDouble;
-  if (t.piste === 'deux') return -(x0 + R.largeurPiste / 2);
-  // Côté de la piste vu dans le sens de marche
-  const aGauche = (t.piste === 'gauche') === (sens === 1);
-  return aGauche ? x0 + Ld / 4 : -(x0 + (3 * Ld) / 4);
+  const droite = sens === 1 ? t.pistes.d : t.pistes.g, gauche = sens === 1 ? t.pistes.g : t.pistes.d;
+  const out = [];
+  if (droite === 'simple') out.push(-(x0 + R.largeurPiste / 2));
+  if (droite === 'double') out.push(-(x0 + (3 * Ld) / 4));
+  if (gauche === 'double') out.push(x0 + Ld / 4);
+  return out;
 }
+/** Les noms des files vélo d'un sens : 'velo' (la première), 'velo2' (la seconde). */
+export const FILES_VELO = ['velo', 'velo2'];
 
 /** Enveloppe convexe (chaîne monotone d'Andrew). */
 export function enveloppe(points) {
@@ -74,13 +80,18 @@ export function geometrieReseau(reseau, R) {
   for (const [id, n] of Object.entries(reseau.noeuds)) {
     const br = branches(reseau, id).sort((a, b) => Math.atan2(a.dir[1], a.dir[0]) - Math.atan2(b.dir[1], b.dir[0]));
     const degre = br.length;
-    const demis = br.map(b => demiLargeur(reseau.troncons[b.troncon], R));
-    const recul = degre <= 1 ? 0 : degre === 2 ? R.reculPassage : Math.max(...demis) + R.margeCarrefour;
-    noeuds[id] = { p: [n.x, n.y], degre, recul, bord: !!n.bord, traversees: degre >= 3, branches: br.map(b => ({ troncon: b.troncon, sens: b.sens })) };
+    noeuds[id] = { p: [n.x, n.y], degre, bord: !!n.bord, traversees: degre >= 3, branches: br.map(b => ({ troncon: b.troncon, sens: b.sens, angle: Math.atan2(b.dir[1], b.dir[0]) })) };
+    for (const b of noeuds[id].branches) {
+      const l = largeurs(reseau.troncons[b.troncon], R);
+      b.gauche = b.sens === 1 ? l.g : l.d;
+      b.droite = b.sens === 1 ? l.d : l.g;
+    }
+    reculer(noeuds[id], R);
   }
+  const reculDe = (n, troncon, sens) => noeuds[n].branches.find(b => b.troncon === troncon && b.sens === sens).recul;
   for (const [id, t] of Object.entries(reseau.troncons)) {
     const L = longueur(t.points);
-    const r0 = noeuds[t.a].recul, r1 = noeuds[t.b].recul;
+    const r0 = reculDe(t.a, id, 1), r1 = reculDe(t.b, id, -1);
     const axe = sousLigne(t.points, Math.min(r0, L / 2 - 0.5), Math.max(L - r1, L / 2 + 0.5));
     const inverse = axe.slice().reverse();
     const voies = { 1: [], '-1': [] };
@@ -89,10 +100,10 @@ export function geometrieReseau(reseau, R) {
       voies[1].push(decalerLigne(axe, d));
       voies[-1].push(decalerLigne(inverse, d));
     }
-    const pistes = t.piste ? { 1: decalerLigne(axe, decalageVoie(t, 'velo', R, 1)), '-1': decalerLigne(inverse, decalageVoie(t, 'velo', R, -1)) } : null;
+    const pistes = aPiste(t) ? { 1: decalagesVelo(t, R, 1).map(d => decalerLigne(axe, d)), '-1': decalagesVelo(t, R, -1).map(d => decalerLigne(inverse, d)) } : null;
     const { g, d } = largeurs(t, R), La = longueur(axe);
     // Trottoirs : la ligne où l'on marche, du point piéton d'un bout à celui de l'autre
-    const s0 = noeuds[t.a].traversees ? Lp / 2 : 0, s1 = noeuds[t.b].traversees ? Lp / 2 : 0;
+    const s0 = noeuds[t.a].traversees ? Math.min(Lp / 2, r0) : 0, s1 = noeuds[t.b].traversees ? Math.min(Lp / 2, r1) : 0;
     const milieu = s0 + s1 < La - 1 ? sousLigne(axe, s0, La - s1) : axe;
     const trottoirs = { g: decalerLigne(milieu, g + bord + tw / 2), d: decalerLigne(milieu, -(d + bord + tw / 2)) };
     troncons[id] = { axe, g, d, demi: Math.max(g, d), voies, pistes, trottoirs, longueur: La };
@@ -102,8 +113,6 @@ export function geometrieReseau(reseau, R) {
     for (const b of n.branches) {
       const g = troncons[b.troncon];
       b.ext = b.sens === 1 ? g.axe : g.axe.slice().reverse();
-      b.gauche = b.sens === 1 ? g.g : g.d;
-      b.droite = b.sens === 1 ? g.d : g.g;
     }
     if (n.degre < 2) { n.zone = null; continue; }
     const coins = [n.p];
@@ -118,7 +127,7 @@ export function geometrieReseau(reseau, R) {
     for (const b of n.branches) {
       const pa = pointA(b.ext, (n.traversees ? Lp : 0) + 1), nrm = [-pa.dir[1], pa.dir[0]];
       const k = b.gauche + bord + 0.7; // les files qui arrivent sont à gauche de la branche vue depuis le nœud
-      b.feu = { p: [pa.p[0] + nrm[0] * k, pa.p[1] + nrm[1] * k], velo: !!reseau.troncons[b.troncon].piste };
+      b.feu = { p: [pa.p[0] + nrm[0] * k, pa.p[1] + nrm[1] * k], velo: aPiste(reseau.troncons[b.troncon]) };
     }
     n.id = id;
   }
@@ -169,12 +178,37 @@ function reseauPieton(reseau, noeuds, troncons, R) {
   return { points };
 }
 
-/** La ligne parcourue d'une voie : { troncon, sens, voie (entier ou 'velo') }. */
+/**
+ * Le recul de chaque branche d'un nœud (m, depuis le nœud) : au-delà du point où le bord
+ * extérieur de son trottoir croise celui de sa voisine, de chaque côté, plus une marge.
+ * Pour deux branches qui font un angle θ (< π), ce point est à (w_j + w_i·cos θ) / sin θ
+ * le long de la branche i, w étant la demi-largeur trottoir compris du côté qui se fait face.
+ */
+function reculer(n, R) {
+  const k = n.degre, bord = R.accotement + R.largeurTrottoir;
+  if (k <= 1) { for (const b of n.branches) b.recul = 0; n.recul = 0; return; }
+  if (k === 2) { for (const b of n.branches) b.recul = R.reculPassage; n.recul = R.reculPassage; return; }
+  const tour = 2 * Math.PI;
+  n.branches.forEach((b, i) => {
+    const g = n.branches[(i + 1) % k], d = n.branches[(i - 1 + k) % k];
+    let s = 0;
+    const croise = (wi, wj, theta) => (theta < Math.PI - 1e-3 ? (wj + wi * Math.cos(theta)) / Math.sin(theta) : 0);
+    s = Math.max(s, croise(b.gauche + bord, g.droite + bord, (((g.angle - b.angle) % tour) + tour) % tour));
+    s = Math.max(s, croise(b.droite + bord, d.gauche + bord, (((b.angle - d.angle) % tour) + tour) % tour));
+    b.recul = s + R.margeCarrefour;
+  });
+  n.recul = Math.max(...n.branches.map(b => b.recul));
+}
+
+/** La ligne parcourue d'une voie : { troncon, sens, voie (entier, 'velo' ou 'velo2') }. */
 export function ligneVoie(geo, v) {
   const g = geo.troncons[v.troncon];
   if (!g) return null;
-  return v.voie === 'velo' ? g.pistes?.[v.sens] ?? null : g.voies[v.sens]?.[v.voie] ?? null;
+  const k = FILES_VELO.indexOf(v.voie);
+  return k >= 0 ? g.pistes?.[v.sens]?.[k] ?? null : g.voies[v.sens]?.[v.voie] ?? null;
 }
+/** Les files vélo d'un sens d'un tronçon : [{ troncon, sens, voie }]. */
+export const filesVelo = (geo, troncon, sens) => (geo.troncons[troncon]?.pistes?.[sens] ?? []).map((_, k) => ({ troncon, sens, voie: FILES_VELO[k] }));
 
 /** Le raccord dans un carrefour, de la fin d'une voie au début d'une autre (Bézier tangente aux deux). */
 export function raccord(ligneEntree, ligneSortie) {
@@ -192,20 +226,23 @@ export function seGenent(a, b, seuil) {
 }
 
 /**
- * Les liaisons cyclables marquées dans les carrefours : de chaque piste qui arrive vers
- * chaque piste qui part, tout droit ou à droite (on ne peint pas les tourne-à-gauche,
- * qui traverseraient tout le carrefour).
+ * Les traversées cyclables marquées dans les carrefours : seulement tout droit, d'une file vélo
+ * qui arrive à la file qui continue en face (comme les urbanistes : une bande parallèle au passage
+ * piéton, jamais de courbe peinte à travers le carrefour). → [{ ligne, double }]
  */
 export function liaisonsVelo(reseau, geo) {
   const out = [];
   for (const n of Object.values(geo.noeuds)) {
     if (n.degre < 2) continue;
     for (const e of n.branches) for (const s of n.branches) {
-      if (e === s || !reseau.troncons[e.troncon].piste || !reseau.troncons[s.troncon].piste) continue;
-      const entree = ligneVoie(geo, { troncon: e.troncon, sens: -e.sens, voie: 'velo' }), sortie = ligneVoie(geo, { troncon: s.troncon, sens: s.sens, voie: 'velo' });
-      const t0 = pointA(entree, longueur(entree)).dir, t1 = pointA(sortie, 0).dir;
-      const virage = Math.acos(Math.max(-1, Math.min(1, t0[0] * t1[0] + t0[1] * t1[1])));
-      if (virage < 0.8 || (cross(t0, t1) < 0 && virage < 2.1)) out.push(raccord(entree, sortie));
+      if (e === s) continue;
+      for (const fe of filesVelo(geo, e.troncon, -e.sens)) for (const fs of filesVelo(geo, s.troncon, s.sens)) {
+        const entree = ligneVoie(geo, fe), sortie = ligneVoie(geo, fs);
+        const t0 = pointA(entree, longueur(entree)).dir, t1 = pointA(sortie, 0).dir;
+        const virage = Math.acos(Math.max(-1, Math.min(1, t0[0] * t1[0] + t0[1] * t1[1])));
+        const ecart = Math.abs(cross(t0, [sortie[0][0] - entree[entree.length - 1][0], sortie[0][1] - entree[entree.length - 1][1]]));
+        if (virage < 0.35 && ecart < 1.5) out.push(raccord(entree, sortie));
+      }
     }
   }
   return out;

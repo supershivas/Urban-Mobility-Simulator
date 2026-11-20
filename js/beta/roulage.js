@@ -12,11 +12,11 @@
 // Feux (v0.9.2) : on n'entre qu'au vert de sa branche. Passages piétons : on s'arrête
 // avant un passage où quelqu'un traverse, et l'on n'entre pas dans un carrefour dont le
 // passage de sortie est occupé. Les piétons eux-mêmes vivent dans pietons.js.
-import { createRng } from '../lib/rng.js?v=0.9.2';
-import { longueur, pointA, projeterSurLigne, feuxDe } from './reseau.js?v=0.9.2';
-import { geometrieReseau, ligneVoie, raccord, seGenent } from './geometrie.js?v=0.9.2';
-import { etatFeux, decalageDe } from './feux.js?v=0.9.2';
-import { creerPietons, avancerPietons, reconcilierPietons } from './pietons.js?v=0.9.2';
+import { createRng } from '../lib/rng.js?v=0.9.3';
+import { longueur, pointA, projeterSurLigne, feuxDe, aPiste } from './reseau.js?v=0.9.3';
+import { geometrieReseau, ligneVoie, raccord, seGenent, filesVelo } from './geometrie.js?v=0.9.3';
+import { etatFeux, decalageDe } from './feux.js?v=0.9.3';
+import { creerPietons, avancerPietons, reconcilierPietons } from './pietons.js?v=0.9.3';
 
 const cleVoie = v => `${v.troncon}|${v.sens}|${v.voie}`;
 
@@ -73,11 +73,16 @@ function compatibles(ctx, a, b, seuil) {
 function choisirSuite(etat, ctx, v, mode) {
   const n = noeudFin(ctx, v), g = ctx.geo.noeuds[n];
   if (g.degre <= 1) return null;
-  const options = g.branches.filter(b => !(b.troncon === v.troncon && b.sens === -v.sens)).filter(b => mode !== 'velo' || ctx.reseau.troncons[b.troncon].piste);
+  const options = g.branches.filter(b => !(b.troncon === v.troncon && b.sens === -v.sens));
+  if (mode === 'velo') {
+    // Un vélo continue sur une file vélo de ce sens (piste à sa droite, ou piste à double sens d'en face)
+    const files = options.flatMap(b => filesVelo(ctx.geo, b.troncon, b.sens));
+    return files.length ? etat.rng.pick(files) : null;
+  }
   if (!options.length) return null;
   const b = etat.rng.pick(options);
   const voies = ctx.reseau.troncons[b.troncon].voies;
-  return { troncon: b.troncon, sens: b.sens, voie: mode === 'velo' ? 'velo' : Math.min(v.voie, voies - 1) };
+  return { troncon: b.troncon, sens: b.sens, voie: Math.min(v.voie, voies - 1) };
 }
 
 function placer(etat, ctx, veh, voie) {
@@ -99,8 +104,10 @@ export function sources(ctx, T) {
       // Une demande par bout de route, quelle que soit sa largeur : doubler les voies ajoute de la place, pas des voitures
       out.push({ cle: `${id}|auto`, noeud: id, mode: 'voiture', voies: Array.from({ length: t.voies }, (_, k) => ({ troncon: b.troncon, sens: b.sens, voie: k })), intervalle });
     }
-    const pistes = n.branches.filter(b => ctx.reseau.troncons[b.troncon].piste);
-    if (pistes.length === 1) out.push({ cle: `${id}|velo`, noeud: id, mode: 'velo', voies: [{ troncon: pistes[0].troncon, sens: pistes[0].sens, voie: 'velo' }], intervalle: T.intervalleVelo });
+    // Un bout du réseau cyclable : un seul tronçon à piste touche ce nœud
+    const pistes = n.branches.filter(b => aPiste(ctx.reseau.troncons[b.troncon]));
+    const files = pistes.length === 1 ? filesVelo(ctx.geo, pistes[0].troncon, pistes[0].sens) : [];
+    if (files.length) out.push({ cle: `${id}|velo`, noeud: id, mode: 'velo', voies: files, intervalle: T.intervalleVelo });
   }
   return out;
 }
@@ -289,7 +296,7 @@ export function reconcilier(etat, ctx) {
   const lignes = [];
   for (const [id, g] of Object.entries(ctx.geo.troncons)) for (const sens of [1, -1]) {
     g.voies[sens].forEach((ligne, k) => lignes.push({ mode: 'voiture', voie: { troncon: id, sens, voie: k }, ligne }));
-    if (g.pistes) lignes.push({ mode: 'velo', voie: { troncon: id, sens, voie: 'velo' }, ligne: g.pistes[sens] });
+    if (g.pistes) for (const f of filesVelo(ctx.geo, id, sens)) lignes.push({ mode: 'velo', voie: f, ligne: ligneVoie(ctx.geo, f) });
   }
   const restants = [];
   for (const veh of etat.vehicules) {

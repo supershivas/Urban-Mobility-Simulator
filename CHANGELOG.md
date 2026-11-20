@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.3 — 2026-11-20
+- Bêta : les carrefours ne s'emmêlent plus — chaque passage recule selon l'angle avec ses voisines, les rues arrivent à 60° au moins, seules les traversées cyclables tout droit sont peintes, le zébra ne couvre que la chaussée
+- Bêta : jusqu'à 4 × 4 voies (Maj + clic : une de moins), refusé au-delà de 27 m ou si la route mord sur une voisine ; pistes à double sens des deux côtés ; beaucoup plus de vélos
+- Bêta : le picto vélo se lit debout dans le sens de marche, comme au sol ; les compteurs passent en haut et ne cachent plus les outils
+
 ## 0.9.2 — 2026-11-20
 - Bêta : feux posés au clic sur un carrefour (outil Feux), avec un panneau pour régler la durée de chaque vert ; les vélos ont leurs feux, plus petits
 - Bêta : trottoirs partout, passages piétons à chaque carrefour, et des piétons qui marchent et traversent ; les voitures les attendent

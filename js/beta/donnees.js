@@ -6,14 +6,15 @@
 export const ROUTE = {
   largeurVoie: 3.0,        // m, une voie automobile
   largeurPiste: 1.75,      // m, piste cyclable (de chaque côté)
-  largeurPisteDouble: 2.5, // m, piste cyclable à double sens (d'un seul côté)
+  largeurPisteDouble: 2.5, // m, piste cyclable à double sens
   largeurTrottoir: 2.0,    // m, trottoir de chaque côté de chaque route
   largeurTraversee: 3.0,   // m, passage piéton (le long de la route), devant chaque carrefour
   separateurPiste: 0.5,    // m, filet entre la dernière voie et la piste
   accotement: 0.4,         // m, bordure au-delà de la chaussée
   margeCarrefour: 1.5,     // m, ajoutée à la demi-largeur pour le recul d'une branche
   reculPassage: 1.0,       // m, recul quand deux tronçons se suivent sans carrefour
-  voiesMax: 2,             // voies par sens
+  voiesMax: 4,             // voies par sens (2 × 2, 3 × 3, 4 × 4)
+  largeurMax: 27,          // m, chaussée et pistes bord à bord : au-delà, refusé (une avenue bruxelloise à 2 × 4 voies et pistes en fait ~28)
   pasArc: 4,               // m, finesse des courbes
 };
 
@@ -23,7 +24,7 @@ export const TRACE = {
   ecartNoeud: 25,          // m, un départ ou une arrivée plus près d'un carrefour s'y accroche
   accroche: 9,             // m, l'arrivée s'accroche à une route à moins de cette distance
   ecartRoutes: 9,          // m, deux routes ne passent pas plus près l'une de l'autre
-  angleMin: 30,            // °, entre deux branches d'un même carrefour
+  angleMin: 60,            // °, entre deux branches d'un même carrefour (les guides d'aménagement visent 75 à 105°, jamais sous 60°)
   branchesMax: 4,          // branches au plus par carrefour
   zone: 560,               // m, demi-côté de la carte constructible
   visee: 14,               // m, distance de visée d'une route sous le pointeur
@@ -62,7 +63,7 @@ export const TRAFIC = {
   graine: 2026,
   intervalleBord: 5,       // s entre deux voitures, par voie, aux deux bouts de la route de départ
   intervalleImpasse: 14,   // s entre deux voitures au bout d'une route nouvelle (un quartier)
-  intervalleVelo: 7,       // s entre deux vélos, au bout d'une piste
+  intervalleVelo: 2.5,     // s entre deux vélos, au bout d'une piste
   alea: 0.35,              // ± part de hasard sur chaque intervalle
   demande: 2.2,            // s d'avance : un véhicule demande le carrefour à cette distance (en temps)
   demandeMin: 6,           // m, et au moins à cette distance

@@ -9,14 +9,18 @@ Un second jeu, ouvert par le bouton « Bêta : carte blanche » de l'écran titr
 | Départ | Une route 2 voies, 2 sens, d'ouest en est (2,4 km, bouts dans la brume) ; des voitures à intervalle dans les deux sens |
 | Tracé | 1 clic sur n'importe quel point d'une route = départ ; au survol, la route nouvelle part **perpendiculairement puis tourne en arc** jusqu'au pointeur ; 1 clic = construire. Arrivée près d'une route : raccord (carrefour) ; sinon impasse. Au bout d'une impasse, la route se prolonge |
 | Trafic | Les voitures empruntent les routes nouvelles, **branche au hasard** à chaque carrefour (graine fixe) ; elles naissent et disparaissent aux bouts de carte et aux impasses |
-| Doubler, piste | S'appliquent au **tronçon entre deux carrefours** ; 1 ↔ 2 voies par sens ; piste verte de chaque côté, picto vélo blanc tous les 30 m |
+| Voies, piste | S'appliquent au **tronçon entre deux carrefours** ; 1 ↔ 2 voies par sens ; piste verte de chaque côté, picto vélo blanc tous les 30 m |
 | Démolir | Outil 4 (ou Suppr), au tronçon : un nœud resté seul disparaît, un nœud qui ne relie plus que deux tronçons pareils (mêmes voies, même piste) se referme ; un tronçon qui touche le bord de la carte reste (Jérôme, v0.9.1) |
 | Outils | Groupés par usage, une couleur par groupe : **Routes** (1 route, 2 doubler, 3 démolir ; encre), **Vélo** (4 pistes de chaque côté, 5 piste à double sens ; vert), **Carrefours** (6 feux ; ambre). Seul l'outil choisi garde son nom sous 1500 px (Jérôme, v0.9.2) |
-| Piste à double sens | Outil à part (comme pour les voies), au tronçon, du côté cliqué ; 2,5 m, tirets blancs au milieu, chacun tient sa droite ; `piste` = 'gauche' / 'droite' vu de a vers b (Jérôme, v0.9.2) |
+| Piste à double sens | Outil à part (comme pour les voies), au tronçon, du côté cliqué ; 2,5 m, tirets blancs au milieu, chacun tient sa droite (Jérôme, v0.9.2) |
 | Feux | Outil + **durées réglables** : un clic pose les feux d'un carrefour (3 branches et plus) et ouvre son panneau (− / + par phase, « Retirer les feux »). Une phase par branche (vélos compris, têtes plus petites sur le même mât), puis une phase piétonne ; orange 3 s, rouge intégral 2 s (Jérôme, v0.9.2) |
 | Trottoirs | **Partout, d'office**, 2 m de chaque côté, arrondis aux impasses (Jérôme, v0.9.2) |
 | Piétons | **Partout** : ils sortent d'un bâtiment, marchent, tournent au hasard aux coins, traversent aux passages (zébrés, devant chaque carrefour), entrent quelque part ; les voitures leur cèdent ; aux feux, ils traversent pendant la phase piétonne (Jérôme, v0.9.2) |
-| Liaisons cyclables | Peintes en vert dans les carrefours, tout droit et à droite (pas les tourne-à-gauche) |
+| Carrefours lisibles | D'après la pratique des urbanistes (guides CROW, NACTO, carrefour protégé néerlandais) : rues à **60° au moins** (`TRACE.angleMin`) ; **recul par branche**, jusqu'où les trottoirs de deux branches voisines se séparent (`geometrie.js → reculer`) ; passages perpendiculaires à la rue ; zébra sur la **chaussée automobile seule** (la piste reste verte) ; seules les **traversées cyclables tout droit** sont peintes, bordées de tirets (Jérôme, v0.9.3, après les captures d'imbroglios en 0.9.2) |
+| Voies | 1 à **4 par sens** : clic = une de plus (au-delà de 4 × 4 : retour à 2 voies), Maj + clic = une de moins ; refus au-delà de **27 m** de chaussée et de pistes (`ROUTE.largeurMax`), ou si la route élargie mord sur une voisine (Jérôme, v0.9.3) |
+| Pistes | Par côté (`pistes = { g, d }`, vu de a vers b) : 'simple' ou 'double' ; **double sens des deux côtés** possible ; un vélo a alors deux files par sens (`velo`, `velo2`) (Jérôme, v0.9.3) |
+| Picto vélo | **Debout dans le sens de marche**, comme les marquages réels (lu par le cycliste qui arrive), allongé ; un par file (Jérôme, v0.9.3) |
+| Compteurs | En haut, au milieu : la barre d'outils reste dégagée (Jérôme, v0.9.3) |
 | Vélos | Quelques vélos roulent sur les pistes, plus lents ; ils naissent et sortent aux bouts du réseau cyclable |
 
 ## Modules

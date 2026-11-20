@@ -2,11 +2,11 @@
 // cyclables, carrefours, véhicules en blocs, et l'aperçu de la route en projet.
 // Ce module dessine et vise : il ne modifie jamais l'état (main.js décide).
 // Repère : x est, y nord (mètres) → scène X = x, Y = haut, Z = −y.
-import * as THREE from '../../vendor/three/three.module.js?v=0.9.2';
-import { pose, metresParPixel } from '../scene/camera.js?v=0.9.2';
-import { decalerLigne, sansDoublons } from '../geo/decalage.js?v=0.9.2';
-import { longueur, pointA, sousLigne } from './reseau.js?v=0.9.2';
-import { liaisonsVelo } from './geometrie.js?v=0.9.2';
+import * as THREE from '../../vendor/three/three.module.js?v=0.9.3';
+import { pose, metresParPixel } from '../scene/camera.js?v=0.9.3';
+import { decalerLigne, sansDoublons } from '../geo/decalage.js?v=0.9.3';
+import { longueur, pointA, sousLigne } from './reseau.js?v=0.9.3';
+import { liaisonsVelo } from './geometrie.js?v=0.9.3';
 
 const COUCHE = { sol: 7, limite: 6, trottoir: 5, bordure: 4, asphalte: 3, velo: 2, marquage: 1, picto: 0, surlignage: -1, apercu: -2, ombre: -3 };
 
@@ -37,8 +37,8 @@ function textureVelo(couleur) {
   c.width = c.height = 128;
   const g = c.getContext('2d');
   g.strokeStyle = couleur; g.fillStyle = couleur; g.lineWidth = 8; g.lineCap = 'round'; g.lineJoin = 'round';
-  // Vu du dessus, la roue avant vers le haut du canvas (sens de marche)
-  g.translate(64, 64); g.rotate(-Math.PI / 2); g.translate(-64, -64);
+  // Comme sur une vraie piste : le vélo de profil, debout pour le cycliste qui arrive (roues de son
+  // côté, en bas du canvas ; le haut du canvas est le sens de marche), tourné vers la droite.
   g.beginPath(); g.arc(32, 80, 20, 0, 2 * Math.PI); g.stroke();
   g.beginPath(); g.arc(96, 80, 20, 0, 2 * Math.PI); g.stroke();
   g.beginPath(); g.moveTo(32, 80); g.lineTo(54, 48); g.lineTo(84, 48); g.lineTo(96, 80); g.moveTo(54, 48); g.lineTo(64, 80); g.lineTo(84, 48); g.moveTo(84, 48); g.lineTo(80, 36); g.lineTo(90, 36); g.moveTo(50, 40); g.lineTo(60, 40); g.stroke();
@@ -128,17 +128,18 @@ export function creerSceneBeta({ conteneur, P, R, C }) {
       for (let k = 1; k < t.voies; k++) for (const sg of [1, -1]) tirets(marq, axe, sg * k * Lv, w, 3, 6);
       // Rives : la ligne au bord de la chaussée automobile
       for (const sg of [1, -1]) ruban(marq, axe, sg * (t.voies * Lv - 0.1) + w / 2, sg * (t.voies * Lv - 0.1) - w / 2);
-      // Pistes : une de chaque côté, ou une à double sens d'un côté (tirets blancs au milieu)
+      // Pistes, de chaque côté : simple, ou à double sens (tirets blancs au milieu)
       const x0 = t.voies * Lv + R.separateurPiste;
-      if (t.piste === 'deux') { ruban(velo, axe, x0 + R.largeurPiste, x0); ruban(velo, axe, -x0, -(x0 + R.largeurPiste)); }
-      else if (t.piste) {
-        const sg = t.piste === 'gauche' ? 1 : -1, Ld = R.largeurPisteDouble;
-        ruban(velo, axe, sg === 1 ? x0 + Ld : -x0, sg === 1 ? x0 : -(x0 + Ld));
-        tirets(marq, axe, sg * (x0 + Ld / 2), 0.12, 1.5, 2.5);
+      for (const [k, sg] of [['g', 1], ['d', -1]]) {
+        const p = t.pistes[k];
+        if (!p) continue;
+        const l = p === 'double' ? R.largeurPisteDouble : R.largeurPiste;
+        ruban(velo, axe, sg === 1 ? x0 + l : -x0, sg === 1 ? x0 : -(x0 + l));
+        if (p === 'double') tirets(marq, axe, sg * (x0 + l / 2), 0.12, 1.5, 2.5);
       }
     }
-    // Liaisons cyclables dans les carrefours (tout droit et à droite)
-    for (const l of liaisonsVelo(reseau, geo)) ruban(velo, l, 0.8, -0.8);
+    // Traversées cyclables dans les carrefours, tout droit seulement : une bande verte bordée de tirets blancs
+    for (const l of liaisonsVelo(reseau, geo)) { ruban(velo, l, 0.8, -0.8); tirets(marq, l, 0.85, 0.15, 0.5, 0.5); tirets(marq, l, -0.85, 0.15, 0.5, 0.5); }
     for (const n of Object.values(geo.noeuds)) {
       if (n.zone) {
         eventail(asph, n.zone); eventail(bord, agrandir(n.zone, n.p, A)); eventail(trot, agrandir(n.zone, n.p, A + Tw));
@@ -150,9 +151,10 @@ export function creerSceneBeta({ conteneur, P, R, C }) {
       if (!n.traversees) continue;
       for (const b of n.branches) {
         const t = reseau.troncons[b.troncon];
-        // Passage piéton : des bandes blanches parallèles à la route, sur toute la largeur
-        const bande = sousLigne(b.ext, 0.15, Lp - 0.15);
-        for (let o = -b.droite + 0.25; o + 0.5 <= b.gauche - 0.1; o += 1) ruban(marq, bande, o + 0.5, o);
+        // Passage piéton : des bandes blanches parallèles à la route, sur la chaussée automobile seulement
+        // (la piste continue en vert à travers le passage, comme dans la réalité)
+        const bande = sousLigne(b.ext, 0.15, Lp - 0.15), V = t.voies * Lv;
+        for (let o = -V + 0.25; o + 0.5 <= V - 0.1; o += 1) ruban(marq, bande, o + 0.5, o);
         // Ligne d'arrêt, avant le passage, sur les files qui arrivent (à gauche de la branche vue depuis le nœud)
         ruban(marq, sousLigne(b.ext, Lp + 0.8, Lp + 1.2), Math.max(t.voies * Lv - 0.1, b.gauche - 0.1), 0);
       }
@@ -160,12 +162,12 @@ export function creerSceneBeta({ conteneur, P, R, C }) {
     groupeReseau.add(maillage(trot, materiaux.trottoir), maillage(bord, materiaux.bordure), maillage(asph, materiaux.asphalte), maillage(velo, materiaux.velo), maillage(marq, materiaux.marquage));
     // Pictos vélo, tous les 30 m, dans le sens de marche de chaque file (deux par piste à double sens)
     const pictos = [];
-    for (const g of Object.values(geo.troncons)) if (g.pistes) for (const sens of [1, -1]) {
-      const l = g.pistes[sens], L = longueur(l);
+    for (const g of Object.values(geo.troncons)) if (g.pistes) for (const sens of [1, -1]) for (const l of g.pistes[sens]) {
+      const L = longueur(l);
       for (let s = sens === 1 ? 12 : 27; s < L - 6; s += 30) pictos.push(pointA(l, s));
     }
     if (pictos.length) {
-      const plan = new THREE.PlaneGeometry(1.2, 1.2).rotateX(-Math.PI / 2);
+      const plan = new THREE.PlaneGeometry(1.3, 2.0).rotateX(-Math.PI / 2); // allongé dans le sens de marche, comme un marquage au sol
       const im = new THREE.InstancedMesh(plan, materiaux.picto, pictos.length);
       im.frustumCulled = false; // la sphère englobante serait celle d'un seul picto, à l'origine
       const m = new THREE.Matrix4(), q = new THREE.Quaternion(), axeY = new THREE.Vector3(0, 1, 0);

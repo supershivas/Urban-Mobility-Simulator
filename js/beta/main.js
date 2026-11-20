@@ -4,19 +4,19 @@
 // (pistes de chaque côté, piste à double sens), carrefours (feux et leurs durées).
 // Cycle de vie, commandes, sauvegarde.
 // Les règles sont dans reseau.js et roulage.js (purs ; jamais « trafic.js » : les bloqueurs de publicités le refusent) ; le dessin dans scene.js.
-import { createStore, autosave } from '../lib/save.js?v=0.9.2';
-import { createI18n } from '../lib/i18n.js?v=0.9.2';
-import { createLoop } from '../lib/loop.js?v=0.9.2';
-import { startUpdateCheck, loadVersion } from '../lib/app-update.js?v=0.9.2';
-import { creerHistorique } from '../historique.js?v=0.9.2';
-import { ROLES, PALETTE_BETA } from '../palette.js?v=0.9.2';
-import { contraindre, deplacer, tourner, zoomer } from '../scene/camera.js?v=0.9.2';
-import { TEXTES_BETA } from './textes.js?v=0.9.2';
-import { ROUTE, TRACE, DEPART, VEHICULES, TRAFIC, CAMERA, FEUX, PIETONS } from './donnees.js?v=0.9.2';
-import { reseauDepart, relireReseau, viser, accroche, projetRoute, construireRoute, basculerVoies, basculerVelo, demolir, basculerPisteDouble, coteDe, basculerFeux, reglerFeu, feuxDe, viserCarrefour } from './reseau.js?v=0.9.2';
-import { posePieton } from './pietons.js?v=0.9.2';
-import { preparerTrafic, creerTrafic, avancer, reconcilier, poseVehicule, compter } from './roulage.js?v=0.9.2';
-import { creerSceneBeta } from './scene.js?v=0.9.2';
+import { createStore, autosave } from '../lib/save.js?v=0.9.3';
+import { createI18n } from '../lib/i18n.js?v=0.9.3';
+import { createLoop } from '../lib/loop.js?v=0.9.3';
+import { startUpdateCheck, loadVersion } from '../lib/app-update.js?v=0.9.3';
+import { creerHistorique } from '../historique.js?v=0.9.3';
+import { ROLES, PALETTE_BETA } from '../palette.js?v=0.9.3';
+import { contraindre, deplacer, tourner, zoomer } from '../scene/camera.js?v=0.9.3';
+import { TEXTES_BETA } from './textes.js?v=0.9.3';
+import { ROUTE, TRACE, DEPART, VEHICULES, TRAFIC, CAMERA, FEUX, PIETONS } from './donnees.js?v=0.9.3';
+import { reseauDepart, relireReseau, viser, accroche, projetRoute, construireRoute, basculerVoies, basculerVelo, demolir, basculerPisteDouble, coteDe, basculerFeux, reglerFeu, feuxDe, viserCarrefour } from './reseau.js?v=0.9.3';
+import { posePieton } from './pietons.js?v=0.9.3';
+import { preparerTrafic, creerTrafic, avancer, reconcilier, poseVehicule, compter } from './roulage.js?v=0.9.3';
+import { creerSceneBeta } from './scene.js?v=0.9.3';
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -144,12 +144,19 @@ function majSurvol() {
     // Le côté sous le pointeur : la piste à double sens s'y posera
     const cote = coteDe(reseau, v.troncon, p);
     scene.majSurvol({ troncon: { ...troncon, cote } });
-    etiquette(t(tr.piste === cote ? 'survol.sansdouble' : 'survol.double'));
+    const k = cote === 'gauche' ? 'g' : 'd', r = basculerPisteDouble(reseau, v.troncon, cote, ROUTE, TRACE);
+    etiquette(r.refus ? t(`refus.${r.refus}`) : t(tr.pistes[k] === 'double' ? 'survol.sansdouble' : 'survol.double'), !!r.refus);
     return;
   }
   scene.majSurvol({ troncon });
-  etiquette(outil === 'voies' ? t(tr.voies > 1 ? 'survol.simple' : 'survol.doubler')
-    : t(tr.piste === 'deux' ? 'survol.sansvelo' : tr.piste ? 'survol.velodeux' : 'survol.velo'));
+  if (outil === 'voies') {
+    // Ce que fera le clic (une voie de plus par sens), ou pourquoi il ne marchera pas ; Maj + clic : une de moins
+    const r = basculerVoies(reseau, v.troncon, ROUTE, TRACE, pointeur.maj ? -1 : 1), n = r.reseau?.troncons[v.troncon].voies;
+    etiquette(r.refus ? t(`refus.${r.refus}`) : n === 1 ? t('survol.simple') : t('survol.voies', { n }), !!r.refus);
+    return;
+  }
+  const simples = tr.pistes.g === 'simple' && tr.pistes.d === 'simple', r = basculerVelo(reseau, v.troncon, ROUTE, TRACE);
+  etiquette(r.refus ? t(`refus.${r.refus}`) : t(simples ? 'survol.sansvelo' : tr.pistes.g || tr.pistes.d ? 'survol.velodeux' : 'survol.velo'), !!r.refus);
 }
 
 /** Le carrefour sous le pointeur (outil Feux). */
@@ -175,7 +182,7 @@ function faire(resultat, message) {
 }
 
 /** Un clic sur le sol, en mètres. */
-function cliquer(p) {
+function cliquer(p, maj = false) {
   const reseau = historique.etat;
   if (outil === 'route') {
     if (depart) {
@@ -196,8 +203,8 @@ function cliquer(p) {
     const v = viser(reseau, p, rayonVisee());
     if (v) {
       if (outil === 'demolir') faire(demolir(reseau, v.troncon), t('toast.demolie'));
-      else if (outil === 'double') faire(basculerPisteDouble(reseau, v.troncon, coteDe(reseau, v.troncon, p)));
-      else faire(outil === 'voies' ? basculerVoies(reseau, v.troncon, ROUTE) : basculerVelo(reseau, v.troncon));
+      else if (outil === 'double') faire(basculerPisteDouble(reseau, v.troncon, coteDe(reseau, v.troncon, p), ROUTE, TRACE));
+      else faire(outil === 'voies' ? basculerVoies(reseau, v.troncon, ROUTE, TRACE, maj ? -1 : 1) : basculerVelo(reseau, v.troncon, ROUTE, TRACE));
     }
   }
   majSurvol();
@@ -274,7 +281,7 @@ vue.addEventListener('pointermove', e => {
     }
   }
   const sol = scene.sousPointeur(...ecran);
-  pointeur = sol ? { sol, ecran } : null;
+  pointeur = sol ? { sol, ecran, maj: e.shiftKey } : null;
   majSurvol();
 });
 vue.addEventListener('pointerup', e => {
@@ -284,7 +291,7 @@ vue.addEventListener('pointerup', e => {
   if (g.bouton === 2) { annulerProjet(); return; } // clic droit : on renonce à la route en projet
   if (g.bouton !== 0) return;
   const sol = scene.sousPointeur(...local(e));
-  if (sol) cliquer(sol);
+  if (sol) cliquer(sol, e.shiftKey);
 });
 vue.addEventListener('pointerleave', () => { if (!geste) { pointeur = null; majSurvol(); } });
 vue.addEventListener('wheel', e => {
@@ -411,7 +418,7 @@ vue.focus();
 
 // ─── Mode debug (section 18) ───────────────────────────────────────────────
 if (DEBUG) {
-  const { installDebug } = await import('../lib/debug.js?v=0.9.2');
+  const { installDebug } = await import('../lib/debug.js?v=0.9.3');
   installDebug({
     state: () => ({
       outil, depart: depart && { ...depart }, projet: projet && { refus: projet.refus ?? null, longueur: projet.longueur, libre: !!projet.fin.libre },
@@ -425,7 +432,7 @@ if (DEBUG) {
       outil: choisirOutil,
       /** Survole puis clique le sol en (x, y) mètres, comme la souris. */
       survoler: (x, y) => { pointeur = { sol: [x, y], ecran: scene.versEcran([x, y]) }; majSurvol(); },
-      cliquer: (x, y) => { pointeur = { sol: [x, y], ecran: scene.versEcran([x, y]) }; cliquer([x, y]); },
+      cliquer: (x, y, maj = false) => { pointeur = { sol: [x, y], ecran: scene.versEcran([x, y]), maj }; cliquer([x, y], maj); },
       ecran: (x, y) => scene.versEcran([x, y]),
       camera: e => majCamera({ ...cam, ...e }),
       annuler, retablir,

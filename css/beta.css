@@ -109,7 +109,8 @@
 .beta-pied p { margin: 0; padding: 6px 10px; max-width: min(640px, 60vw); }
 #aide { left: 50%; transform: translateX(-50%); bottom: calc(var(--pas) * 2 + var(--jeu-cible) + 8px); font-weight: 600; text-align: center; max-width: min(760px, 70vw); }
 .beta-camera { left: var(--pas); bottom: var(--pas); font-size: var(--t-petit); }
-.beta-compte { right: var(--pas); bottom: var(--pas); font-variant-numeric: tabular-nums; }
+/* Les compteurs en haut, au milieu : la barre d’outils, en bas, reste dégagée (vu en 0.9.2) */
+.beta-pied .beta-compte { top: var(--pas); left: 50%; transform: translateX(-50%); bottom: auto; min-height: var(--jeu-cible); display: flex; align-items: center; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* L'étiquette sous le pointeur : ce que fera le clic, ou pourquoi il ne marchera pas */
 .beta-etiquette {

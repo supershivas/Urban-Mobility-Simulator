@@ -51,7 +51,7 @@ test('les refus sont dits : trop court, trop serré, trop près, hors carte, bor
 test('l\'arrivée sur une autre route fait un carrefour', () => {
   let r = depart();
   r = construireRoute(r, tirer(r, [0, 0], [0, 150]), TRACE).reseau;
-  const p = tirer(r, [200, 0], [3, 100]);
+  const p = tirer(r, [100, 0], [3, 97]);
   assert.equal(p.refus, undefined);
   assert.equal(p.fin.libre, undefined);
   const { reseau, troncon } = construireRoute(r, p, TRACE);
@@ -61,11 +61,15 @@ test('l\'arrivée sur une autre route fait un carrefour', () => {
 });
 test('doubler les voies et ajouter une piste cyclable, puis revenir', () => {
   const r0 = depart();
-  const r1 = basculerVoies(r0, 't1', ROUTE).reseau;
+  const r1 = basculerVoies(r0, 't1', ROUTE, TRACE).reseau;
   assert.equal(r1.troncons.t1.voies, 2);
-  assert.equal(basculerVoies(r1, 't1', ROUTE).reseau.troncons.t1.voies, 1);
-  const r2 = basculerVelo(r1, 't1').reseau;
-  assert.equal(r2.troncons.t1.piste, 'deux');
+  const r3 = basculerVoies(r1, 't1', ROUTE, TRACE).reseau, r4 = basculerVoies(r3, 't1', ROUTE, TRACE).reseau;
+  assert.deepEqual([r3.troncons.t1.voies, r4.troncons.t1.voies], [3, 4], '3 × 3 puis 4 × 4');
+  assert.equal(basculerVoies(r4, 't1', ROUTE, TRACE).reseau.troncons.t1.voies, 1, 'au-delà de 4 × 4 : retour à 2 voies');
+  assert.equal(basculerVoies(r3, 't1', ROUTE, TRACE, -1).reseau.troncons.t1.voies, 2, 'Maj + clic : une de moins');
+  assert.equal(basculerVoies(r0, 't1', ROUTE, TRACE, -1).refus, 'uneVoie');
+  const r2 = basculerVelo(r1, 't1', ROUTE, TRACE).reseau;
+  assert.deepEqual(r2.troncons.t1.pistes, { g: 'simple', d: 'simple' });
   const g = geometrieReseau(r2, ROUTE).troncons.t1;
   assert.equal(g.voies[1].length, 2);
   assert.ok(g.pistes);
@@ -85,7 +89,7 @@ test('démolir une impasse referme le carrefour : la route de départ redevient 
 test('démolir un tronçon entre deux carrefours referme les deux ; des voies différentes ne se recollent pas', () => {
   let r = depart();
   r = construireRoute(r, tirer(r, [0, 0], [0, 150]), TRACE).reseau;
-  r = construireRoute(r, tirer(r, [200, 0], [3, 100]), TRACE).reseau;
+  r = construireRoute(r, tirer(r, [100, 0], [3, 97]), TRACE).reseau;
   const milieu = Object.entries(r.troncons).find(([, t]) => t.points.every(p => p[1] === 0) && t.points.every(p => p[0] >= -1 && p[0] <= 201))[0];
   const avant = Object.keys(r.troncons).length;
   const apres = demolir(r, milieu).reseau;
@@ -94,13 +98,13 @@ test('démolir un tronçon entre deux carrefours referme les deux ; des voies di
   // Sur la route nouvelle : une moitié en 2 × 2, l'autre non → le nœud reste quand on démolit la diagonale
   const diag = Object.keys(r.troncons).at(-1);
   const nord = Object.entries(r.troncons).find(([id, t]) => id !== diag && t.points.at(-1)[1] > 140)[0];
-  const r2 = basculerVoies(r, nord, ROUTE).reseau;
+  const r2 = basculerVoies(r, nord, ROUTE, TRACE).reseau;
   assert.ok(Object.keys(demolir(r2, diag).reseau.troncons).length === Object.keys(r2.troncons).length - 2, 'la route de départ se recolle, pas la route nord');
 });
 test('la sauvegarde relue est le même réseau', () => {
   let r = depart();
   r = construireRoute(r, tirer(r, [0, 0], [60, 140]), TRACE).reseau;
-  r = basculerVelo(r, Object.keys(r.troncons)[0]).reseau;
+  r = basculerVelo(r, Object.keys(r.troncons)[0], ROUTE, TRACE).reseau;
   assert.deepEqual(relireReseau(JSON.parse(JSON.stringify(r))), r);
   assert.equal(relireReseau({ noeuds: {}, troncons: { t: { a: 'x', b: 'y', points: [] } } }), null);
 });
@@ -156,25 +160,25 @@ test('même graine, même trafic', () => {
   assert.deepEqual(a.vehicules.map(v => [v.id, v.s.toFixed(3)]), b.vehicules.map(v => [v.id, v.s.toFixed(3)]));
 });
 test('des vélos roulent sur la piste cyclable', () => {
-  const r = basculerVelo(depart(), 't1').reseau;
+  const r = basculerVelo(depart(), 't1', ROUTE, TRACE).reseau;
   const { etat } = simuler(r, 320);
   assert.ok(compter(etat).velo > 0);
   assert.ok(etat.sortis.velo > 5);
-  assert.ok(etat.vehicules.filter(v => v.mode === 'velo').every(v => v.voie.voie === 'velo'));
+  assert.ok(etat.vehicules.filter(v => v.mode === 'velo').every(v => ['velo', 'velo2'].includes(v.voie.voie)));
 });
 test('après une modification, les véhicules restent sur leur voie', () => {
   const r0 = depart();
   const { etat } = simuler(r0, 60);
   const avant = etat.vehicules.length;
-  const r1 = basculerVoies(r0, 't1', ROUTE).reseau;
+  const r1 = basculerVoies(r0, 't1', ROUTE, TRACE).reseau;
   reconcilier(etat, preparerTrafic(r1, ROUTE, FEUX));
   assert.ok(etat.vehicules.length >= avant - 2, `${avant} → ${etat.vehicules.length}`);
 });
 test('2 × 2 voies avec pistes et deux carrefours : le trafic tourne sans se chevaucher', () => {
   let r = depart();
   r = construireRoute(r, tirer(r, [0, 0], [0, 150]), TRACE).reseau;
-  r = construireRoute(r, tirer(r, [200, 0], [3, 100]), TRACE).reseau;
-  for (const id of Object.keys(r.troncons)) r = basculerVelo(basculerVoies(r, id, ROUTE).reseau, id).reseau;
+  r = construireRoute(r, tirer(r, [100, 0], [3, 97]), TRACE).reseau;
+  for (const id of Object.keys(r.troncons)) r = basculerVelo(basculerVoies(r, id, ROUTE, TRACE).reseau, id, ROUTE, TRACE).reseau;
   const { etat } = simuler(r, 240);
   assert.ok(etat.sortis.voiture > 20, `${etat.sortis.voiture}`);
   assert.ok(etat.sortis.velo > 5);
@@ -195,20 +199,67 @@ group('beta — pistes à double sens, feux, piétons');
 const carrefourT = () => { const r = depart(); return construireRoute(r, tirer(r, [0, 0], [0, 150]), TRACE).reseau; };
 const noeudT = r => Object.keys(r.noeuds).find(n => branches(r, n).length === 3);
 test('une piste à double sens d\'un côté : les deux sens roulent sur le même côté, chacun à sa droite', () => {
-  const r = basculerPisteDouble(depart(), 't1', coteDe(depart(), 't1', [0, 5])).reseau;
-  assert.equal(r.troncons.t1.piste, 'gauche', 'au nord, vu d\'ouest en est');
+  const r = basculerPisteDouble(depart(), 't1', coteDe(depart(), 't1', [0, 5]), ROUTE, TRACE).reseau;
+  assert.deepEqual(r.troncons.t1.pistes, { g: 'double', d: null }, 'au nord, vu d\'ouest en est');
   const g = geometrieReseau(r, ROUTE).troncons.t1;
-  const yEst = g.pistes[1][0][1], yOuest = g.pistes[-1][0][1];
+  const yEst = g.pistes[1][0][0][1], yOuest = g.pistes[-1][0][0][1];
   assert.ok(yEst > 0 && yOuest > 0, 'les deux au nord de l\'axe');
   assert.ok(yOuest > yEst, 'vers l\'ouest : le côté extérieur (sa droite)');
   assert.equal(g.d, ROUTE.largeurVoie, 'au sud : la chaussée seule');
-  assert.equal(basculerPisteDouble(r, 't1', 'gauche').reseau.troncons.t1.piste, null, 'second clic : retirée');
-  assert.equal(basculerVelo(r, 't1').reseau.troncons.t1.piste, 'deux');
+  assert.deepEqual(basculerPisteDouble(r, 't1', 'gauche', ROUTE, TRACE).reseau.troncons.t1.pistes, { g: null, d: null }, 'second clic : retirée');
+  assert.deepEqual(basculerVelo(r, 't1', ROUTE, TRACE).reseau.troncons.t1.pistes, { g: 'simple', d: 'simple' });
 });
-test('les anciennes sauvegardes (velo: true) deviennent des pistes des deux côtés', () => {
+test('deux pistes à double sens : chaque sens a deux files, une de chaque côté', () => {
+  let r = basculerPisteDouble(depart(), 't1', 'gauche', ROUTE, TRACE).reseau;
+  r = basculerPisteDouble(r, 't1', 'droite', ROUTE, TRACE).reseau;
+  assert.deepEqual(r.troncons.t1.pistes, { g: 'double', d: 'double' });
+  const g = geometrieReseau(r, ROUTE).troncons.t1;
+  assert.equal(g.pistes[1].length, 2);
+  assert.ok(g.pistes[1][0][0][1] < 0 && g.pistes[1][1][0][1] > 0, 'vers l\'est : au sud d\'abord, au nord ensuite');
+  const { etat } = simuler(r, 300);
+  assert.ok(etat.sortis.velo > 40, `${etat.sortis.velo} vélos sortis`);
+  assert.ok(etat.vehicules.some(v => v.voie.voie === 'velo2'), 'des vélos sur la piste d\'en face');
+});
+test('trop large : refusé au-delà de largeurMax, ou s\'il mord sur une route voisine', () => {
+  let r = depart();
+  for (let k = 0; k < 3; k++) r = basculerVoies(r, 't1', ROUTE, TRACE).reseau; // 4 × 4 : 24 m
+  r = basculerPisteDouble(r, 't1', 'gauche', ROUTE, TRACE).reseau; // + 3 m = 27 m
+  assert.equal(basculerPisteDouble(r, 't1', 'droite', ROUTE, TRACE).refus, 'large');
+  assert.equal(basculerVelo(r, 't1', ROUTE, TRACE).refus, 'large');
+  // Deux routes parallèles à 14 m l'une de l'autre : la première ne s'élargit pas jusqu'à mordre sur la seconde
+  let q = { v: 1, suivant: 9, noeuds: { a: { x: 0, y: 0 }, b: { x: 0, y: 150 }, c: { x: 14, y: 0 }, d: { x: 14, y: 150 } },
+    troncons: { u: { a: 'a', b: 'b', points: [[0, 0], [0, 150]], voies: 1, pistes: { g: null, d: null } }, w: { a: 'c', b: 'd', points: [[14, 0], [14, 150]], voies: 1, pistes: { g: null, d: null } } } };
+  const nord = 'u';
+  let refus = null;
+  for (let k = 0; k < 3 && !refus; k++) { const res = basculerVoies(q, nord, ROUTE, TRACE); refus = res.refus; q = res.reseau ?? q; }
+  assert.equal(refus, 'chevauche');
+});
+test('les anciennes sauvegardes (velo, piste) deviennent des pistes par côté', () => {
   const vieux = JSON.parse(JSON.stringify(depart()));
-  delete vieux.troncons.t1.piste; vieux.troncons.t1.velo = true;
-  assert.equal(relireReseau(vieux).troncons.t1.piste, 'deux');
+  delete vieux.troncons.t1.pistes; vieux.troncons.t1.velo = true;
+  assert.deepEqual(relireReseau(vieux).troncons.t1.pistes, { g: 'simple', d: 'simple' });
+  const v2 = JSON.parse(JSON.stringify(depart()));
+  delete v2.troncons.t1.pistes; v2.troncons.t1.piste = 'droite';
+  assert.deepEqual(relireReseau(v2).troncons.t1.pistes, { g: null, d: 'double' });
+});
+test('carrefour en angle aigu : chaque branche recule assez pour que deux passages ne se touchent jamais', () => {
+  // Un carrefour à la main : est, ouest, et une branche à 62° de l\'est (limite basse)
+  const a = (62 * Math.PI) / 180, pts = [[100, 0], [-100, 0], [100 * Math.cos(a), 100 * Math.sin(a)]];
+  const r = { v: 1, suivant: 10, noeuds: { c: { x: 0, y: 0 } }, troncons: {} };
+  pts.forEach((p, i) => { r.noeuds[`n${i}`] = { x: p[0], y: p[1] }; r.troncons[`t${i}`] = { a: 'c', b: `n${i}`, points: [[0, 0], p], voies: 2, pistes: { g: 'double', d: 'simple' } }; });
+  const geo = geometrieReseau(r, ROUTE);
+  const passages = Object.values(geo.pietons.points).flatMap(p => p.liens.filter(l => l.traversee)).map(l => l.ligne);
+  const proche = (u, v) => Math.min(...[0, 0.25, 0.5, 0.75, 1].flatMap(i => [0, 0.25, 0.5, 0.75, 1].map(j => {
+    const p = [u[0][0] + (u[1][0] - u[0][0]) * i, u[0][1] + (u[1][1] - u[0][1]) * i], q = [v[0][0] + (v[1][0] - v[0][0]) * j, v[0][1] + (v[1][1] - v[0][1]) * j];
+    return Math.hypot(p[0] - q[0], p[1] - q[1]);
+  })));
+  for (let i = 0; i < passages.length; i++) for (let j = i + 1; j < passages.length; j++) {
+    const u = passages[i], v = passages[j];
+    if (Math.hypot(u[0][0] - v[1][0], u[0][1] - v[1][1]) < 0.01 && Math.hypot(u[1][0] - v[0][0], u[1][1] - v[0][1]) < 0.01) continue; // le même passage, dans l\'autre sens
+    assert.ok(proche(u, v) > ROUTE.largeurTraversee, `passages ${i} et ${j} à ${proche(u, v).toFixed(1)} m`);
+  }
+  const recul = id => geo.noeuds.c.branches.find(b => b.troncon === id).recul;
+  assert.ok(recul('t0') > recul('t1') + 5 && recul('t2') > recul('t1') + 5, `les deux branches de l\'angle aigu reculent plus : ${['t0', 't1', 't2'].map(id => recul(id).toFixed(1))}`);
 });
 test('les feux : posés sur un carrefour seulement, une phase par branche puis les piétons, durées bornées', () => {
   const r = carrefourT(), n = noeudT(r);

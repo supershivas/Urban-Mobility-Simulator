@@ -75,7 +75,7 @@ await souris(-250, 0);
 await souris(-50, 0);
 const reseau = await page.evaluate(() => window.__jeu.reseau());
 const ouest = Object.values(reseau.troncons).find(t => t.points.some(p => p[0] < -1000));
-verifier(ouest?.voies === 2 && ouest?.piste === 'deux', 'à l\'ouest : 2 × 2 voies et pistes cyclables');
+verifier(ouest?.voies === 2 && ouest?.pistes.g === 'simple' && ouest?.pistes.d === 'simple', 'à l\'ouest : 2 × 2 voies et pistes cyclables');
 
 // Piste à double sens (touche 5) : au nord de la route, à la place des deux pistes
 await page.keyboard.press('5');
@@ -83,7 +83,7 @@ await souris(-250, 7, false);
 const surDouble = await page.textContent('#etiquette');
 await souris(-250, 7);
 const ouest2 = Object.values((await page.evaluate(() => window.__jeu.reseau())).troncons).find(t => t.points.some(p => p[0] < -1000));
-verifier(ouest2?.piste === 'gauche', `piste à double sens au nord (« ${surDouble} ») : ${ouest2?.piste}`);
+verifier(ouest2?.pistes.g === 'double' && ouest2?.pistes.d === 'simple', `piste à double sens au nord (« ${surDouble} ») : ${JSON.stringify(ouest2?.pistes)}`);
 
 // Feux (touche 6) sur le premier carrefour : le panneau s'ouvre, + allonge le vert de la première phase
 await page.evaluate(() => window.__jeu.camera({ cible: [0, 0], distance: 120 }));
