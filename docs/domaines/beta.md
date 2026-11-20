@@ -25,6 +25,10 @@ Un second jeu, ouvert par le bouton « Bêta : carte blanche » de l'écran titr
 | Sas vélo | Automatique aux feux : la ligne des voitures recule de 4 m, sas vert avec un vélo par voie (Jérôme, v0.9.4) |
 | Céder | Seulement à qui est sur sa voie ou va y entrer (à 2 m, en marchant vers elle) : `aCeder` (Jérôme, v0.9.4) |
 | Passages proches | Deux passages à moins de 8 m l'un de l'autre n'en font qu'un (celui du bout a) ; les lignes de voie s'arrêtent à la ligne d'arrêt (Jérôme, v0.9.4) |
+| Rond-point | Outil 9, au carrefour, clics successifs : mini (11 m, îlot franchissable), urbain (16 m, planté), grand (24 m, deux voies) puis plus rien (`GIRATOIRES`). Il retire feux et mouvements. On cède à l'entrée à qui roule dans l'anneau et arrive vers son point d'entrée (`anneauCharge`) ; dans l'anneau, chacun suit qui est devant lui (géométrie) ; dents de requin aux entrées ; avec des pistes, l'anneau cyclable est un cercle (Jérôme, v0.9.5) |
+| Mouvements | Par défaut une flèche par voie (une voie : partout ; plusieurs : gauche + tout droit, droite + tout droit, tout droit au milieu ; dans un T, gauche / droite). Outil 0 « Mouvements » : clic sur un carrefour, ses liaisons s'affichent ; **glisser** du bout d'une voie qui arrive (rond blanc) vers une voie qui part (rond bleu) ajoute ou retire, clic sur une liaison la retire ; le dernier mouvement d'une voie reste. Les voitures les suivent (`js/beta/mouvements.js`, `noeud.mouvements`) (Jérôme, v0.9.5) |
+| Îlots centraux | Outil 8, au tronçon, clics successifs : refuges (zone peinte hachurée de 2 m, refuge surélevé à chaque passage, on traverse en deux fois et chaque moitié se regarde seule) → terre-plein planté de 3 m (interrompu au droit des passages) → rien (Jérôme, v0.9.5) |
+| Virages | Deux tronçons en angle (nœud à deux branches) : chaque bout recule jusqu'où les bords se croisent et la route se courbe, marquages compris ; les coins de trottoir s'arrondissent partout (`coinArrondi`) (Jérôme, v0.9.5) |
 | Compteurs | En haut, au milieu : la barre d'outils reste dégagée (Jérôme, v0.9.3) |
 | Vélos | Quelques vélos roulent sur les pistes, plus lents ; ils naissent et sortent aux bouts du réseau cyclable |
 
@@ -55,7 +59,7 @@ Un second jeu, ouvert par le bouton « Bêta : carte blanche » de l'écran titr
 
 ## Commandes
 
-Clic : selon l'outil (1 route, 2 doubler, 3 ou Suppr démolir, 4 pistes, 5 piste à double sens, 6 feux ; Échap ferme le panneau des feux). Glisser : déplacer ; clic droit glissé (ou Maj + glisser) : tourner ; molette, + / − : zoom ; flèches / WASD : déplacer ; Q / E : tourner. Clic droit ou Échap : renoncer à la route en projet (Échap sinon : menu). Ctrl Z / Ctrl Y : annuler / rétablir. Espace : pause ; X : vitesse ×1 / ×2 / ×4. Origine : recentrer.
+Clic : selon l'outil (1 route, 2 voies, 3 ou Suppr démolir, 4 pistes, 5 piste à double sens, 6 feux, 7 voie bus, 8 îlot central, 9 rond-point, 0 mouvements ; Échap ferme le panneau des feux ou la vue des mouvements). Glisser : déplacer ; clic droit glissé (ou Maj + glisser) : tourner ; molette, + / − : zoom ; flèches / WASD : déplacer ; Q / E : tourner. Clic droit ou Échap : renoncer à la route en projet (Échap sinon : menu). Ctrl Z / Ctrl Y : annuler / rétablir. Espace : pause ; X : vitesse ×1 / ×2 / ×4. Origine : recentrer.
 
 ## Vérification
 

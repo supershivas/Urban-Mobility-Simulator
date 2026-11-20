@@ -13,8 +13,8 @@
 //   fonction BPR ; délai uniforme de Webster au carrefour d'aval s'il est à feux.
 // - Conflits : croisements des raccords et traversées d'un carrefour, par paire de modes
 //   (exposition, jamais une prédiction d'accidents : pilier 3).
-import { REFERENCES, MODES_DEMANDE, SEUILS, SAISIE } from './data/simulation.js?v=0.9.4';
-import { segmentsSeCroisent } from './geo/geometrie.js?v=0.9.4';
+import { REFERENCES, MODES_DEMANDE, SEUILS, SAISIE } from './data/simulation.js?v=0.9.5';
+import { segmentsSeCroisent } from './geo/geometrie.js?v=0.9.5';
 
 const SENS = ['aller', 'retour'];
 const nombre = v => typeof v === 'number' && Number.isFinite(v);

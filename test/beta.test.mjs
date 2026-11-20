@@ -406,3 +406,66 @@ test('céder voie par voie : seulement à qui est sur sa voie ou va y entrer', (
   assert.equal(essai([pieton(3, false)]), false, 'sur la voie voisine, il s\'éloigne : on passe');
   assert.equal(essai([pieton(7, true)]), false, 'de l\'autre côté de la route : on passe');
 });
+
+group('beta — îlots, mouvements, ronds-points, virages');
+test('îlot central : refuges puis terre-plein ; la chaussée s\'écarte, on traverse en deux fois', async () => {
+  const { basculerIlot } = await import('../js/beta/reseau.js');
+  let r = carrefourT();
+  const ouest = Object.entries(r.troncons).find(([, t]) => t.points.some(p => p[0] < -500))[0];
+  r = basculerIlot(r, ouest, ROUTE, TRACE).reseau;
+  assert.equal(r.troncons[ouest].ilot, 'refuges');
+  const geo = geometrieReseau(r, ROUTE);
+  assert.ok(geo.troncons[ouest].voies[1][0][0][1] < -ROUTE.largeurRefuge / 2, 'la voie s\'écarte de l\'axe');
+  const moities = Object.values(geo.pietons.points).flatMap(p => p.liens.filter(l => l.moitie)).length;
+  assert.equal(moities, 4, 'deux moitiés, dans les deux sens');
+  assert.equal(basculerIlot(r, ouest, ROUTE, TRACE).reseau.troncons[ouest].ilot, 'terreplein');
+  const { etat } = simuler(r, 240, 3, PIETONS);
+  assert.ok(etat.sortis.voiture > 15, `${etat.sortis.voiture}`);
+});
+test('mouvements par défaut : une voie va partout ; à deux voies, gauche + tout droit et droite + tout droit', async () => {
+  const { mouvementsDu, fleches, basculerMouvement } = await import('../js/beta/mouvements.js');
+  let r = carrefourT();
+  const ouest = Object.entries(r.troncons).find(([, t]) => t.points.some(p => p[0] < -500))[0];
+  const n = noeudT(r), g1 = geometrieReseau(r, ROUTE).noeuds[n], mv1 = mouvementsDu(r, g1, n);
+  const e1 = Object.keys(mv1).find(k => k.startsWith(ouest + '|'));
+  assert.deepEqual(fleches(g1, mv1, e1), ['gauche', 'toutdroit']);
+  r = basculerVoies(r, ouest, ROUTE, TRACE).reseau;
+  const g2 = geometrieReseau(r, ROUTE).noeuds[n], mv2 = mouvementsDu(r, g2, n);
+  const [e0, e1b] = Object.keys(mv2).filter(k => k.startsWith(ouest + '|')).sort();
+  assert.deepEqual(fleches(g2, mv2, e0), ['gauche', 'toutdroit'], 'voie de gauche');
+  assert.deepEqual(fleches(g2, mv2, e1b), ['toutdroit'], 'voie de droite : pas de droite dans ce T, tout droit');
+  // Retirer le tout-droit de la voie de gauche : elle ne tourne plus qu'à gauche ; le dernier ne se retire pas
+  const td = mv2[e0].find(s => fleches(g2, { [e0]: [s] }, e0)[0] === 'toutdroit');
+  const r2 = basculerMouvement(r, g2, n, e0, td).reseau;
+  assert.deepEqual(fleches(g2, mouvementsDu(r2, g2, n), e0), ['gauche']);
+  assert.equal(basculerMouvement(r2, g2, n, e0, mouvementsDu(r2, g2, n)[e0][0]).refus, 'dernierMouvement');
+  // Le trafic suit : plus aucune voiture ne va tout droit depuis la voie de gauche
+  const ctx = preparerTrafic(r2, ROUTE, FEUX), etat = creerTrafic(TRAFIC, 6);
+  for (let i = 0; i < 150 * 30; i++) {
+    avancer(etat, ctx, TRAFIC, VEHICULES, 1 / 30);
+    for (const v of etat.vehicules) if (v.etape === 'voie' && `${v.voie.troncon}|${v.voie.sens}|${v.voie.voie}` === e0 && v.suite) assert.notEqual(`${v.suite.troncon}|${v.suite.sens}`, td.split('|').slice(0, 2).join('|'));
+  }
+});
+test('rond-point : trois tailles, les voitures tournent sans se chevaucher, et sortent', async () => {
+  const { basculerGiratoire } = await import('../js/beta/reseau.js');
+  let r = carrefourT();
+  const n = noeudT(r);
+  const tailles = [];
+  for (let k = 0; k < 4; k++) { r = basculerGiratoire(r, n).reseau; tailles.push(r.noeuds[n].giratoire ?? null); }
+  assert.deepEqual(tailles, ['mini', 'urbain', 'grand', null]);
+  r = basculerGiratoire(basculerGiratoire(r, n).reseau, n).reseau; // urbain
+  assert.equal(basculerFeux(r, n, FEUX).refus, 'feuxGiratoire');
+  const geo = geometrieReseau(r, ROUTE);
+  assert.ok(geo.noeuds[n].branches.every(b => b.recul >= 16), 'les branches reculent au-delà de l\'anneau');
+  const { etat } = simuler(r, 240, 8, PIETONS);
+  assert.ok(etat.sortis.voiture > 20, `${etat.sortis.voiture} sorties`);
+  sansChevauchement(etat);
+  assert.equal(etat.abandons, 0);
+});
+test('virage à angle droit : les deux bouts reculent et la route se courbe', () => {
+  let r = depart();
+  r = construireRoute(r, tirer(r, [0, 0], [0, 120]), TRACE).reseau;
+  r = construireRoute(r, tirer(r, [-120, 0], [0, 120]), TRACE).reseau;
+  const n = Object.values(geometrieReseau(r, ROUTE).noeuds).find(x => x.degre === 2);
+  assert.ok(n.virage && n.recul > 4, `recul ${n.recul}`);
+});

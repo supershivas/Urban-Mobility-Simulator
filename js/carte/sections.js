@@ -2,9 +2,9 @@
 // médiane par bande de circulation (le sens), construits depuis le même modèle
 // (js/section.js) et les mêmes bords (js/geo/decalage.js) que la vue 3D.
 // Pur : les projections sont passées en argument (proj4 dans le jeu). Testé.
-import { decalages } from '../section.js?v=0.9.4';
-import { decalerLigne, contourBande } from '../geo/decalage.js?v=0.9.4';
-import { BANDES } from '../data/bandes.js?v=0.9.4';
+import { decalages } from '../section.js?v=0.9.5';
+import { decalerLigne, contourBande } from '../geo/decalage.js?v=0.9.5';
+import { BANDES } from '../data/bandes.js?v=0.9.5';
 
 /**
  * entrees : [{ ligne (WGS84 [lon, lat]), section }] ; versMetres / versLonLat : projections.

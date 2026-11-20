@@ -12,6 +12,8 @@ export const ROUTE = {
   largeurTraverseeVelo: 2.0, largeurTraverseeVeloDouble: 3.0, // m, traversée cyclable d'un carrefour protégé
   ecartTraversees: 0.6,    // m, entre la traversée cyclable et le passage piéton
   fusionTraversees: 8,     // m, deux passages plus proches n'en font qu'un
+  largeurRefuge: 2.0,      // m, îlot refuge (et zone peinte entre les deux sens)
+  largeurTerrePlein: 3.0,  // m, terre-plein central planté
   sas: 4,                  // m, sas vélo aux feux (zone avancée devant les voitures)
   separateurPiste: 0.5,    // m, filet entre la dernière voie et la piste
   accotement: 0.4,         // m, bordure au-delà de la chaussée
@@ -32,6 +34,16 @@ export const TRACE = {
   branchesMax: 4,          // branches au plus par carrefour
   zone: 560,               // m, demi-côté de la carte constructible
   visee: 14,               // m, distance de visée d'une route sous le pointeur
+};
+
+// Ronds-points (Jérôme, v0.9.5) : rayon extérieur de l'anneau, largeur de chaussée, voies.
+// Ordres de grandeur des guides (CEREMA, SPW) : mini-giratoire 7 à 12 m (îlot franchissable),
+// urbain 12 à 20 m, grand à deux voies 20 à 30 m.
+export const GIRATOIRES = {
+  mini: { rayon: 11, largeur: 6, voies: 1, plante: false },
+  urbain: { rayon: 16, largeur: 6.5, voies: 1, plante: true },
+  grand: { rayon: 24, largeur: 9, voies: 2, plante: true },
+  entree: 3,               // m entre le bord de l'anneau et la traversée cyclable (ou le passage)
 };
 
 export const DEPART = { longueur: 2400 }; // m, la route de départ, d'ouest en est ; ses bouts sont loin dans la brume

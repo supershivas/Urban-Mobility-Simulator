@@ -1,7 +1,7 @@
 // Les images de la carte, dessinées au lancement depuis la palette (aucune
 // ressource distante, aucun sprite) : motifs des bandes et flèches de sens.
 // Un motif double la teinte d'une bande : on ne lit jamais un type par la couleur seule.
-import { BANDES } from '../data/bandes.js?v=0.9.4';
+import { BANDES } from '../data/bandes.js?v=0.9.5';
 
 const PX = 2; // images en double densité (écrans à forte densité)
 

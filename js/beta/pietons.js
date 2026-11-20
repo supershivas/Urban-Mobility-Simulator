@@ -5,7 +5,7 @@
 // Traverser : aux feux, seulement pendant la phase piétonne ; sans feux, le piéton a la
 // priorité, mais il ne s'engage pas devant un véhicule qui ne pourrait plus s'arrêter
 // (roulage.js lui dit si le passage est menacé). Une fois engagé, les véhicules l'attendent.
-import { longueur, pointA, projeterSurLigne } from './reseau.js?v=0.9.4';
+import { longueur, pointA, projeterSurLigne } from './reseau.js?v=0.9.5';
 
 export const creerPietons = rng => ({ pietons: [], prochainPieton: 1, rngPietons: rng });
 
@@ -68,7 +68,7 @@ export function avancerPietons(etat, ctx, P, V, dt, menacee) {
       const [n, i] = p.lien.traversee.split('|'), feux = etat.feux[n];
       const temps = p.L / vitesse;
       const permis = feux ? feux.pietons && feux.resteVert > temps * 0.5 : true;
-      if (!permis || menacee(n, +i)) { restants.push(p); continue; }
+      if (!permis || menacee(n, +i, p.lien.moitie)) { restants.push(p); continue; }
       p.attend = false;
     }
     let pas = vitesse * dt;

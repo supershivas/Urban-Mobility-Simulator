@@ -141,3 +141,9 @@ dialog form { margin-top: calc(var(--pas) * 2); }
   .beta-camera { display: none; }
 }
 .beta-groupe[data-groupe="carrefours"] .beta-groupe-nom { color: var(--jeu-encre); } /* l’ambre seul se lit mal sur blanc */
+
+/* Dix outils (v0.9.5) : sous 1600 px, les noms de groupe s'effacent (la couleur reste) et l'aide de la caméra aussi */
+@media (max-width: 1600px) {
+  .beta-groupe-nom { display: none; }
+  .beta-camera { display: none; }
+}

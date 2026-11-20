@@ -262,6 +262,16 @@ export function basculerVoies(reseau, id, R, T, delta = 1) {
   return changer(reseau, id, { ...t, voies, ...(voies < 2 ? { bus: SANS_BUS } : {}) }, R, T);
 }
 
+// ─── Îlots centraux (v0.9.5) ───────────────────────────────────────────────
+const ILOTS = [null, 'refuges', 'terreplein'];
+/** Îlot central suivant : aucun → refuges piétons → terre-plein planté → aucun. */
+export function basculerIlot(reseau, id, R, T) {
+  const t = reseau.troncons[id];
+  if (!t) return { refus: 'perdu' };
+  const ilot = ILOTS[(ILOTS.indexOf(t.ilot ?? null) + 1) % ILOTS.length];
+  return changer(reseau, id, { ...t, ilot }, R, T);
+}
+
 // ─── Voies bus (v0.9.4) ────────────────────────────────────────────────────
 // `bus = { g, d }` (vu de a vers b) : la voie la plus à droite du sens qui roule de ce côté
 // (côté d : sens +1 ; côté g : sens −1) est réservée aux bus.
@@ -310,9 +320,11 @@ export function basculerPisteDouble(reseau, id, cote, R, T) {
 
 /** Demi-largeurs de la chaussée, pistes comprises (même calcul que geometrie.js). */
 export function demiLargeurs(t, R) {
-  const voiture = t.voies * R.largeurVoie, x0 = voiture + R.separateurPiste;
+  // Un îlot central écarte les deux sens : refuges (zone peinte, îlots aux passages) ou terre-plein planté
+  const mediane = t.ilot === 'refuges' ? R.largeurRefuge / 2 : t.ilot === 'terreplein' ? R.largeurTerrePlein / 2 : 0;
+  const voiture = mediane + t.voies * R.largeurVoie, x0 = voiture + R.separateurPiste;
   const cote = p => (p === 'simple' ? x0 + R.largeurPiste : p === 'double' ? x0 + R.largeurPisteDouble : voiture);
-  return { g: cote(t.pistes.g), d: cote(t.pistes.d), voiture, x0 };
+  return { g: cote(t.pistes.g), d: cote(t.pistes.d), voiture, x0, mediane };
 }
 
 /**
@@ -354,6 +366,7 @@ const avecNoeud = (reseau, id, n) => ({ reseau: { ...reseau, noeuds: { ...reseau
 export function basculerFeux(reseau, idNoeud, F) {
   const n = reseau.noeuds[idNoeud];
   if (!n) return { refus: 'perdu' };
+  if (n.giratoire) return { refus: 'feuxGiratoire' };
   if (n.feux) { const { feux, ...reste } = n; return avecNoeud(reseau, idNoeud, reste); }
   const k = branches(reseau, idNoeud).length;
   if (k < 3) return { refus: 'pasCarrefour' };
@@ -367,6 +380,17 @@ export function reglerFeu(reseau, idNoeud, phase, delta, F) {
   const borne = v => Math.max(F.min, Math.min(F.max, v + delta));
   const nouveaux = phase === 'pietons' ? { ...feux, pietons: borne(feux.pietons) } : { ...feux, verts: feux.verts.map((v, i) => (i === phase ? borne(v) : v)) };
   return avecNoeud(reseau, idNoeud, { ...reseau.noeuds[idNoeud], feux: nouveaux });
+}
+
+const TAILLES = [undefined, 'mini', 'urbain', 'grand'];
+/** Rond-point suivant sur un carrefour : aucun → mini → urbain → grand → aucun. Il remplace les feux et les mouvements choisis. */
+export function basculerGiratoire(reseau, idNoeud) {
+  const n = reseau.noeuds[idNoeud];
+  if (!n) return { refus: 'perdu' };
+  if (branches(reseau, idNoeud).length < 3) return { refus: 'pasCarrefour' };
+  const giratoire = TAILLES[(TAILLES.indexOf(n.giratoire) + 1) % TAILLES.length];
+  const { feux, mouvements, giratoire: _g, ...reste } = n;
+  return avecNoeud(reseau, idNoeud, giratoire ? { ...reste, giratoire } : reste);
 }
 
 /** Le carrefour le plus proche du point p, à moins de `rayon` m (trois branches au moins). */
@@ -398,8 +422,8 @@ function nettoyerNoeud(reseau, idNoeud) {
   if (!reseau.noeuds[idNoeud]) return reseau;
   const br = branches(reseau, idNoeud);
   if (br.length === 0) { const noeuds = { ...reseau.noeuds }; delete noeuds[idNoeud]; return { ...reseau, noeuds }; }
-  if (br.length < 3 && reseau.noeuds[idNoeud].feux) { // plus un carrefour : plus de feux
-    const { feux, ...n } = reseau.noeuds[idNoeud];
+  if (br.length < 3 && (reseau.noeuds[idNoeud].feux || reseau.noeuds[idNoeud].giratoire || reseau.noeuds[idNoeud].mouvements)) { // plus un carrefour : plus de feux ni de rond-point
+    const { feux, giratoire, mouvements, ...n } = reseau.noeuds[idNoeud];
     reseau = { ...reseau, noeuds: { ...reseau.noeuds, [idNoeud]: n } };
   }
   if (br.length !== 2 || br[0].troncon === br[1].troncon || reseau.noeuds[idNoeud].bord) return reseau;
@@ -407,7 +431,7 @@ function nettoyerNoeud(reseau, idNoeud) {
   // t1 parcouru vers le nœud, puis t2 depuis le nœud ; les côtés des pistes s'échangent quand on retourne un tronçon
   const pistes = b1.sens !== -1 ? retournees(t1.pistes) : t1.pistes;
   const bus = b1.sens !== -1 ? retournees(busDe(t1)) : busDe(t1), bus2 = b2.sens !== 1 ? retournees(busDe(t2)) : busDe(t2);
-  if (t1.voies !== t2.voies || !memesPistes(pistes, b2.sens !== 1 ? retournees(t2.pistes) : t2.pistes) || !memesPistes(bus, bus2)) {
+  if (t1.voies !== t2.voies || (t1.ilot ?? null) !== (t2.ilot ?? null) || !memesPistes(pistes, b2.sens !== 1 ? retournees(t2.pistes) : t2.pistes) || !memesPistes(bus, bus2)) {
     if (reseau.noeuds[idNoeud].feux) { const { feux, ...n } = reseau.noeuds[idNoeud]; return { ...reseau, noeuds: { ...reseau.noeuds, [idNoeud]: n } }; }
     return reseau;
   }
@@ -435,6 +459,7 @@ export function relireReseau(d) {
     }
     delete t.velo; delete t.piste;
     for (const k of ['g', 'd']) if (!['simple', 'double'].includes(t.pistes[k])) t.pistes[k] = null;
+    if (!['refuges', 'terreplein'].includes(t.ilot)) delete t.ilot;
     if (t.voies >= 2 && t.bus) t.bus = { g: !!t.bus.g, d: !!t.bus.d }; else delete t.bus;
   }
   return { v: 1, suivant: d.suivant || 1, noeuds: d.noeuds, troncons: d.troncons };

@@ -2,11 +2,12 @@
 // cyclables, carrefours, véhicules en blocs, et l'aperçu de la route en projet.
 // Ce module dessine et vise : il ne modifie jamais l'état (main.js décide).
 // Repère : x est, y nord (mètres) → scène X = x, Y = haut, Z = −y.
-import * as THREE from '../../vendor/three/three.module.js?v=0.9.4';
-import { pose, metresParPixel } from '../scene/camera.js?v=0.9.4';
-import { decalerLigne, sansDoublons } from '../geo/decalage.js?v=0.9.4';
-import { longueur, pointA, sousLigne, busDe } from './reseau.js?v=0.9.4';
-import { liaisonsVelo } from './geometrie.js?v=0.9.4';
+import * as THREE from '../../vendor/three/three.module.js?v=0.9.5';
+import { pose, metresParPixel } from '../scene/camera.js?v=0.9.5';
+import { decalerLigne, sansDoublons } from '../geo/decalage.js?v=0.9.5';
+import { longueur, pointA, sousLigne, busDe } from './reseau.js?v=0.9.5';
+import { liaisonsVelo, largeurs } from './geometrie.js?v=0.9.5';
+import { mouvementsDu, fleches, cle as cleVoie } from './mouvements.js?v=0.9.5';
 
 const COUCHE = { sol: 7, limite: 6, trottoir: 5, bordure: 4, asphalte: 3, bus: 2.6, ilot: 2.3, velo: 2, marquage: 1, picto: 0, surlignage: -1, apercu: -2, ombre: -3 };
 
@@ -47,6 +48,25 @@ function textureTexte(texte, couleur) {
   return t;
 }
 
+/** Une flèche au sol (haut du canvas = sens de marche) : toutdroit, gauche, droite, ou leurs combinaisons. */
+function textureFleche(cle, couleur) {
+  const c = document.createElement('canvas');
+  c.width = 64; c.height = 192;
+  const g = c.getContext('2d');
+  g.strokeStyle = couleur; g.fillStyle = couleur; g.lineWidth = 9; g.lineCap = 'butt'; g.lineJoin = 'miter';
+  const pointe = (x, y, ang) => { g.save(); g.translate(x, y); g.rotate(ang); g.beginPath(); g.moveTo(0, -16); g.lineTo(14, 10); g.lineTo(-14, 10); g.closePath(); g.fill(); g.restore(); };
+  g.beginPath(); g.moveTo(32, 190); g.lineTo(32, 110); g.stroke(); // le fût
+  for (const d of cle.split('+')) {
+    if (d === 'toutdroit') { g.beginPath(); g.moveTo(32, 112); g.lineTo(32, 26); g.stroke(); pointe(32, 20, 0); }
+    if (d === 'gauche') { g.beginPath(); g.moveTo(32, 120); g.quadraticCurveTo(32, 78, 14, 70); g.stroke(); pointe(10, 68, -Math.PI / 2.4); }
+    if (d === 'droite') { g.beginPath(); g.moveTo(32, 120); g.quadraticCurveTo(32, 78, 50, 70); g.stroke(); pointe(54, 68, Math.PI / 2.4); }
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  return t;
+}
+
 /** Le picto vélo, dessiné une fois dans un canvas (blanc sur transparent). */
 function textureVelo(couleur) {
   const c = document.createElement('canvas');
@@ -79,7 +99,7 @@ export function creerSceneBeta({ conteneur, P, R, C }) {
   scene.fog = new THREE.Fog(P.sol, 400, 1500);
   const camera = new THREE.PerspectiveCamera(C.fov, 1, 1, 6000);
 
-  const aplat = (couche, plus = {}) => new THREE.MeshBasicMaterial({ polygonOffset: true, polygonOffsetFactor: COUCHE[couche], polygonOffsetUnits: COUCHE[couche] * 4, ...plus });
+  const aplat = (couche, plus = {}) => new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: COUCHE[couche], polygonOffsetUnits: COUCHE[couche] * 4, ...plus });
   const maillage = (positions, materiau) => {
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
@@ -117,6 +137,14 @@ export function creerSceneBeta({ conteneur, P, R, C }) {
     texteBus: aplat('picto', { map: textureTexte('BUS', P.marquage), transparent: true, depthWrite: false }),
     bus: aplat('bus', { color: P.voieBus }),
     ilot: aplat('ilot', { color: P.trottoir }),
+    plante: aplat('picto', { color: P.plante }),
+    refuge: aplat('surlignage', { color: P.trottoir }),
+    ilotCentral: aplat('ilot', { color: P.bordure }),
+    planteCentrale: aplat('velo', { color: P.plante }),
+    apron: aplat('velo', { color: P.trottoir }),
+    mouvement: aplat('apercu', { color: P.apercu, transparent: true, opacity: 0.85, depthWrite: false }),
+    mouvementRefus: aplat('apercu', { color: P.refus, transparent: true, opacity: 0.85, depthWrite: false }),
+    poigneeEntree: aplat('apercu', { color: P.marquage, depthWrite: false }),
   };
 
   const groupeReseau = new THREE.Group(), groupeSurvol = new THREE.Group();
@@ -134,7 +162,7 @@ export function creerSceneBeta({ conteneur, P, R, C }) {
   /** Redessine tout le réseau depuis sa géométrie (geometrie.js). */
   function majReseau(reseau, geo) {
     vider(groupeReseau);
-    const trot = [], bord = [], asph = [], velo = [], marq = [];
+    const trot = [], bord = [], asph = [], velo = [], marq = [], plante = [], refuge = [], ilotC = [], planteC = [], apron = [];
     const Lv = R.largeurVoie, w = 0.15, A = R.accotement, Tw = R.largeurTrottoir, Lp = R.largeurTraversee;
     const bus = [], ilots = [], textesBus = [], sasPictos = [];
     const brancheDe = (n, id, sens) => geo.noeuds[n].branches.find(x => x.troncon === id && x.sens === sens);
@@ -144,31 +172,41 @@ export function creerSceneBeta({ conteneur, P, R, C }) {
       ruban(bord, axe, g.g + A, -(g.d + A));
       ruban(asph, axe, g.g, -g.d);
       // Les lignes de voie s'arrêtent à la ligne d'arrêt : rien ne se peint sur les passages ni dans le sas
-      const coupe = (n, sens) => (geo.noeuds[n].traversees ? brancheDe(n, id, sens).arret - 0.2 : 0);
+      const coupe = (n, sens) => { const b = brancheDe(n, id, sens); return geo.noeuds[n].traversees ? Math.max(b.arret, b.arretPassage) - 0.2 : 0; };
       const c0 = Math.min(coupe(t.a, 1), La / 2), c1 = Math.min(coupe(t.b, -1), La / 2);
       const lignes = c0 + c1 < La - 1 ? sousLigne(axe, c0, La - c1) : null;
+      const m = largeurs(t, R).mediane;
       if (lignes) {
-        // Axe : tirets sur une 2 voies, ligne continue doublée à partir de 2 × 2 (on ne dépasse pas)
-        if (t.voies === 1) tirets(marq, lignes, 0, w, 3, 6);
+        // Axe : tirets sur une 2 voies, ligne continue doublée à partir de 2 × 2 (on ne dépasse pas) ;
+        // avec un îlot central, une ligne continue de chaque côté de l'îlot
+        if (m) for (const sg of [1, -1]) ruban(marq, lignes, sg * (m - 0.05) + w / 2, sg * (m - 0.05) - w / 2);
+        else if (t.voies === 1) tirets(marq, lignes, 0, w, 3, 6);
         else { ruban(marq, lignes, 0.12 + w / 2, 0.12 - w / 2); ruban(marq, lignes, -0.12 + w / 2, -0.12 - w / 2); }
         for (let k = 1; k < t.voies; k++) for (const sg of [1, -1]) {
           // Une voie bus se sépare des autres par une ligne continue large
-          const versBus = busDe(t)[sg === 1 ? 'g' : 'd'] && k === t.voies - 1;
-          if (versBus) ruban(marq, lignes, sg * k * Lv + 0.15, sg * k * Lv - 0.15); else tirets(marq, lignes, sg * k * Lv, w, 3, 6);
+          const versBus = busDe(t)[sg === 1 ? 'g' : 'd'] && k === t.voies - 1, o = sg * (m + k * Lv);
+          if (versBus) ruban(marq, lignes, o + 0.15, o - 0.15); else tirets(marq, lignes, o, w, 3, 6);
         }
         // Rives : la ligne au bord de la chaussée automobile
-        for (const sg of [1, -1]) ruban(marq, lignes, sg * (t.voies * Lv - 0.1) + w / 2, sg * (t.voies * Lv - 0.1) - w / 2);
+        for (const sg of [1, -1]) ruban(marq, lignes, sg * (m + t.voies * Lv - 0.1) + w / 2, sg * (m + t.voies * Lv - 0.1) - w / 2);
+        // L'îlot central, entre les lignes d'arrêt : zone peinte hachurée (refuges) ou terre-plein planté et bordé
+        if (t.ilot === 'refuges') {
+          const Lm = longueur(lignes);
+          for (let s0 = 1; s0 + 0.5 < Lm; s0 += 2.5) { const seg = sousLigne(lignes, s0, s0 + 0.5); ruban(marq, seg, m - 0.2, -m + 0.2); }
+        } else if (t.ilot === 'terreplein') {
+          ruban(bord, lignes, m - 0.1, -m + 0.1); ruban(plante, sousLigne(lignes, 0.3, Math.max(0.4, longueur(lignes) - 0.3)), m - 0.4, -m + 0.4);
+        }
       }
       // Voies bus : la voie la plus à droite de chaque sens, teintée, avec « BUS » au sol
       for (const [k, sg, sens] of [['g', 1, -1], ['d', -1, 1]]) {
         if (!busDe(t)[k]) continue;
-        const x1 = t.voies * Lv, x0 = x1 - Lv;
+        const x1 = m + t.voies * Lv, x0 = x1 - Lv;
         ruban(bus, axe, sg === 1 ? x1 : -x0, sg === 1 ? x0 : -x1);
         const ligne = g.voies[sens][t.voies - 1], L = longueur(ligne);
         for (let s = 15; s < L - 10; s += 45) textesBus.push(pointA(ligne, s));
       }
       // Pistes, de chaque côté : simple, ou à double sens (tirets blancs au milieu)
-      const x0 = t.voies * Lv + R.separateurPiste;
+      const x0 = largeurs(t, R).x0;
       for (const [k, sg] of [['g', 1], ['d', -1]]) {
         const p = t.pistes[k];
         if (!p) continue;
@@ -184,12 +222,34 @@ export function creerSceneBeta({ conteneur, P, R, C }) {
         // Carrefour protégé : la chaussée se resserre (zone et amorces), les îlots de coin sont du trottoir
         eventail(asph, n.zone); eventail(bord, agrandir(n.zone, n.p, A)); eventail(trot, agrandir(n.zoneTotale, n.p, A + Tw));
         for (const q of n.amorces || []) { eventail(asph, q); eventail(bord, agrandir(q, [(q[0][0] + q[3][0]) / 2, (q[0][1] + q[3][1]) / 2], A)); }
+      } else if (n.virage) {
+        // Un virage entre deux tronçons : la route suit une courbe, marquages compris
+        const v = n.virage, t0 = reseau.troncons[v.troncon], l0 = largeurs(t0, R), m = l0.mediane, ax = v.axe;
+        ruban(trot, ax, v.g + A + Tw, -(v.d + A + Tw)); ruban(bord, ax, v.g + A, -(v.d + A)); ruban(asph, ax, v.g, -v.d);
+        if (m) for (const sg of [1, -1]) ruban(marq, ax, sg * (m - 0.05) + w / 2, sg * (m - 0.05) - w / 2);
+        else if (t0.voies === 1) tirets(marq, ax, 0, w, 3, 6);
+        else { ruban(marq, ax, 0.12 + w / 2, 0.12 - w / 2); ruban(marq, ax, -0.12 + w / 2, -0.12 - w / 2); }
+        for (let k = 1; k < t0.voies; k++) for (const sg of [1, -1]) tirets(marq, ax, sg * (m + k * Lv), w, 3, 6);
+        for (const sg of [1, -1]) ruban(marq, ax, sg * (m + t0.voies * Lv - 0.1) + w / 2, sg * (m + t0.voies * Lv - 0.1) - w / 2);
+        const [b0, b1] = n.branches;
+        for (const [p, sg] of [[b0.pisteD || b1.pisteG, 1], [b0.pisteG || b1.pisteD, -1]]) {
+          if (!p) continue;
+          const l = p === 'double' ? R.largeurPisteDouble : R.largeurPiste;
+          ruban(velo, ax, sg === 1 ? l0.x0 + l : -l0.x0, sg === 1 ? l0.x0 : -(l0.x0 + l));
+        }
       } else if (n.degre === 1 && !n.bord) {
         // Impasse : un bout arrondi
         const demi = geo.troncons[n.branches[0].troncon].demi;
         eventail(asph, disque(n.p, demi)); eventail(bord, disque(n.p, demi + A)); eventail(trot, disque(n.p, demi + A + Tw));
       }
       if (!n.traversees) continue;
+      if (n.giratoire) {
+        // Rond-point : l'îlot central (planté, ou franchissable pour un mini-giratoire), la voie intérieure en tirets
+        const G = n.giratoire;
+        eventail(ilotC, disque(n.p, G.interieur, 48));
+        eventail(G.plante ? planteC : apron, disque(n.p, G.interieur - (G.plante ? 0.6 : 1.2), 48));
+        if (G.voies === 2) { const r = G.rayon - (G.rayon - G.interieur) / 2, c = disque(n.p, r, 64); tirets(marq, [...c, c[0]], 0, w, 3, 3); }
+      }
       if (n.anneau) {
         // Carrefour protégé : l'anneau cyclable (coins autour d'un îlot, traversées bordées de tirets)
         for (const c of n.anneau.coins) {
@@ -210,22 +270,32 @@ export function creerSceneBeta({ conteneur, P, R, C }) {
         }
       }
       for (const b of n.branches) {
-        const t = reseau.troncons[b.troncon], V = t.voies * Lv;
+        const t = reseau.troncons[b.troncon], lt = largeurs(t, R), V = lt.voiture, m = lt.mediane;
         // Passage piéton (sauf s'il a fusionné avec celui d'à côté) : des bandes blanches sur la chaussée automobile
         // seulement (la piste continue en vert à travers le passage, comme dans la réalité)
         if (b.passage) {
           const bande = sousLigne(b.ext, b.z0 + 0.15, b.z0 + Lp - 0.15);
-          for (let o = -V + 0.25; o + 0.5 <= V - 0.1; o += 1) ruban(marq, bande, o + 0.5, o);
+          for (let o = -V + 0.25; o + 0.5 <= V - 0.1; o += 1) if (o + 0.5 <= -m || o >= m) ruban(marq, bande, o + 0.5, o);
+          // Le refuge : un îlot surélevé au droit du passage, un peu plus long que lui
+          if (m) { const r = sousLigne(b.ext, Math.max(0.2, b.z0 - 0.8), b.z0 + Lp + 0.8); ruban(bord, r, m, -m); ruban(refuge, r, m - 0.25, -m + 0.25); }
+        }
+        // Rond-point : « cédez le passage » à l'entrée de l'anneau, des dents de requin sur les files qui arrivent
+        if (n.giratoire) {
+          const q = pointA(b.ext, Math.max(0.3, b.arret - 0.4)), nrm = [-q.dir[1], q.dir[0]];
+          for (let o = m + 0.3; o + 0.5 <= V - 0.1; o += 0.9) {
+            const base = k => [q.p[0] + nrm[0] * k, q.p[1] + nrm[1] * k], pointe = [q.p[0] + nrm[0] * (o + 0.25) + q.dir[0] * 0.7, q.p[1] + nrm[1] * (o + 0.25) + q.dir[1] * 0.7];
+            eventail(marq, [base(o), base(o + 0.5), pointe]);
+          }
         }
         // Ligne d'arrêt des files qui arrivent (à gauche de la branche vue depuis le nœud)
         const arretVelo = b.arret - b.sas;
-        ruban(marq, sousLigne(b.ext, arretVelo - 0.2, arretVelo + 0.2), Math.max(V - 0.1, b.gauche - 0.1), 0);
+        if (!n.giratoire) ruban(marq, sousLigne(b.ext, arretVelo - 0.2, arretVelo + 0.2), Math.max(V - 0.1, b.gauche - 0.1), m);
         if (b.sas) {
           // Sas vélo : la ligne des voitures recule ; entre les deux, une zone verte et un vélo par voie
-          ruban(marq, sousLigne(b.ext, b.arret - 0.2, b.arret + 0.2), V - 0.1, 0);
-          ruban(velo, sousLigne(b.ext, arretVelo + 0.2, b.arret - 0.2), V - 0.15, 0.15);
+          ruban(marq, sousLigne(b.ext, b.arret - 0.2, b.arret + 0.2), V - 0.1, m);
+          ruban(velo, sousLigne(b.ext, arretVelo + 0.2, b.arret - 0.2), V - 0.15, m + 0.15);
           for (let k = 0; k < t.voies; k++) {
-            const q = pointA(b.ext, (arretVelo + b.arret) / 2), o = (k + 0.5) * Lv;
+            const q = pointA(b.ext, (arretVelo + b.arret) / 2), o = m + (k + 0.5) * Lv;
             sasPictos.push({ p: [q.p[0] - q.dir[1] * o, q.p[1] + q.dir[0] * o], dir: [-q.dir[0], -q.dir[1]] });
           }
         }
@@ -233,7 +303,25 @@ export function creerSceneBeta({ conteneur, P, R, C }) {
     }
     const ilotsPos = [];
     for (const poly of ilots) eventail(ilotsPos, poly);
-    groupeReseau.add(maillage(trot, materiaux.trottoir), maillage(bord, materiaux.bordure), maillage(asph, materiaux.asphalte), maillage(bus, materiaux.bus), maillage(ilotsPos, materiaux.ilot), maillage(velo, materiaux.velo), maillage(marq, materiaux.marquage));
+    groupeReseau.add(maillage(trot, materiaux.trottoir), maillage(bord, materiaux.bordure), maillage(asph, materiaux.asphalte), maillage(bus, materiaux.bus), maillage(ilotsPos, materiaux.ilot), maillage(velo, materiaux.velo), maillage(marq, materiaux.marquage), maillage(plante, materiaux.plante), maillage(refuge, materiaux.refuge), maillage(ilotC, materiaux.ilotCentral), maillage(planteC, materiaux.planteCentrale), maillage(apron, materiaux.apron));
+    // Flèches au sol : sur chaque voie qui arrive à un carrefour, les directions qu'elle permet
+    const parFleche = {};
+    for (const [id, n] of Object.entries(geo.noeuds)) {
+      if (n.degre < 3 || n.giratoire) continue;
+      const mv = mouvementsDu(reseau, n, id);
+      for (const b of n.branches) {
+        const t = reseau.troncons[b.troncon], m = largeurs(t, R).mediane, ext = b.ext, L = longueur(ext), s0 = Math.max(b.arret, b.arretPassage) + 6;
+        if (s0 > L - 3) continue;
+        const q = pointA(ext, s0), nrm = [-q.dir[1], q.dir[0]];
+        for (let k = 0; k < t.voies; k++) {
+          const dirs = fleches(n, mv, cleVoie({ troncon: b.troncon, sens: -b.sens, voie: k }));
+          if (!dirs.length) continue;
+          const o = m + (k + 0.5) * Lv;
+          (parFleche[dirs.join('+')] ??= []).push({ p: [q.p[0] + nrm[0] * o, q.p[1] + nrm[1] * o], dir: [-q.dir[0], -q.dir[1]] });
+        }
+      }
+    }
+    for (const [cle, liste] of Object.entries(parFleche)) poser(liste, materiauFleche(cle), 1.6, 4.8);
     // Pictos vélo, tous les 30 m, dans le sens de marche de chaque file (deux par piste à double sens)
     const pictos = [];
     for (const g of Object.values(geo.troncons)) if (g.pistes) for (const sens of [1, -1]) for (const l of g.pistes[sens]) {
@@ -307,6 +395,26 @@ export function creerSceneBeta({ conteneur, P, R, C }) {
     lampes.count = nl;
     lampes.instanceMatrix.needsUpdate = true;
     if (lampes.instanceColor) lampes.instanceColor.needsUpdate = true;
+    demanderRendu();
+  }
+
+  const fleches_ = {};
+  const materiauFleche = cle => (fleches_[cle] ??= aplat('picto', { map: textureFleche(cle, P.marquage), transparent: true, depthWrite: false }));
+
+  // ─── Vue « Mouvements » : les liaisons voie à voie du carrefour choisi, et les poignées à tirer ──
+  const groupeMouvements = new THREE.Group();
+  scene.add(groupeMouvements);
+  /** liens : [{ ligne, survol }], entrees / sorties : [p], apercu : { ligne, refus } | null. */
+  function majMouvements(vue) {
+    vider(groupeMouvements);
+    if (!vue) { demanderRendu(); return; }
+    const ok = [], surv = [];
+    for (const l of vue.liens) ruban(l.survol ? surv : ok, l.ligne, l.survol ? 0.35 : 0.2, l.survol ? -0.35 : -0.2);
+    groupeMouvements.add(maillage(ok, materiaux.mouvement), maillage(surv, materiaux.mouvementRefus));
+    if (vue.apercu) { const a = []; ruban(a, vue.apercu.ligne, 0.3, -0.3); groupeMouvements.add(maillage(a, vue.apercu.refus ? materiaux.mouvementRefus : materiaux.mouvement)); }
+    const poignee = (liste, mat, r) => { const out = []; for (const p of liste) eventail(out, disque(p, r, 16)); groupeMouvements.add(maillage(out, mat)); };
+    poignee(vue.sorties, materiaux.anneau, 0.7);
+    poignee(vue.entrees, materiaux.poigneeEntree, 0.8);
     demanderRendu();
   }
 
@@ -482,7 +590,7 @@ export function creerSceneBeta({ conteneur, P, R, C }) {
   }
 
   return {
-    canvas, majReseau, majSurvol, majVehicules, majPietons, majFeux, dessinerLimite, appliquerCamera, sousPointeur, versEcran, rendre, demanderRendu,
+    canvas, majReseau, majSurvol, majVehicules, majPietons, majFeux, majMouvements, dessinerLimite, appliquerCamera, sousPointeur, versEcran, rendre, demanderRendu,
     get etatCamera() { return etatCamera; },
     get taille() { return [largeur, hauteur]; },
     metresParPixel: () => metresParPixel(etatCamera, hauteur, C.fov),

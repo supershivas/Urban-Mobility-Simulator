@@ -5,7 +5,8 @@
 //  3. l'outil « Doubler » passe un tronçon à 2 × 2 voies, l'outil « Piste cyclable » lui ajoute ses pistes ;
 //  4. des voitures roulent sur la route nouvelle, des vélos sur la piste ;
 //  5. piste à double sens, feux (panneau, durées), piétons ;
-//  6. l'outil « Démolir » retire un tronçon (ses carrefours se referment), refuse celui qui mène au bord.
+//  6. îlot central, vue Mouvements (glisser-déposer d'une liaison), rond-point ;
+//  7. l'outil « Démolir » retire un tronçon (ses carrefours se referment), refuse celui qui mène au bord.
 // Captures dans captures/beta/ (ou --sortie <dossier>).
 //   node outils/critere-beta.mjs [--sortie dossier]
 import { mkdirSync } from 'node:fs';
@@ -29,7 +30,7 @@ await page.waitForFunction(() => window.__jeu && document.getElementById('charge
 verifier(true, `prête en ${Date.now() - t0} ms`);
 const etat = () => page.evaluate(() => window.__jeu.state());
 const ecran = (x, y) => page.evaluate(([x, y]) => window.__jeu.ecran(x, y), [x, y]);
-const vue = await page.$('#vue').then(e => e.boundingBox());
+const vue = await page.$('#vue').then(e => e.boundingBox()), vueBox = vue;
 async function souris(x, y, cliquer = true) {
   const [px, py] = await ecran(x, y);
   await page.mouse.move(vue.x + px, vue.y + py, { steps: 4 });
@@ -140,6 +141,47 @@ await souris(-250, 0, false);
 const refusBord = await page.textContent('#etiquette');
 await souris(-250, 0);
 verifier((await etat()).troncons === e.troncons && /bord|edge/.test(refusBord), `le tronçon du bord reste (« ${refusBord} »)`);
+
+// 7. Îlot central (8), rond-point (9), mouvements (0) : à la souris
+await page.evaluate(() => window.__jeu.camera({ cible: [-250, 0], distance: 120, azimut: 0.35, inclinaison: 0.6 }));
+await page.waitForTimeout(200);
+await page.keyboard.press('8');
+await souris(-300, 0);
+let res = await page.evaluate(() => window.__jeu.reseau());
+const ilot = Object.values(res.troncons).find(t => t.points.some(p => p[0] < -1000))?.ilot;
+verifier(ilot === 'refuges', `îlot central : ${ilot}`);
+const second = await page.evaluate(() => { const r = window.__jeu.reseau(); return Object.entries(r.noeuds).filter(([id]) => Object.values(r.troncons).filter(t => t.a === id || t.b === id).length >= 3).map(([, n]) => [n.x, n.y]); });
+const [gx, gy] = second.find(p => Math.abs(p[0]) > 50) ?? second[0];
+await page.evaluate(([x, y]) => window.__jeu.camera({ cible: [x, y], distance: 90 }), [gx, gy]);
+await page.waitForTimeout(200);
+await page.keyboard.press('0');
+await souris(gx, gy);
+const vueM = await page.evaluate(() => window.__jeu.vueMouvements());
+verifier(vueM && vueM.liens > 0, `vue Mouvements : ${vueM?.liens} liaisons, ${vueM?.entrees.length} entrées`);
+// Tirer une liaison de la première entrée vers une sortie qu'elle n'a pas encore
+const avantLiens = vueM.liens;
+const [ex, ey] = vueM.entrees[0].p;
+const cible = vueM.sorties.find(s => Math.hypot(s.p[0] - ex, s.p[1] - ey) > 4);
+const [px, py] = await ecran(ex, ey), [qx, qy] = await ecran(...cible.p);
+await page.mouse.move(vueBox.x + px, vueBox.y + py);
+await page.mouse.down();
+await page.mouse.move(vueBox.x + (px + qx) / 2, vueBox.y + (py + qy) / 2, { steps: 5 });
+await page.mouse.move(vueBox.x + qx, vueBox.y + qy, { steps: 5 });
+await page.mouse.up();
+const apres = await page.evaluate(() => window.__jeu.vueMouvements());
+verifier(apres.liens !== avantLiens, `glisser-déposer : ${avantLiens} → ${apres.liens} liaisons`);
+await page.screenshot({ path: `${sortie}/8-mouvements.png` });
+await page.keyboard.press('Escape');
+await page.keyboard.press('9');
+await souris(gx, gy);
+await souris(gx, gy);
+res = await page.evaluate(() => window.__jeu.reseau());
+const gir = Object.values(res.noeuds).find(n => n.giratoire)?.giratoire;
+verifier(gir === 'urbain', `rond-point : ${gir}`);
+await page.evaluate(() => window.__jeu.timeScale(4));
+await page.waitForTimeout(5000);
+await page.evaluate(() => window.__jeu.timeScale(1));
+await page.screenshot({ path: `${sortie}/9-giratoire.png` });
 
 verifier(!erreurs.length, erreurs.length ? `erreurs : ${erreurs.join(' | ')}` : 'aucune erreur dans la console');
 await navigateur.close();

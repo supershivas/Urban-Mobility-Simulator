@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.5 — 2026-11-20
+- Bêta : ronds-points en trois tailles (mini, urbain, grand à deux voies) — on cède à qui tourne, la piste cyclable fait le tour en cercle
+- Bêta : une flèche au sol sur chaque voie, et une vue Mouvements pour tirer ou couper les liaisons voie à voie ; les voitures les suivent
+- Bêta : îlots centraux (refuges où l'on traverse en deux fois, ou terre-plein planté) ; les virages à angle droit se courbent
+
 ## 0.9.4 — 2026-11-20
 - Bêta : carrefours protégés pour les cyclistes — la chaussée se resserre, un îlot à chaque coin, la piste fait le tour et traverse chaque branche (à double sens quand une piste à double sens y arrive)
 - Bêta : des bus et un outil Voie bus (la voie de droite d'un sens, interdite aux voitures) ; aux feux, un sas vélo devant les voitures
