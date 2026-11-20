@@ -3,8 +3,8 @@
 // bande choisie et le message du dernier refus. Ce module dessine et écoute :
 // il ne modifie jamais la section, il demande à main.js (surOperation…), qui
 // applique les règles de js/section.js et tient l'historique.
-import { BANDES, SENS, LARGEURS } from './data/bandes.js?v=0.9.3';
-import { libre } from './section.js?v=0.9.3';
+import { BANDES, SENS, LARGEURS } from './data/bandes.js?v=0.9.4';
+import { libre } from './section.js?v=0.9.4';
 
 /**
  * racine : l'élément du bandeau ; P : palette ; t, lang : textes.

@@ -4,19 +4,19 @@
 // (pistes de chaque côté, piste à double sens), carrefours (feux et leurs durées).
 // Cycle de vie, commandes, sauvegarde.
 // Les règles sont dans reseau.js et roulage.js (purs ; jamais « trafic.js » : les bloqueurs de publicités le refusent) ; le dessin dans scene.js.
-import { createStore, autosave } from '../lib/save.js?v=0.9.3';
-import { createI18n } from '../lib/i18n.js?v=0.9.3';
-import { createLoop } from '../lib/loop.js?v=0.9.3';
-import { startUpdateCheck, loadVersion } from '../lib/app-update.js?v=0.9.3';
-import { creerHistorique } from '../historique.js?v=0.9.3';
-import { ROLES, PALETTE_BETA } from '../palette.js?v=0.9.3';
-import { contraindre, deplacer, tourner, zoomer } from '../scene/camera.js?v=0.9.3';
-import { TEXTES_BETA } from './textes.js?v=0.9.3';
-import { ROUTE, TRACE, DEPART, VEHICULES, TRAFIC, CAMERA, FEUX, PIETONS } from './donnees.js?v=0.9.3';
-import { reseauDepart, relireReseau, viser, accroche, projetRoute, construireRoute, basculerVoies, basculerVelo, demolir, basculerPisteDouble, coteDe, basculerFeux, reglerFeu, feuxDe, viserCarrefour } from './reseau.js?v=0.9.3';
-import { posePieton } from './pietons.js?v=0.9.3';
-import { preparerTrafic, creerTrafic, avancer, reconcilier, poseVehicule, compter } from './roulage.js?v=0.9.3';
-import { creerSceneBeta } from './scene.js?v=0.9.3';
+import { createStore, autosave } from '../lib/save.js?v=0.9.4';
+import { createI18n } from '../lib/i18n.js?v=0.9.4';
+import { createLoop } from '../lib/loop.js?v=0.9.4';
+import { startUpdateCheck, loadVersion } from '../lib/app-update.js?v=0.9.4';
+import { creerHistorique } from '../historique.js?v=0.9.4';
+import { ROLES, PALETTE_BETA } from '../palette.js?v=0.9.4';
+import { contraindre, deplacer, tourner, zoomer } from '../scene/camera.js?v=0.9.4';
+import { TEXTES_BETA } from './textes.js?v=0.9.4';
+import { ROUTE, TRACE, DEPART, VEHICULES, TRAFIC, CAMERA, FEUX, PIETONS } from './donnees.js?v=0.9.4';
+import { reseauDepart, relireReseau, viser, accroche, projetRoute, construireRoute, basculerVoies, basculerVelo, demolir, basculerPisteDouble, coteDe, basculerFeux, reglerFeu, feuxDe, viserCarrefour, basculerBus, busDe } from './reseau.js?v=0.9.4';
+import { posePieton } from './pietons.js?v=0.9.4';
+import { preparerTrafic, creerTrafic, avancer, reconcilier, poseVehicule, compter } from './roulage.js?v=0.9.4';
+import { creerSceneBeta } from './scene.js?v=0.9.4';
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -26,6 +26,7 @@ for (const [role, couleur] of Object.entries(ROLES)) document.documentElement.st
 for (const k of ['sol', 'velo', 'refus', 'apercu']) document.documentElement.style.setProperty(`--beta-${k}`, PALETTE_BETA[k]);
 document.documentElement.style.setProperty('--beta-feux', PALETTE_BETA.feuOrange);
 document.documentElement.style.setProperty('--beta-feuvert', PALETTE_BETA.feuVert);
+document.documentElement.style.setProperty('--beta-voiebus', PALETTE_BETA.voieBus);
 
 // Même préfixe que le jeu principal : la langue choisie là-bas vaut ici ; la carte beta a sa propre entrée
 const store = createStore({
@@ -140,6 +141,13 @@ function majSurvol() {
     etiquette(r.refus ? t(`refus.${r.refus}`) : t('survol.demolir'), true);
     return;
   }
+  if (outil === 'bus') {
+    // La voie bus du sens qui roule de ce côté
+    const cote = coteDe(reseau, v.troncon, p), r = basculerBus(reseau, v.troncon, cote);
+    scene.majSurvol({ troncon: { ...troncon, cote } });
+    etiquette(r.refus ? t(`refus.${r.refus}`) : t(busDe(tr)[cote === 'gauche' ? 'g' : 'd'] ? 'survol.sansbus' : 'survol.bus'), !!r.refus);
+    return;
+  }
   if (outil === 'double') {
     // Le côté sous le pointeur : la piste à double sens s'y posera
     const cote = coteDe(reseau, v.troncon, p);
@@ -203,6 +211,7 @@ function cliquer(p, maj = false) {
     const v = viser(reseau, p, rayonVisee());
     if (v) {
       if (outil === 'demolir') faire(demolir(reseau, v.troncon), t('toast.demolie'));
+      else if (outil === 'bus') faire(basculerBus(reseau, v.troncon, coteDe(reseau, v.troncon, p)));
       else if (outil === 'double') faire(basculerPisteDouble(reseau, v.troncon, coteDe(reseau, v.troncon, p), ROUTE, TRACE));
       else faire(outil === 'voies' ? basculerVoies(reseau, v.troncon, ROUTE, TRACE, maj ? -1 : 1) : basculerVelo(reseau, v.troncon, ROUTE, TRACE));
     }
@@ -302,7 +311,7 @@ vue.addEventListener('wheel', e => {
 
 // ─── Clavier ───────────────────────────────────────────────────────────────
 const tenues = new Set();
-const ORDRE = ['route', 'voies', 'demolir', 'velo', 'double', 'feux'];
+const ORDRE = ['route', 'voies', 'demolir', 'velo', 'double', 'feux', 'bus'];
 const OUTILS = { Delete: 'demolir' };
 ORDRE.forEach((o, i) => { OUTILS[`Digit${i + 1}`] = o; OUTILS[`Numpad${i + 1}`] = o; });
 document.addEventListener('keydown', e => {
@@ -354,7 +363,7 @@ $('vitesse-texte').textContent = t('vitesse', { n: vitesse });
 let dernierCompte = '';
 function majCompte() {
   const n = compter(trafic);
-  const texte = t('compte', { voitures: n.voiture, velos: n.velo, pietons: trafic.pietons.length }) + (trafic.abandons ? t('compte.abandons', { n: trafic.abandons }) : '');
+  const texte = t('compte', { voitures: n.voiture, velos: n.velo, bus: n.bus, pietons: trafic.pietons.length }) + (trafic.abandons ? t('compte.abandons', { n: trafic.abandons }) : '');
   if (texte !== dernierCompte) { $('compte').textContent = texte; dernierCompte = texte; }
 }
 
@@ -418,7 +427,7 @@ vue.focus();
 
 // ─── Mode debug (section 18) ───────────────────────────────────────────────
 if (DEBUG) {
-  const { installDebug } = await import('../lib/debug.js?v=0.9.3');
+  const { installDebug } = await import('../lib/debug.js?v=0.9.4');
   installDebug({
     state: () => ({
       outil, depart: depart && { ...depart }, projet: projet && { refus: projet.refus ?? null, longueur: projet.longueur, libre: !!projet.fin.libre },

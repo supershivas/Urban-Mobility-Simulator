@@ -16,14 +16,14 @@
 // et al. 2000), s'arrête au rouge pour SON mouvement (phases du scénario, js/carrefour.js phasesDe :
 // modèle proposé et durées de vert ; v0.7).
 // Les blocs ne se gênent pas dans la zone d'un carrefour (exclu : priorités, conflits).
-import { branchesDe, raccordsDe, phasesDe, auVert } from './carrefour.js?v=0.9.3';
-import { geometrieCarrefour, recul, reculBranche, extraire, pointSurLigne } from './geo/raccords.js?v=0.9.3';
-import { decalerLigne } from './geo/decalage.js?v=0.9.3';
-import { decalages } from './section.js?v=0.9.3';
-import { longueur } from './geo/geometrie.js?v=0.9.3';
-import { MODE_DE_BANDE } from './data/carrefours.js?v=0.9.3';
-import { DEBITS_JEU, VOIES_DU_MODE, DEMANDE_DU_MODE, VEHICULES, VITESSES, SIMULATION } from './data/circulation.js?v=0.9.3';
-import { createRng } from './lib/rng.js?v=0.9.3';
+import { branchesDe, raccordsDe, phasesDe, auVert } from './carrefour.js?v=0.9.4';
+import { geometrieCarrefour, recul, reculBranche, extraire, pointSurLigne } from './geo/raccords.js?v=0.9.4';
+import { decalerLigne } from './geo/decalage.js?v=0.9.4';
+import { decalages } from './section.js?v=0.9.4';
+import { longueur } from './geo/geometrie.js?v=0.9.4';
+import { MODE_DE_BANDE } from './data/carrefours.js?v=0.9.4';
+import { DEBITS_JEU, VOIES_DU_MODE, DEMANDE_DU_MODE, VEHICULES, VITESSES, SIMULATION } from './data/circulation.js?v=0.9.4';
+import { createRng } from './lib/rng.js?v=0.9.4';
 
 const SENS_SOURCE = { 'unique-direct': 'aller', 'unique-inverse': 'retour' };
 const LARGEUR_INCONNUE = 3; // m, dessin seulement : décale les deux sens d'une voie inconnue

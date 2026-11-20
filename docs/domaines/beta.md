@@ -20,6 +20,11 @@ Un second jeu, ouvert par le bouton « Bêta : carte blanche » de l'écran titr
 | Voies | 1 à **4 par sens** : clic = une de plus (au-delà de 4 × 4 : retour à 2 voies), Maj + clic = une de moins ; refus au-delà de **27 m** de chaussée et de pistes (`ROUTE.largeurMax`), ou si la route élargie mord sur une voisine (Jérôme, v0.9.3) |
 | Pistes | Par côté (`pistes = { g, d }`, vu de a vers b) : 'simple' ou 'double' ; **double sens des deux côtés** possible ; un vélo a alors deux files par sens (`velo`, `velo2`) (Jérôme, v0.9.3) |
 | Picto vélo | **Debout dans le sens de marche**, comme les marquages réels (lu par le cycliste qui arrive), allongé ; un par file (Jérôme, v0.9.3) |
+| Carrefour protégé | Dès qu'une branche a une piste (`n.protege`) : depuis le carrefour, traversée cyclable (2 m, 3 m à double sens si une piste à double sens y arrive), passage piéton, ligne d'arrêt vélo, sas (aux feux), ligne d'arrêt voitures. La chaussée se resserre (`compacter` : zone et amorces), les îlots de coin sont du trottoir, l'anneau cyclable contourne l'îlot par l'extérieur ; les vélos y circulent dans le sens trigonométrique (à rebours seulement sur une traversée à double sens), attendent 1,5 m avant une traversée qui n'est pas libre (aux feux : branche traversée au rouge) ; le premier arrivé à une jonction passe (Jérôme, v0.9.4) |
+| Bus | Outil 7 **Voie bus**, au côté cliqué : la voie la plus à droite de ce sens (il faut deux voies) ; les voitures n'y vont jamais, les bus la prennent ; un bus toutes les 24 s à chaque bout de carte ; voie brun-rouge avec « BUS » au sol, séparée par une ligne continue large (Jérôme, v0.9.4) |
+| Sas vélo | Automatique aux feux : la ligne des voitures recule de 4 m, sas vert avec un vélo par voie (Jérôme, v0.9.4) |
+| Céder | Seulement à qui est sur sa voie ou va y entrer (à 2 m, en marchant vers elle) : `aCeder` (Jérôme, v0.9.4) |
+| Passages proches | Deux passages à moins de 8 m l'un de l'autre n'en font qu'un (celui du bout a) ; les lignes de voie s'arrêtent à la ligne d'arrêt (Jérôme, v0.9.4) |
 | Compteurs | En haut, au milieu : la barre d'outils reste dégagée (Jérôme, v0.9.3) |
 | Vélos | Quelques vélos roulent sur les pistes, plus lents ; ils naissent et sortent aux bouts du réseau cyclable |
 

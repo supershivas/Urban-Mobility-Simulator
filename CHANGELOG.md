@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.4 — 2026-11-20
+- Bêta : carrefours protégés pour les cyclistes — la chaussée se resserre, un îlot à chaque coin, la piste fait le tour et traverse chaque branche (à double sens quand une piste à double sens y arrive)
+- Bêta : des bus et un outil Voie bus (la voie de droite d'un sens, interdite aux voitures) ; aux feux, un sas vélo devant les voitures
+- Bêta : on ne cède qu'à qui est sur sa voie ou va y entrer ; deux passages presque collés n'en font qu'un ; les lignes de voie s'arrêtent à la ligne d'arrêt
+
 ## 0.9.3 — 2026-11-20
 - Bêta : les carrefours ne s'emmêlent plus — chaque passage recule selon l'angle avec ses voisines, les rues arrivent à 60° au moins, seules les traversées cyclables tout droit sont peintes, le zébra ne couvre que la chaussée
 - Bêta : jusqu'à 4 × 4 voies (Maj + clic : une de moins), refusé au-delà de 27 m ou si la route mord sur une voisine ; pistes à double sens des deux côtés ; beaucoup plus de vélos

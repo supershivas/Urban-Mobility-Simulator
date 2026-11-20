@@ -258,7 +258,25 @@ export function basculerVoies(reseau, id, R, T, delta = 1) {
   if (!t) return { refus: 'perdu' };
   const voies = delta > 0 ? (t.voies >= R.voiesMax ? 1 : t.voies + 1) : Math.max(1, t.voies - 1);
   if (voies === t.voies) return { refus: 'uneVoie' };
-  return changer(reseau, id, { ...t, voies }, R, T);
+  // Une voie bus demande au moins deux voies dans son sens : revenir à une voie la retire
+  return changer(reseau, id, { ...t, voies, ...(voies < 2 ? { bus: SANS_BUS } : {}) }, R, T);
+}
+
+// ─── Voies bus (v0.9.4) ────────────────────────────────────────────────────
+// `bus = { g, d }` (vu de a vers b) : la voie la plus à droite du sens qui roule de ce côté
+// (côté d : sens +1 ; côté g : sens −1) est réservée aux bus.
+export const SANS_BUS = Object.freeze({ g: false, d: false });
+export const busDe = t => t.bus ?? SANS_BUS;
+/** La voie bus d'un sens d'un tronçon (indice de voie), ou null. */
+export const voieBus = (t, sens) => (busDe(t)[sens === 1 ? 'd' : 'g'] ? t.voies - 1 : null);
+
+/** Pose ou retire la voie bus du côté cliqué ; il faut au moins deux voies dans ce sens. */
+export function basculerBus(reseau, id, cote) {
+  const t = reseau.troncons[id];
+  if (!t) return { refus: 'perdu' };
+  const k = cote === 'gauche' ? 'g' : 'd', bus = busDe(t);
+  if (!bus[k] && t.voies < 2) return { refus: 'busUneVoie' };
+  return avecTroncon(reseau, id, { ...t, bus: { ...bus, [k]: !bus[k] } });
 }
 
 const avecTroncon = (reseau, id, t) => ({ reseau: { ...reseau, troncons: { ...reseau.troncons, [id]: t } } });
@@ -388,7 +406,8 @@ function nettoyerNoeud(reseau, idNoeud) {
   const [b1, b2] = br, t1 = reseau.troncons[b1.troncon], t2 = reseau.troncons[b2.troncon];
   // t1 parcouru vers le nœud, puis t2 depuis le nœud ; les côtés des pistes s'échangent quand on retourne un tronçon
   const pistes = b1.sens !== -1 ? retournees(t1.pistes) : t1.pistes;
-  if (t1.voies !== t2.voies || !memesPistes(pistes, b2.sens !== 1 ? retournees(t2.pistes) : t2.pistes)) {
+  const bus = b1.sens !== -1 ? retournees(busDe(t1)) : busDe(t1), bus2 = b2.sens !== 1 ? retournees(busDe(t2)) : busDe(t2);
+  if (t1.voies !== t2.voies || !memesPistes(pistes, b2.sens !== 1 ? retournees(t2.pistes) : t2.pistes) || !memesPistes(bus, bus2)) {
     if (reseau.noeuds[idNoeud].feux) { const { feux, ...n } = reseau.noeuds[idNoeud]; return { ...reseau, noeuds: { ...reseau.noeuds, [idNoeud]: n } }; }
     return reseau;
   }
@@ -399,7 +418,7 @@ function nettoyerNoeud(reseau, idNoeud) {
   const troncons = { ...reseau.troncons }, noeuds = { ...reseau.noeuds };
   delete troncons[b1.troncon]; delete troncons[b2.troncon]; delete noeuds[idNoeud];
   const nouveau = `t${reseau.suivant}`;
-  troncons[nouveau] = { ...t1, a, b, pistes, points: [...avant, ...apres.slice(1)] };
+  troncons[nouveau] = { ...t1, a, b, pistes, bus, points: [...avant, ...apres.slice(1)] };
   return { ...reseau, suivant: reseau.suivant + 1, noeuds, troncons };
 }
 
@@ -416,6 +435,7 @@ export function relireReseau(d) {
     }
     delete t.velo; delete t.piste;
     for (const k of ['g', 'd']) if (!['simple', 'double'].includes(t.pistes[k])) t.pistes[k] = null;
+    if (t.voies >= 2 && t.bus) t.bus = { g: !!t.bus.g, d: !!t.bus.d }; else delete t.bus;
   }
   return { v: 1, suivant: d.suivant || 1, noeuds: d.noeuds, troncons: d.troncons };
 }

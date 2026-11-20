@@ -9,6 +9,10 @@ export const ROUTE = {
   largeurPisteDouble: 2.5, // m, piste cyclable à double sens
   largeurTrottoir: 2.0,    // m, trottoir de chaque côté de chaque route
   largeurTraversee: 3.0,   // m, passage piéton (le long de la route), devant chaque carrefour
+  largeurTraverseeVelo: 2.0, largeurTraverseeVeloDouble: 3.0, // m, traversée cyclable d'un carrefour protégé
+  ecartTraversees: 0.6,    // m, entre la traversée cyclable et le passage piéton
+  fusionTraversees: 8,     // m, deux passages plus proches n'en font qu'un
+  sas: 4,                  // m, sas vélo aux feux (zone avancée devant les voitures)
   separateurPiste: 0.5,    // m, filet entre la dernière voie et la piste
   accotement: 0.4,         // m, bordure au-delà de la chaussée
   margeCarrefour: 1.5,     // m, ajoutée à la demi-largeur pour le recul d'une branche
@@ -35,6 +39,7 @@ export const DEPART = { longueur: 2400 }; // m, la route de départ, d'ouest en 
 export const VEHICULES = {
   voiture: { longueur: 4.4, largeur: 1.8, hauteur: 1.45, vitesse: 13.9, vitesseVirage: 7, acceleration: 1.6, freinage: 2.5, temps: 1.2, ecart: 2.2 },
   velo: { longueur: 1.8, largeur: 0.6, hauteur: 1.6, vitesse: 5, vitesseVirage: 4, acceleration: 1, freinage: 1.5, temps: 1, ecart: 1.2 },
+  bus: { longueur: 12, largeur: 2.55, hauteur: 3.1, vitesse: 12.5, vitesseVirage: 5, acceleration: 1.0, freinage: 2.0, temps: 1.5, ecart: 2.5 },
   pieton: { longueur: 0.4, largeur: 0.5, hauteur: 1.7, vitesse: 1.3 },
 };
 
@@ -63,6 +68,7 @@ export const TRAFIC = {
   graine: 2026,
   intervalleBord: 5,       // s entre deux voitures, par voie, aux deux bouts de la route de départ
   intervalleImpasse: 14,   // s entre deux voitures au bout d'une route nouvelle (un quartier)
+  intervalleBus: 24,       // s entre deux bus, à chaque bout de la carte
   intervalleVelo: 2.5,     // s entre deux vélos, au bout d'une piste
   alea: 0.35,              // ± part de hasard sur chaque intervalle
   demande: 2.2,            // s d'avance : un véhicule demande le carrefour à cette distance (en temps)

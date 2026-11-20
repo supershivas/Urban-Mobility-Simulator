@@ -40,6 +40,8 @@ export const PALETTE_BETA = {
   asphalte: '#5A5E66',
   bordure: '#C4BDAF',    // bordure de trottoir autour de la chaussée
   trottoir: '#F4F1EA',   // trottoirs (v0.9.2), plus clairs que le sol
+  voieBus: '#8C5A4A',    // voie bus (v0.9.4) : brun rouge, comme les voies bus bruxelloises
+  bus: '#D9A441',        // les bus (même ocre que la bande bus du jeu principal)
   marquage: '#F7F6F1',
   velo: '#3E9E5A',       // piste cyclable (et son picto blanc)
   cycliste: '#1F5C36',

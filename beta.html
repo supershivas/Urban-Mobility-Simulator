@@ -7,8 +7,8 @@
 <title>Urban Mobility Simulator — Carte blanche (bêta)</title>
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="js/lib/game.css?v=0.9.3">
-<link rel="stylesheet" href="css/beta.css?v=0.9.3">
+<link rel="stylesheet" href="js/lib/game.css?v=0.9.4">
+<link rel="stylesheet" href="css/beta.css?v=0.9.4">
 </head>
 <body>
 <!-- Jeu beta « Carte blanche » (v0.9.0) : une carte vierge en 3D, une route, et ce que le joueur y construit.
@@ -46,6 +46,12 @@
       <button class="bouton beta-outil" data-outil="double" data-i18n-title="outil.double" aria-pressed="false">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="17" r="3"/><circle cx="17" cy="17" r="3"/><path d="M7 17l3-5h5l2 5M10 12l2 5 3-5"/><path d="M3 5h8M8 2l3 3-3 3M21 9h-8M16 6l-3 3 3 3"/></svg>
         <span data-i18n="outil.double"></span> <kbd>5</kbd></button>
+    </div>
+    <div class="beta-groupe" data-groupe="transports" role="group" data-i18n-aria="groupe.transports">
+      <span class="beta-groupe-nom" data-i18n="groupe.transports"></span>
+      <button class="bouton beta-outil" data-outil="bus" data-i18n-title="outil.bus" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="15" rx="3"/><path d="M4 11h16M8 18v3M16 18v3"/><circle cx="8" cy="14.5" r="1"/><circle cx="16" cy="14.5" r="1"/></svg>
+        <span data-i18n="outil.bus"></span> <kbd>7</kbd></button>
     </div>
     <div class="beta-groupe" data-groupe="carrefours" role="group" data-i18n-aria="groupe.carrefours">
       <span class="beta-groupe-nom" data-i18n="groupe.carrefours"></span>
@@ -137,6 +143,6 @@
     }, 30000);
   })();
 </script>
-<script type="module" src="js/beta/main.js?v=0.9.3"></script>
+<script type="module" src="js/beta/main.js?v=0.9.4"></script>
 </body>
 </html>

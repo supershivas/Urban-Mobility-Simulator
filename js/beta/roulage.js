@@ -12,11 +12,11 @@
 // Feux (v0.9.2) : on n'entre qu'au vert de sa branche. Passages piétons : on s'arrête
 // avant un passage où quelqu'un traverse, et l'on n'entre pas dans un carrefour dont le
 // passage de sortie est occupé. Les piétons eux-mêmes vivent dans pietons.js.
-import { createRng } from '../lib/rng.js?v=0.9.3';
-import { longueur, pointA, projeterSurLigne, feuxDe, aPiste } from './reseau.js?v=0.9.3';
-import { geometrieReseau, ligneVoie, raccord, seGenent, filesVelo } from './geometrie.js?v=0.9.3';
-import { etatFeux, decalageDe } from './feux.js?v=0.9.3';
-import { creerPietons, avancerPietons, reconcilierPietons } from './pietons.js?v=0.9.3';
+import { createRng } from '../lib/rng.js?v=0.9.4';
+import { longueur, pointA, projeterSurLigne, feuxDe, aPiste, voieBus } from './reseau.js?v=0.9.4';
+import { geometrieReseau, ligneVoie, raccord, seGenent, filesVelo, cheminAnneau, coteEntree, coteSortie } from './geometrie.js?v=0.9.4';
+import { etatFeux, decalageDe } from './feux.js?v=0.9.4';
+import { creerPietons, avancerPietons, reconcilierPietons } from './pietons.js?v=0.9.4';
 
 const cleVoie = v => `${v.troncon}|${v.sens}|${v.voie}`;
 
@@ -30,7 +30,7 @@ export function preparerTrafic(reseau, R, F) {
 
 export function creerTrafic(T, graine = T.graine) {
   const rng = createRng(graine);
-  return { t: 0, vehicules: [], prochainId: 1, sources: {}, rng, sortis: { voiture: 0, velo: 0 }, abandons: 0, feux: {}, traversees: new Map(), ...creerPietons(rng.fork('pietons')) };
+  return { t: 0, vehicules: [], prochainId: 1, sources: {}, rng, sortis: { voiture: 0, velo: 0, bus: 0 }, abandons: 0, feux: {}, traversees: new Map(), traverseesVelo: new Map(), ...creerPietons(rng.fork('pietons')) };
 }
 
 /** La branche (indice dans l'ordre des angles) par laquelle une voie arrive à son nœud de fin. */
@@ -39,9 +39,32 @@ function brancheArrivee(ctx, v) {
   return ctx.geo.noeuds[n].branches.findIndex(b => b.troncon === v.troncon && b.sens === -v.sens);
 }
 const brancheDepart = (ctx, n, v) => ctx.geo.noeuds[n].branches.findIndex(b => b.troncon === v.troncon && b.sens === v.sens);
-const occupee = (etat, n, i) => (etat.traversees.get(`${n}|${i}`) || 0) > 0;
-/** Abscisse de la ligne d'arrêt d'une voie : avant le passage piéton s'il y en a un. */
-const arret = (ctx, veh) => veh.L - (ctx.geo.noeuds[noeudFin(ctx, veh.voie)].traversees ? ctx.R.largeurTraversee + 1 : 0.5);
+/** Quelqu'un de la liste est-il sur le point Q (à la demi-largeur près d'une voie), ou va-t-il y arriver ? */
+const genants = (liste, Q, demi) => (liste || []).some(o => {
+  const dx = Q[0] - o.p[0], dy = Q[1] - o.p[1], d = Math.hypot(dx, dy);
+  return d < demi + 0.4 || (d < demi + 2.2 && dx * o.dir[0] + dy * o.dir[1] > 0);
+});
+const DEMI = { voiture: 1.2, bus: 1.4, velo: 0.6 };
+/**
+ * Doit-on céder sur la branche i du nœud n, à l'endroit où sa voie (ligne) croise le passage piéton
+ * — et, pour une voiture ou un bus, la traversée cyclable ? `arrivee` : la voie arrive au nœud (sinon elle en part).
+ * Seulement à qui est sur sa voie ou s'apprête à y entrer (Jérôme, v0.9.4).
+ */
+export function aCeder(etat, ctx, n, i, ligne, arrivee, mode) {
+  const g = ctx.geo.noeuds[n], b = g.branches[i];
+  if (!g.traversees || !b || !ligne) return false;
+  const L = longueur(ligne), au = s => pointA(ligne, arrivee ? L - s : s).p, cle = `${n}|${i}`;
+  if (b.passage && genants(etat.traversees.get(cle), au(b.z0 + ctx.R.largeurTraversee / 2), DEMI[mode])) return true;
+  return mode !== 'velo' && g.protege && genants(etat.traverseesVelo.get(cle), au(b.Lv / 2), DEMI[mode]);
+}
+/** Abscisse de la ligne d'arrêt d'une voie : avant le passage piéton (et la traversée cyclable) s'il y en a. */
+const arret = (ctx, veh) => {
+  const n = ctx.geo.noeuds[noeudFin(ctx, veh.voie)], b = n.branches[brancheArrivee(ctx, veh.voie)];
+  return veh.L - (b ? b.arret : 0.5);
+};
+/** Un segment d'anneau : son identité et son sens de parcours. */
+const cleSeg = seg => `${seg.id}@${seg.ligne[0][0].toFixed(2)},${seg.ligne[0][1].toFixed(2)}`;
+const famille = mode => (mode === 'velo' ? 'velo' : 'voiture'); // un bus roule sur les voies des voitures
 
 /** Le nœud au bout d'une voie. */
 const noeudFin = (ctx, v) => { const t = ctx.reseau.troncons[v.troncon]; return v.sens === 1 ? t.b : t.a; };
@@ -80,16 +103,35 @@ function choisirSuite(etat, ctx, v, mode) {
     return files.length ? etat.rng.pick(files) : null;
   }
   if (!options.length) return null;
-  const b = etat.rng.pick(options);
-  const voies = ctx.reseau.troncons[b.troncon].voies;
-  return { troncon: b.troncon, sens: b.sens, voie: Math.min(v.voie, voies - 1) };
+  const b = etat.rng.pick(options), t = ctx.reseau.troncons[b.troncon];
+  return { troncon: b.troncon, sens: b.sens, voie: voieDe(t, b.sens, mode, v.voie) };
+}
+
+/** La voie prise sur un tronçon : un bus prend la voie bus (ou la plus à droite) ; une voiture n'y va jamais. */
+function voieDe(t, sens, mode, voulue) {
+  const vb = voieBus(t, sens);
+  if (mode === 'bus') return vb ?? t.voies - 1;
+  const v = Math.min(voulue, t.voies - 1);
+  return vb !== null && v === vb ? v - 1 : v;
 }
 
 function placer(etat, ctx, veh, voie) {
   const ligne = ligneVoie(ctx.geo, voie);
   veh.voie = voie; veh.etape = 'voie'; veh.ligne = ligne; veh.L = longueur(ligne);
   veh.suite = choisirSuite(etat, ctx, voie, veh.mode);
-  veh.admis = false; veh.demande = null;
+  veh.admis = false; veh.demande = null; veh.anneau = null;
+  const n = ctx.geo.noeuds[noeudFin(ctx, voie)];
+  if (veh.mode === 'velo' && veh.suite && n.protege) {
+    // Carrefour protégé : le vélo fait le tour par l'anneau (coins, traversées), jamais par le milieu
+    const i = brancheArrivee(ctx, voie), j = brancheDepart(ctx, n.id, veh.suite);
+    const ce = coteEntree(voie.voie), cs = coteSortie(veh.suite.voie);
+    const fin = ligne[ligne.length - 1], debut = ligneVoie(ctx.geo, veh.suite)[0];
+    const pe = n.anneau.points[`${i}:${ce}`], ps = n.anneau.points[`${j}:${cs}`];
+    veh.anneau = [{ ligne: [fin, pe], traversee: null, id: `${n.id}|e${i}${ce}` }, ...cheminAnneau(n, i, ce, j, cs), { ligne: [ps, debut], traversee: null, id: `${n.id}|s${j}${cs}` }]
+      .filter(seg => longueur(seg.ligne) > 0.05);
+    veh.raccord = null;
+    return;
+  }
   veh.raccord = veh.suite ? raccordDe(ctx, voie, veh.suite) : null; // prévu : il règle la vitesse d'approche
 }
 
@@ -102,7 +144,10 @@ export function sources(ctx, T) {
       const b = n.branches[0], t = ctx.reseau.troncons[b.troncon];
       const intervalle = n.bord ? T.intervalleBord : T.intervalleImpasse;
       // Une demande par bout de route, quelle que soit sa largeur : doubler les voies ajoute de la place, pas des voitures
-      out.push({ cle: `${id}|auto`, noeud: id, mode: 'voiture', voies: Array.from({ length: t.voies }, (_, k) => ({ troncon: b.troncon, sens: b.sens, voie: k })), intervalle });
+      const vb = voieBus(t, b.sens);
+      out.push({ cle: `${id}|auto`, noeud: id, mode: 'voiture', voies: Array.from({ length: t.voies }, (_, k) => ({ troncon: b.troncon, sens: b.sens, voie: k })).filter(v => v.voie !== vb), intervalle });
+      // Les bus arrivent par les bouts de la carte
+      if (n.bord) out.push({ cle: `${id}|bus`, noeud: id, mode: 'bus', voies: [{ troncon: b.troncon, sens: b.sens, voie: voieDe(t, b.sens, 'bus', 0) }], intervalle: T.intervalleBus });
     }
     // Un bout du réseau cyclable : un seul tronçon à piste touche ce nœud
     const pistes = n.branches.filter(b => aPiste(ctx.reseau.troncons[b.troncon]));
@@ -132,7 +177,7 @@ function faireNaitre(etat, ctx, T, V, parCle) {
 function indexer(etat) {
   const parCle = new Map();
   const ajouter = (k, veh) => { let l = parCle.get(k); if (!l) parCle.set(k, (l = [])); l.push(veh); };
-  for (const veh of etat.vehicules) ajouter(veh.etape === 'voie' ? cleVoie(veh.voie) : veh.raccord.cle, veh);
+  for (const veh of etat.vehicules) if (veh.etape !== 'anneau') ajouter(veh.etape === 'voie' ? cleVoie(veh.voie) : veh.raccord.cle, veh);
   for (const l of parCle.values()) l.sort((a, b) => a.s - b.s);
   return parCle;
 }
@@ -153,8 +198,42 @@ function devant(veh, parCle, ctx, V, etat) {
   if (veh.etape === 'voie') {
     if (!veh.suite) return { gap: Infinity, v: 0 };
     const n = noeudFin(ctx, veh.voie), xa = arret(ctx, veh);
+    // Vélo vers l'anneau : il ne cède qu'aux piétons du passage de sa branche ; l'anneau fait le reste
+    if (veh.anneau) {
+      if (aCeder(etat, ctx, n, brancheArrivee(ctx, veh.voie), veh.ligne, true, 'velo') && veh.s < xa + 0.5) return { gap: xa - veh.s, v: 0 };
+      // Les vélos déjà sur ses deux premiers segments d'anneau (la porte, puis le coin où d'autres le rejoignent)
+      let gap = Infinity;
+      const k0 = cleSeg(veh.anneau[0]), k1 = veh.anneau[1] && cleSeg(veh.anneau[1]), L0 = longueur(veh.anneau[0].ligne);
+      for (const o of etat.vehicules) {
+        if (o.etape !== 'anneau') continue;
+        const k = cleSeg(o.anneau[o.iseg]);
+        if (k === k0) gap = Math.min(gap, reste + o.s - V.velo.longueur);
+        else if (k === k1) gap = Math.min(gap, reste + L0 + o.s - V.velo.longueur);
+      }
+      // Un vélo de l'anneau passe à la porte : on attend 1 m avant (il est déjà sur l'anneau, il a la priorité)
+      const pe = veh.anneau[0].ligne[veh.anneau[0].ligne.length - 1];
+      for (const o of etat.vehicules) {
+        if (o.etape !== 'anneau' || cleSeg(o.anneau[o.iseg]) === k0) continue;
+        const q = pointA(o.ligne, o.s).p;
+        if (Math.hypot(q[0] - pe[0], q[1] - pe[1]) < 2.4) gap = Math.min(gap, reste - 1);
+      }
+      // Et le vélo qui sort d'une traversée juste devant la porte (il a la priorité : il est déjà sur l'anneau)
+      if (reste < 6) {
+        const { p, dir } = pointA(veh.ligne, veh.s);
+        for (const o of etat.vehicules) {
+          if (o.etape !== 'anneau') continue;
+          const q = pointA(o.ligne, o.s).p, dx = q[0] - p[0], dy = q[1] - p[1], d = Math.hypot(dx, dy);
+          if (d < 3 && dx * dir[0] + dy * dir[1] > 0) gap = Math.min(gap, d - V.velo.longueur);
+        }
+      }
+      return { gap, v: 0 };
+    }
     // La ligne d'arrêt : tant qu'on n'est pas admis, ou si quelqu'un traverse devant (avant d'y être engagé)
-    const passage = ctx.geo.noeuds[n].traversees && occupee(etat, n, brancheArrivee(ctx, veh.voie)) && veh.s < xa + 0.5;
+    const passage = veh.s < xa + 0.5 && aCeder(etat, ctx, n, brancheArrivee(ctx, veh.voie), veh.ligne, true, veh.mode);
+    // Passé la ligne d'arrêt, avant la traversée cyclable de sa branche : un vélo qui s'y est engagé passe d'abord
+    const g = ctx.geo.noeuds[n], bA = g.branches[brancheArrivee(ctx, veh.voie)];
+    if (g.protege && veh.mode !== 'velo' && veh.s >= xa + 0.5 && veh.s < veh.L - bA.Lv - 0.3
+      && genants(etat.traverseesVelo.get(`${n}|${brancheArrivee(ctx, veh.voie)}`), pointA(veh.ligne, veh.L - bA.Lv / 2).p, DEMI[veh.mode])) return { gap: veh.L - bA.Lv - 0.6 - veh.s, v: 0 };
     if (!veh.admis || passage) return { gap: xa - veh.s, v: 0 };
     // Engagé : ce qui roule déjà sur les raccords qui partent de sa voie, puis sur sa voie de sortie
     const k = cleVoie(veh.voie) + '>';
@@ -167,7 +246,7 @@ function devant(veh, parCle, ctx, V, etat) {
   }
   // Dans le carrefour : on attend au bout du raccord si quelqu'un traverse la branche de sortie
   const n = noeudFin(ctx, veh.voie);
-  if (ctx.geo.noeuds[n].traversees && occupee(etat, n, brancheDepart(ctx, n, veh.suite))) return { gap: reste - 0.3, v: 0 };
+  if (aCeder(etat, ctx, n, brancheDepart(ctx, n, veh.suite), ligneVoie(ctx.geo, veh.suite), false, veh.mode)) return { gap: reste - 0.3, v: 0 };
   const o = premierSur(parCle, [veh.raccord.sortie]);
   if (o) return { gap: reste + o.s - V[o.mode].longueur, v: o.v };
   return { gap: Infinity, v: 0 };
@@ -182,7 +261,7 @@ function admettre(etat, ctx, T, V, parCle) {
     for (let i = l.length - 1; i >= 0; i--) {
       const veh = l[i];
       if (veh.etape !== 'voie' || !veh.suite) break;
-      if (veh.admis) continue;
+      if (veh.admis || veh.anneau) continue;
       if (arret(ctx, veh) - veh.s <= Math.max(T.demandeMin, veh.v * T.demande)) {
         if (veh.demande === null) veh.demande = etat.t;
         const n = noeudFin(ctx, veh.voie);
@@ -200,7 +279,7 @@ function admettre(etat, ctx, T, V, parCle) {
     for (const veh of liste) {
       // Aux feux : seulement au vert de sa branche ; et jamais vers un passage où quelqu'un traverse
       if (feux && feux.couleurs[brancheArrivee(ctx, veh.voie)] !== 'vert') continue;
-      if (g.traversees && (occupee(etat, n, brancheDepart(ctx, n, veh.suite)) || occupee(etat, n, brancheArrivee(ctx, veh.voie)))) continue;
+      if (aCeder(etat, ctx, n, brancheDepart(ctx, n, veh.suite), ligneVoie(ctx.geo, veh.suite), false, veh.mode) || aCeder(etat, ctx, n, brancheArrivee(ctx, veh.voie), veh.ligne, true, veh.mode)) continue;
       const r = raccordDe(ctx, veh.voie, veh.suite);
       const sortie = premierSur(parCle, [r.sortie]);
       const place = !sortie || sortie.s > V[sortie.mode].longueur + V[veh.mode].ecart + 1;
@@ -217,13 +296,15 @@ export function avancer(etat, ctx, T, V, dt, P) {
   etat.t += dt;
   etat.feux = {};
   for (const [n, f] of Object.entries(ctx.feux)) etat.feux[n] = etatFeux(f, ctx.F, etat.t, decalageDe(n));
-  if (P) avancerPietons(etat, ctx, P, V, dt, (n, i) => traverseeMenacee(etat, ctx, V, P, n, i));
+  if (P) avancerPietons(etat, ctx, P, V, dt, (n, i) => traverseeMenacee(etat, ctx, V, P, n, i, 'pieton'));
+  avancerAnneaux(etat, ctx, V, P, dt);
   let parCle = indexer(etat);
   faireNaitre(etat, ctx, T, V, parCle);
   parCle = indexer(etat);
   admettre(etat, ctx, T, V, parCle);
   // Vitesses (IDM), calculées toutes avant de bouger
   const acc = etat.vehicules.map(veh => {
+    if (veh.etape === 'anneau') return null;
     const s = V[veh.mode], d = devant(veh, parCle, ctx, V, etat);
     const vr = veh.raccord && veh.raccord.virage > T.virageDroit ? s.vitesseVirage : s.vitesse;
     let v0 = veh.etape === 'raccord' ? vr : s.vitesse;
@@ -234,6 +315,7 @@ export function avancer(etat, ctx, T, V, dt, P) {
   });
   const restants = [];
   etat.vehicules.forEach((veh, i) => {
+    if (!acc[i]) { restants.push(veh); return; } // sur l'anneau : avancé par avancerAnneaux
     veh.v = Math.max(0, Math.min(V[veh.mode].vitesse * 1.05, veh.v + acc[i].a * dt));
     veh.s += Math.min(veh.v * dt, Math.max(0, acc[i].gap - 0.2));
     // Soupape d'un bouchon en boucle : un conducteur arrêté trop longtemps renonce (hypothèse de jeu)
@@ -243,6 +325,13 @@ export function avancer(etat, ctx, T, V, dt, P) {
     while (veh.s >= veh.L) {
       if (veh.etape === 'voie') {
         if (!veh.suite) { veh.sorti = true; etat.sortis[veh.mode]++; break; }
+        if (veh.anneau) { // un vélo entre dans l'anneau du carrefour protégé, s'il y a la place
+          const id0 = veh.anneau[0].id, ecart = V.velo.longueur + V.velo.ecart;
+          const pris = etat.vehicules.some(o => o !== veh && o.etape === 'anneau' && o.anneau[o.iseg].id === id0 && o.anneau[o.iseg].ligne[0] === veh.anneau[0].ligne[0] && o.s < ecart);
+          if (pris) { veh.s = veh.L; veh.v = 0; break; }
+          veh.s = 0; veh.etape = 'anneau'; veh.iseg = 0; veh.ligne = veh.anneau[0].ligne; veh.L = longueur(veh.ligne); veh.part = false;
+          break;
+        }
         veh.s -= veh.L; veh.etape = 'raccord'; veh.ligne = veh.raccord.ligne; veh.L = veh.raccord.longueur;
       } else {
         const s = veh.s - veh.L;
@@ -256,25 +345,106 @@ export function avancer(etat, ctx, T, V, dt, P) {
 }
 
 /**
- * Un piéton peut-il s'engager sur le passage de la branche i du nœud n ? Non si un véhicule
- * est dessus, arrive trop vite pour s'arrêter, ou est engagé dans le carrefour vers cette branche.
- * Une voiture arrêtée à la ligne ne gêne pas : elle attend qu'on passe.
+ * Peut-on s'engager sur la branche i du nœud n — le passage piéton (type 'pieton') ou la traversée
+ * cyclable (type 'velo') ? Non si un véhicule est dessus, arrive trop vite pour s'arrêter, ou est
+ * engagé dans le carrefour vers cette branche. Un véhicule arrêté ne gêne pas : il attend qu'on passe.
+ * Un vélo qui traverse ne regarde que les voitures et les bus.
  */
-export function traverseeMenacee(etat, ctx, V, P, n, i) {
+export function traverseeMenacee(etat, ctx, V, P, n, i, type = 'pieton') {
   const b = ctx.geo.noeuds[n].branches[i], Lp = ctx.R.largeurTraversee;
+  const [a0, a1] = type === 'velo' ? [0, b.Lv] : [b.z0, b.z0 + Lp]; // la bande, en m depuis le recul
   const versBranche = v => v && v.troncon === b.troncon && v.sens === b.sens;
   for (const veh of etat.vehicules) {
+    if (veh.etape === 'anneau' || (type === 'velo' && veh.mode === 'velo')) continue;
     const len = V[veh.mode].longueur, proche = d => d >= 0 && veh.v > 0.5 && d < Math.max(P.regardMin, veh.v * P.regardVoiture);
     if (veh.etape === 'raccord') { if (noeudFin(ctx, veh.voie) === n && versBranche(veh.suite)) return true; continue; }
     const v = veh.voie;
-    if (v.troncon === b.troncon && v.sens === -b.sens) { // il arrive par cette branche
-      const d = veh.L - Lp - veh.s;
-      if ((d < 0 && d > -(Lp + len)) || proche(d)) return true;
-    } else if (versBranche(v)) { // il en repart : sur le passage ?
-      if (veh.s < Lp + len) return true;
+    if (v.troncon === b.troncon && v.sens === -b.sens && noeudFin(ctx, v) === n) { // il arrive par cette branche
+      const d = veh.L - a1 - veh.s;
+      if ((d < 0 && d > -(a1 - a0 + len)) || proche(d)) return true;
+    } else if (versBranche(v)) { // il en repart : sur la bande ?
+      if (veh.s > a0 && veh.s - len < a1) return true;
     } else if (veh.admis && veh.occupe === n && versBranche(veh.suite) && proche(arret(ctx, veh) - veh.s)) return true;
   }
   return false;
+}
+
+/**
+ * Les vélos sur l'anneau d'un carrefour protégé : ils suivent leurs segments à vitesse de virage,
+ * gardent leurs distances, et ne s'engagent sur une traversée que si elle est libre de voitures
+ * (aux feux : quand la branche traversée est au rouge). Met à jour etat.traverseesVelo.
+ */
+function avancerAnneaux(etat, ctx, V, P, dt) {
+  const sur = etat.vehicules.filter(v => v.etape === 'anneau');
+  const spec = V.velo, regard = P || { regardMin: 3, regardVoiture: 1.6 }, ecart = spec.longueur + spec.ecart;
+  // Qui est où : par segment (identité + sens de parcours), l'abscisse de chacun
+  const cle = cleSeg;
+  const prets = etat.vehicules.filter(o => o.mode === 'velo' && o.etape === 'voie' && o.anneau && o.v > 0.3 && o.L - o.s < 3);
+  const parSeg = new Map();
+  for (const v of sur) { const k = cle(v.anneau[v.iseg]); if (!parSeg.has(k)) parSeg.set(k, []); parSeg.get(k).push(v); }
+  /** La place libre devant (m) : sur son segment, puis au début du suivant (ou de sa piste de sortie). */
+  const placeDevant = veh => {
+    let gap = Infinity;
+    for (const o of parSeg.get(cle(veh.anneau[veh.iseg])) || []) if (o !== veh && (o.s > veh.s || (o.s === veh.s && o.id < veh.id))) gap = Math.min(gap, o.s - veh.s - spec.longueur);
+    // Un vélo qui arrive par une porte et roule déjà dans le passage (pas s'il attend : c'est lui qui cède)
+    const { p, dir } = pointA(veh.ligne, veh.s);
+    for (const o of prets) {
+      const q = pointA(o.ligne, o.s).p, dx = q[0] - p[0], dy = q[1] - p[1], d = Math.hypot(dx, dy);
+      if (d < 1.6 && dx * dir[0] + dy * dir[1] > 0) gap = Math.min(gap, d - spec.longueur);
+    }
+    const reste = veh.L - veh.s, suivant = veh.anneau[veh.iseg + 1];
+    if (suivant) {
+      for (const o of parSeg.get(cle(suivant)) || []) gap = Math.min(gap, reste + o.s - spec.longueur);
+      // Deux vélos qui vont rejoindre le même segment : le plus près du point de jonction passe d'abord
+      const ks = cle(suivant);
+      for (const o of sur) {
+        if (o === veh || o.etape !== 'anneau' || o.iseg + 1 >= o.anneau.length || cle(o.anneau[o.iseg + 1]) !== ks || cle(o.anneau[o.iseg]) === cle(veh.anneau[veh.iseg])) continue;
+        const r2 = o.L - o.s;
+        if (r2 < reste || (r2 === reste && o.id < veh.id)) gap = Math.min(gap, reste - r2 - spec.longueur);
+      }
+    } else for (const o of etat.vehicules) if (o.etape === 'voie' && o.voie.troncon === veh.suite.troncon && o.voie.sens === veh.suite.sens && o.voie.voie === veh.suite.voie) gap = Math.min(gap, reste + o.s - spec.longueur);
+    return gap;
+  };
+  for (const veh of sur) {
+    if (veh.etape !== 'anneau') continue;
+    let limite = placeDevant(veh) - spec.ecart;
+    // Avant une traversée : on attend 1,5 m avant, tant qu'elle n'est pas libre (aux feux : branche traversée au rouge)
+    const suivant = veh.anneau[veh.iseg + 1];
+    if (suivant?.traversee && !veh.permis && veh.L - veh.s < 4) {
+      const [n, i] = suivant.traversee.split('|'), feux = etat.feux[n];
+      veh.permis = (!feux || feux.couleurs[+i] === 'rouge') && !traverseeMenacee(etat, ctx, V, regard, n, +i, 'velo');
+    }
+    if (suivant?.traversee && !veh.permis) limite = Math.min(limite, veh.L - 1.5 - veh.s);
+    const avance = Math.max(0, Math.min(spec.vitesseVirage * dt, limite));
+    veh.v = avance / dt; veh.arret = avance > 0 ? 0 : veh.arret + dt;
+    veh.s += avance;
+    while (veh.s >= veh.L) {
+      const reste = veh.s - veh.L, k0 = cle(veh.anneau[veh.iseg]);
+      parSeg.set(k0, (parSeg.get(k0) || []).filter(o => o !== veh));
+      if (veh.iseg + 1 < veh.anneau.length) {
+        veh.iseg++; veh.ligne = veh.anneau[veh.iseg].ligne; veh.L = longueur(veh.ligne); veh.s = reste;
+        veh.part = !!veh.anneau[veh.iseg].traversee; veh.permis = false;
+        const k1 = cle(veh.anneau[veh.iseg]);
+        if (!parSeg.has(k1)) parSeg.set(k1, []);
+        parSeg.get(k1).push(veh);
+      } else { // sorti de l'anneau : sur sa piste de sortie
+        placer(etat, ctx, veh, veh.suite);
+        veh.s = reste; veh.ne = false;
+        break;
+      }
+    }
+  }
+  const occ = new Map();
+  for (const veh of sur) {
+    if (veh.etape !== 'anneau') continue;
+    const seg = veh.anneau[veh.iseg];
+    if (seg.traversee && veh.part) {
+      const { p, dir } = pointA(veh.ligne, veh.s);
+      if (!occ.has(seg.traversee)) occ.set(seg.traversee, []);
+      occ.get(seg.traversee).push({ p, dir });
+    }
+  }
+  etat.traverseesVelo = occ;
 }
 
 // ─── Lecture ───────────────────────────────────────────────────────────────
@@ -303,7 +473,7 @@ export function reconcilier(etat, ctx) {
     const { p, dir } = pointA(veh.ligne, veh.s);
     let best = null;
     for (const c of lignes) {
-      if (c.mode !== veh.mode) continue;
+      if (c.mode !== famille(veh.mode)) continue;
       const pr = projeterSurLigne(c.ligne, p);
       if (pr.d < 2.5 && pr.dir[0] * dir[0] + pr.dir[1] * dir[1] > 0.7 && (!best || pr.d < best.d)) best = { ...pr, c };
     }
@@ -318,7 +488,7 @@ export function reconcilier(etat, ctx) {
 }
 
 export const compter = etat => {
-  const n = { voiture: 0, velo: 0 };
+  const n = { voiture: 0, velo: 0, bus: 0 };
   for (const v of etat.vehicules) n[v.mode]++;
   return n;
 };

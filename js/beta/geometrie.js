@@ -16,8 +16,8 @@
 // posés là où les trottoirs de deux branches voisines se séparent) : chaque branche recule
 // jusqu'au point où le bord extérieur de son trottoir croise celui de chaque voisine ;
 // plus l'angle est aigu, plus elle recule. Plus jamais deux passages l'un sur l'autre.
-import { longueur, pointA, sousLigne, branches, demiLargeurs, aPiste } from './reseau.js?v=0.9.3';
-import { decalerLigne } from '../geo/decalage.js?v=0.9.3';
+import { longueur, pointA, sousLigne, branches, demiLargeurs, aPiste } from './reseau.js?v=0.9.4';
+import { decalerLigne } from '../geo/decalage.js?v=0.9.4';
 
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 const cross = (a, b) => a[0] * b[1] - a[1] * b[0];
@@ -87,6 +87,14 @@ export function geometrieReseau(reseau, R) {
       b.droite = b.sens === 1 ? l.d : l.g;
     }
     reculer(noeuds[id], R);
+    disposer(noeuds[id], reseau, R, !!n.feux);
+  }
+  // Deux passages presque collés (un tronçon court entre deux carrefours) n'en font qu'un : celui du bout a
+  for (const [id, t] of Object.entries(reseau.troncons)) {
+    const ba = noeuds[t.a].branches.find(x => x.troncon === id && x.sens === 1), bb = noeuds[t.b].branches.find(x => x.troncon === id && x.sens === -1);
+    if (!noeuds[t.a].traversees || !noeuds[t.b].traversees) continue;
+    const ecart = longueur(t.points) - ba.recul - bb.recul - (ba.z0 + Lp) - (bb.z0 + Lp);
+    if (ecart < R.fusionTraversees) { bb.passage = false; bb.arret = (noeuds[t.b].protege ? bb.Lv : 0) + 1 + bb.sas; }
   }
   const reculDe = (n, troncon, sens) => noeuds[n].branches.find(b => b.troncon === troncon && b.sens === sens).recul;
   for (const [id, t] of Object.entries(reseau.troncons)) {
@@ -103,7 +111,8 @@ export function geometrieReseau(reseau, R) {
     const pistes = aPiste(t) ? { 1: decalagesVelo(t, R, 1).map(d => decalerLigne(axe, d)), '-1': decalagesVelo(t, R, -1).map(d => decalerLigne(inverse, d)) } : null;
     const { g, d } = largeurs(t, R), La = longueur(axe);
     // Trottoirs : la ligne où l'on marche, du point piéton d'un bout à celui de l'autre
-    const s0 = noeuds[t.a].traversees ? Math.min(Lp / 2, r0) : 0, s1 = noeuds[t.b].traversees ? Math.min(Lp / 2, r1) : 0;
+    const pas = (n, sens) => { const b = noeuds[n].branches.find(x => x.troncon === id && x.sens === sens); return noeuds[n].traversees ? b.z0 + Lp / 2 : 0; };
+    const s0 = Math.min(pas(t.a, 1), La / 2 - 0.5), s1 = Math.min(pas(t.b, -1), La / 2 - 0.5);
     const milieu = s0 + s1 < La - 1 ? sousLigne(axe, s0, La - s1) : axe;
     const trottoirs = { g: decalerLigne(milieu, g + bord + tw / 2), d: decalerLigne(milieu, -(d + bord + tw / 2)) };
     troncons[id] = { axe, g, d, demi: Math.max(g, d), voies, pistes, trottoirs, longueur: La };
@@ -121,15 +130,18 @@ export function geometrieReseau(reseau, R) {
       coins.push([pa.p[0] + nrm[0] * b.gauche, pa.p[1] + nrm[1] * b.gauche], [pa.p[0] - nrm[0] * b.droite, pa.p[1] - nrm[1] * b.droite]);
     }
     n.zone = enveloppe(coins);
+    n.zoneTotale = n.zone;
+    if (n.protege) compacter(n, reseau, R);
   }
   // Les feux : un mât à droite des files qui arrivent, sur le trottoir, au droit de la ligne d'arrêt
   for (const [id, n] of Object.entries(noeuds)) {
     for (const b of n.branches) {
-      const pa = pointA(b.ext, (n.traversees ? Lp : 0) + 1), nrm = [-pa.dir[1], pa.dir[0]];
+      const pa = pointA(b.ext, b.arret), nrm = [-pa.dir[1], pa.dir[0]];
       const k = b.gauche + bord + 0.7; // les files qui arrivent sont à gauche de la branche vue depuis le nœud
       b.feu = { p: [pa.p[0] + nrm[0] * k, pa.p[1] + nrm[1] * k], velo: aPiste(reseau.troncons[b.troncon]) };
     }
     n.id = id;
+    n.anneau = n.protege ? anneau(n, R) : null;
   }
   return { noeuds, troncons, pietons: reseauPieton(reseau, noeuds, troncons, R) };
 }
@@ -172,7 +184,7 @@ function reseauPieton(reseau, noeuds, troncons, R) {
     for (let i = 0; i < k; i++) {
       const a = points[`${id}:${i}:g`], b = points[`${id}:${(i + 1) % k}:d`];
       lier(`${id}:${i}:g`, `${id}:${(i + 1) % k}:d`, [a.p, b.p], { coin: id });
-      if (n.traversees) lier(`${id}:${i}:d`, `${id}:${i}:g`, [points[`${id}:${i}:d`].p, points[`${id}:${i}:g`].p], { traversee: `${id}|${i}` });
+      if (n.traversees && n.branches[i].passage) lier(`${id}:${i}:d`, `${id}:${i}:g`, [points[`${id}:${i}:d`].p, points[`${id}:${i}:g`].p], { traversee: `${id}|${i}` });
     }
   }
   return { points };
@@ -199,6 +211,132 @@ function reculer(n, R) {
   });
   n.recul = Math.max(...n.branches.map(b => b.recul));
 }
+
+/**
+ * L'ordre des marquages devant chaque branche, depuis le carrefour (le recul) vers l'extérieur,
+ * comme dans un carrefour protégé néerlandais : la traversée cyclable (à double sens si une piste
+ * à double sens y arrive), un écart, le passage piéton, la ligne d'arrêt des vélos, puis — aux
+ * feux — le sas vélo et la ligne d'arrêt des voitures (b.sas, b.arret).
+ *   b.pisteG / b.pisteD : la piste de chaque côté de la branche vue depuis le nœud
+ *   b.Lv (largeur de la traversée cyclable, 0 sans), b.double, b.z0 (début du passage piéton), b.arret
+ * Un carrefour est « protégé » (n.protege) dès qu'une de ses branches a une piste.
+ */
+function disposer(n, reseau, R, feux) {
+  const k = n.degre, Lp = R.largeurTraversee;
+  for (const b of n.branches) {
+    const p = reseau.troncons[b.troncon].pistes;
+    b.pisteG = b.sens === 1 ? p.g : p.d;
+    b.pisteD = b.sens === 1 ? p.d : p.g;
+  }
+  n.protege = n.traversees && n.branches.some(b => b.pisteG || b.pisteD);
+  n.branches.forEach((b, i) => {
+    // Les pistes qui se font face par-dessus cette branche : la droite de la voisine de gauche, la gauche de celle de droite
+    const g = n.branches[(i + 1) % k], d = n.branches[(i - 1 + k) % k];
+    b.double = n.protege && (g.pisteD === 'double' || d.pisteG === 'double');
+    b.Lv = n.protege ? (b.double ? R.largeurTraverseeVeloDouble : R.largeurTraverseeVelo) : 0;
+    b.z0 = n.protege ? b.Lv + R.ecartTraversees : 0;
+    b.passage = n.traversees;
+    // Sas vélo aux feux : la ligne des voitures recule, les vélos attendent devant elles
+    b.sas = feux && n.traversees ? R.sas : 0;
+    b.arret = n.traversees ? b.z0 + Lp + 1 + b.sas : 0.5;
+  });
+}
+
+/**
+ * Carrefour protégé : la zone des voitures se resserre sur les chaussées automobiles (leurs bords se
+ * croisent plus près du nœud que les trottoirs) ; entre elle et l'anneau cyclable, les îlots de coin.
+ * n.zone devient cette zone compacte, n.amorces les bouts de chaussée qui la relient aux branches ;
+ * n.zoneTotale garde l'ancienne, pour les trottoirs.
+ */
+function compacter(n, reseau, R) {
+  const k = n.degre, tour = 2 * Math.PI, croise = (wi, wj, th) => (th < Math.PI - 1e-3 ? (wj + wi * Math.cos(th)) / Math.sin(th) : 0);
+  const voiture = b => reseau.troncons[b.troncon].voies * R.largeurVoie;
+  const coins = [], amorces = [];
+  n.branches.forEach((b, i) => {
+    const g = n.branches[(i + 1) % k], d = n.branches[(i - 1 + k) % k], w = voiture(b) + 0.3;
+    const r = Math.max(croise(w, voiture(g) + 0.3, (((g.angle - b.angle) % tour) + tour) % tour), croise(w, voiture(d) + 0.3, (((b.angle - d.angle) % tour) + tour) % tour)) + 1;
+    const pa = pointA(b.ext, 0), u = pa.dir, nrm = [-u[1], u[0]], recul = Math.max(0, b.recul - Math.min(r, b.recul));
+    const au = (s, o) => [pa.p[0] - u[0] * s + nrm[0] * o, pa.p[1] - u[1] * s + nrm[1] * o];
+    const V = voiture(b);
+    coins.push(au(recul, V), au(recul, -V));
+    if (recul > 0.05) amorces.push([au(0, V), au(recul, V), au(recul, -V), au(0, -V)]);
+  });
+  n.zone = enveloppe([n.p, ...coins]);
+  n.amorces = amorces;
+}
+
+/**
+ * L'anneau cyclable d'un carrefour protégé : un point de chaque côté de chaque branche (au milieu
+ * de sa traversée cyclable, dans l'axe de la piste), les traversées (de la droite à la gauche de la
+ * branche) et les coins (de la gauche de la branche i à la droite de la branche i + 1), qui tournent
+ * autour d'un îlot. On le parcourt dans le sens trigonométrique, ou à rebours sur les traversées à double sens.
+ */
+function anneau(n, R) {
+  const k = n.degre, points = {}, coins = [], traversees = [];
+  const centre = (b, cote) => {
+    const t = { voies: 0 }, kind = cote === 'g' ? b.pisteG : b.pisteD;
+    const voiture = (cote === 'g' ? b.gauche : b.droite) - (kind ? R.separateurPiste + (kind === 'double' ? R.largeurPisteDouble : R.largeurPiste) : 0);
+    return voiture + R.separateurPiste + (kind === 'double' ? R.largeurPisteDouble : R.largeurPiste) / 2;
+  };
+  n.branches.forEach((b, i) => {
+    const pa = pointA(b.ext, b.Lv / 2), nrm = [-pa.dir[1], pa.dir[0]];
+    for (const [cote, sg] of [['g', 1], ['d', -1]]) {
+      const o = centre(b, cote) * sg;
+      points[`${i}:${cote}`] = [pa.p[0] + nrm[0] * o, pa.p[1] + nrm[1] * o];
+    }
+    b.voitureG = b.gauche - (b.pisteG ? R.separateurPiste + (b.pisteG === 'double' ? R.largeurPisteDouble : R.largeurPiste) : 0);
+    b.voitureD = b.droite - (b.pisteD ? R.separateurPiste + (b.pisteD === 'double' ? R.largeurPisteDouble : R.largeurPiste) : 0);
+  });
+  n.branches.forEach((b, i) => {
+    traversees.push({ i, ligne: [points[`${i}:d`], points[`${i}:g`]], double: b.double, largeur: b.Lv });
+    // Coin : la piste contourne l'îlot par l'extérieur — courbe dont le point de contrôle est le coin
+    // extérieur (là où la piste de la branche i, tournée vers la branche j, rejoint celle de j)
+    const j = (i + 1) % k, c = n.branches[j], a = points[`${i}:g`], z = points[`${j}:d`];
+    const u = pointA(b.ext, 0).dir, v = pointA(c.ext, 0).dir;
+    const det = v[0] * u[1] - v[1] * u[0];
+    let ligne = [a, z];
+    if (Math.abs(det) > 1e-3) {
+      // a + t·v = z + m·u
+      const w = [z[0] - a[0], z[1] - a[1]], t = (w[0] * u[1] - w[1] * u[0]) / det, m = (w[0] * v[1] - w[1] * v[0]) / det;
+      if (t > 0 && m > 0) {
+        const ctl = [a[0] + v[0] * t, a[1] + v[1] * t];
+        ligne = Array.from({ length: 9 }, (_, m) => { const t = m / 8, q = 1 - t; return [q * q * a[0] + 2 * q * t * ctl[0] + t * t * z[0], q * q * a[1] + 2 * q * t * ctl[1] + t * t * z[1]]; });
+      }
+    }
+    const kinds = [b.pisteG, c.pisteD];
+    coins.push({ i, ligne, largeur: kinds.includes('double') ? R.largeurPisteDouble : R.largeurPiste, piste: kinds.some(Boolean) });
+  });
+  return { points, coins, traversees };
+}
+
+/**
+ * Le chemin d'un vélo sur l'anneau, de la branche i (côté c) à la branche j (côté c2) :
+ * [{ ligne, traversee: 'nœud|indice' | null }]. Dans le sens trigonométrique toujours permis ;
+ * à rebours seulement sur des traversées à double sens. Le plus court des deux.
+ */
+export function cheminAnneau(n, i, c, j, c2) {
+  const k = n.degre, A = n.anneau, pos = (b, cote) => 2 * b + (cote === 'g' ? 1 : 0), N = 2 * k;
+  const depart = pos(i, c), arrivee = pos(j, c2);
+  const arete = (p, sens) => {
+    // Position p → p + sens (mod N) : un coin entre g(b) et d(b+1), une traversée entre d(b) et g(b)
+    const q = (p + sens + N) % N, bas = sens === 1 ? p : q;
+    if (bas % 2 === 1) { const co = A.coins[(bas - 1) / 2]; return { ligne: sens === 1 ? co.ligne : co.ligne.slice().reverse(), traversee: null, id: `${n.id}|c${(bas - 1) / 2}` }; }
+    const tr = A.traversees[bas / 2];
+    return { ligne: sens === 1 ? tr.ligne : tr.ligne.slice().reverse(), traversee: `${n.id}|${bas / 2}`, double: tr.double, id: `${n.id}|t${bas / 2}` };
+  };
+  const parcours = sens => {
+    const out = [];
+    for (let p = depart; p !== arrivee; p = (p + sens + N) % N) out.push(arete(p, sens));
+    return out;
+  };
+  const direct = parcours(1), rebours = parcours(-1);
+  const long = ch => ch.reduce((s, e) => s + longueur(e.ligne), 0);
+  const reboursPermis = rebours.every(e => !e.traversee || e.double);
+  return reboursPermis && long(rebours) < long(direct) ? rebours : direct;
+}
+/** Côté de l'anneau où arrive une file vélo ('velo' : à sa droite = gauche de la branche) et d'où part une file. */
+export const coteEntree = voie => (voie === 'velo' ? 'g' : 'd');
+export const coteSortie = voie => (voie === 'velo' ? 'd' : 'g');
 
 /** La ligne parcourue d'une voie : { troncon, sens, voie (entier, 'velo' ou 'velo2') }. */
 export function ligneVoie(geo, v) {
@@ -233,7 +371,7 @@ export function seGenent(a, b, seuil) {
 export function liaisonsVelo(reseau, geo) {
   const out = [];
   for (const n of Object.values(geo.noeuds)) {
-    if (n.degre < 2) continue;
+    if (n.degre < 2 || n.protege) continue; // un carrefour protégé a son anneau
     for (const e of n.branches) for (const s of n.branches) {
       if (e === s) continue;
       for (const fe of filesVelo(geo, e.troncon, -e.sens)) for (const fs of filesVelo(geo, s.troncon, s.sens)) {

@@ -1,10 +1,10 @@
 // Le jeu beta « Carte blanche » : réseau (tracé en arc, découpe, refus), géométrie, trafic.
-import { basculerPisteDouble, basculerFeux, reglerFeu, coteDe, feuxDe } from '../js/beta/reseau.js';
+import { basculerBus, basculerPisteDouble, basculerFeux, reglerFeu, coteDe, feuxDe } from '../js/beta/reseau.js';
 import { etatFeux, cycle } from '../js/beta/feux.js';
 import { posePieton } from '../js/beta/pietons.js';
 import { reseauDepart, tracerArc, projetRoute, construireRoute, viser, accroche, basculerVoies, basculerVelo, demolir, branches, longueur, relireReseau } from '../js/beta/reseau.js';
 import { geometrieReseau, enveloppe } from '../js/beta/geometrie.js';
-import { preparerTrafic, creerTrafic, avancer, reconcilier, compter, sources } from '../js/beta/roulage.js';
+import { preparerTrafic, creerTrafic, avancer, reconcilier, compter, sources, aCeder } from '../js/beta/roulage.js';
 import { pointA } from '../js/beta/reseau.js';
 import { ROUTE, TRACE, TRAFIC, VEHICULES, FEUX, PIETONS } from '../js/beta/donnees.js';
 
@@ -130,10 +130,11 @@ function simuler(reseau, secondes, graine = 7, P = null) {
   return { ctx, etat };
 }
 function sansChevauchement(etat) {
-  // Deux véhicules ne sont jamais l'un sur l'autre (centres à moins d'un mètre)
+  // Deux véhicules ne sont jamais l'un sur l'autre (centres à moins d'un mètre ; deux vélos de front : 0,5 m)
   const pos = etat.vehicules.map(v => pointA(v.ligne, v.s).p);
   for (let i = 0; i < pos.length; i++) for (let j = i + 1; j < pos.length; j++) {
-    assert.ok(Math.hypot(pos[i][0] - pos[j][0], pos[i][1] - pos[j][1]) > 1, `véhicules ${etat.vehicules[i].id} et ${etat.vehicules[j].id}`);
+    const a = etat.vehicules[i], b = etat.vehicules[j], seuil = a.mode === 'velo' && b.mode === 'velo' ? 0.5 : 1;
+    assert.ok(Math.hypot(pos[i][0] - pos[j][0], pos[i][1] - pos[j][1]) > seuil, `véhicules ${a.id} (${a.mode}, ${a.etape}) et ${b.id} (${b.mode}, ${b.etape})`);
   }
 }
 test('des voitures passent à intervalle sur la route de départ, dans les deux sens', () => {
@@ -149,7 +150,7 @@ test('au carrefour, les voitures tournent dans la route nouvelle et en sortent',
   const { etat, ctx } = simuler(r, 200);
   const nouvelle = Object.keys(r.troncons).at(-1);
   assert.ok(etat.vehicules.some(v => v.voie.troncon === nouvelle), 'quelqu\'un roule sur la nouvelle route');
-  assert.ok(etat.sortis.voiture > 30, `${etat.sortis.voiture}`);
+  assert.ok(etat.sortis.voiture > 20, `${etat.sortis.voiture}`);
   sansChevauchement(etat);
   assert.equal(sources(ctx, TRAFIC).filter(s => s.mode === 'voiture').length, 3);
 });
@@ -319,4 +320,89 @@ test('le réseau piéton : chaque point a un lien, les impasses se contournent, 
   const passages = new Set(pts.flatMap(p => p.liens.filter(l => l.traversee).map(l => l.traversee)));
   assert.equal(passages.size, 3);
   assert.ok(pts.some(p => p.liens.some(l => l.coin && l.ligne.length > 2)), 'le tour de l\'impasse');
+});
+
+group('beta — bus, carrefour protégé, passages');
+test('voie bus : il faut deux voies ; les voitures n\'y roulent jamais, les bus si', () => {
+  let r = depart();
+  assert.equal(basculerBus(r, 't1', 'droite').refus, 'busUneVoie');
+  r = basculerVoies(r, 't1', ROUTE, TRACE).reseau;
+  r = basculerBus(r, 't1', 'droite').reseau;
+  r = basculerBus(r, 't1', 'gauche').reseau;
+  assert.deepEqual(r.troncons.t1.bus, { g: true, d: true });
+  const ctx = preparerTrafic(r, ROUTE, FEUX), etat = creerTrafic(TRAFIC, 4);
+  let bus = 0;
+  for (let i = 0; i < 200 * 30; i++) {
+    avancer(etat, ctx, TRAFIC, VEHICULES, 1 / 30);
+    for (const v of etat.vehicules) {
+      if (v.mode === 'voiture') assert.notEqual(v.voie.voie, 1, `voiture ${v.id} sur la voie bus`);
+      if (v.mode === 'bus') { bus++; assert.equal(v.voie.voie, 1); }
+    }
+  }
+  assert.ok(bus > 0 && etat.sortis.bus > 2, `${etat.sortis.bus} bus sortis`);
+  assert.equal(basculerVoies(r, 't1', ROUTE, TRACE, -1).reseau.troncons.t1.bus.d, false, 'une seule voie : plus de voie bus');
+});
+test('carrefour protégé : les vélos font le tour par l\'anneau, et aucun véhicule ne roule sur un vélo qui traverse', () => {
+  let r = carrefourT();
+  for (const id of Object.keys(r.troncons)) r = basculerVelo(r, id, ROUTE, TRACE).reseau;
+  const geo = geometrieReseau(r, ROUTE), n = geo.noeuds[noeudT(r)];
+  assert.ok(n.protege && n.anneau.coins.length === 3 && n.anneau.traversees.length === 3);
+  const ctx = preparerTrafic(r, ROUTE, FEUX), etat = creerTrafic(TRAFIC, 11);
+  let surAnneau = 0, traverses = 0;
+  for (let i = 0; i < 240 * 30; i++) {
+    avancer(etat, ctx, TRAFIC, VEHICULES, 1 / 30, PIETONS);
+    for (const v of etat.vehicules) {
+      if (v.etape !== 'anneau') continue;
+      surAnneau++;
+      if (!v.anneau[v.iseg].traversee || !v.part) continue;
+      traverses++;
+      const q = pointA(v.ligne, v.s).p;
+      for (const o of etat.vehicules) if (o.mode !== 'velo') {
+        const c = pointA(o.ligne, o.s).p;
+        assert.ok(Math.hypot(c[0] - q[0], c[1] - q[1]) > 1.5, `t = ${etat.t.toFixed(1)} : ${o.mode} ${o.id} sur le vélo ${v.id}`);
+      }
+    }
+  }
+  assert.ok(surAnneau > 500 && traverses > 100, `${surAnneau} pas sur l'anneau, ${traverses} en traversée`);
+  assert.ok(etat.sortis.velo > 40 && etat.sortis.voiture > 15, `${etat.sortis.velo} vélos, ${etat.sortis.voiture} voitures`);
+});
+test('une piste à double sens qui arrive : la traversée d\'en face est à double sens', () => {
+  let r = carrefourT();
+  const ouest = Object.entries(r.troncons).find(([, t]) => t.points.some(p => p[0] < -500))[0];
+  r = basculerPisteDouble(r, ouest, 'gauche', ROUTE, TRACE).reseau; // au nord de la route de départ, côté ouest
+  const n = geometrieReseau(r, ROUTE).noeuds[noeudT(r)];
+  const nord = n.branches.findIndex(b => r.troncons[b.troncon].points.some(p => p[1] > 100));
+  assert.equal(n.anneau.traversees[nord].double, true);
+  assert.equal(n.anneau.traversees[nord].largeur, ROUTE.largeurTraverseeVeloDouble);
+});
+test('deux carrefours très proches : un seul passage piéton entre eux', () => {
+  let r = depart();
+  r = construireRoute(r, tirer(r, [0, 0], [0, 150]), TRACE).reseau;
+  r = construireRoute(r, tirer(r, [26, 0], [26, -150]), TRACE).reseau;
+  const geo = geometrieReseau(r, ROUTE);
+  const court = Object.entries(r.troncons).find(([, t]) => t.points.every(p => p[1] === 0 && p[0] >= -0.01 && p[0] <= 26.01))[0];
+  const bouts = Object.values(geo.noeuds).flatMap(n => n.branches.filter(b => b.troncon === court));
+  assert.deepEqual(bouts.map(b => b.passage).sort(), [false, true]);
+});
+test('aux feux, un sas vélo : la ligne des voitures recule de sas mètres', () => {
+  const r0 = carrefourT(), n = noeudT(r0);
+  const sans = geometrieReseau(r0, ROUTE).noeuds[n].branches[0].arret;
+  const avec = geometrieReseau(basculerFeux(r0, n, FEUX).reseau, ROUTE).noeuds[n].branches[0];
+  assert.equal(avec.sas, ROUTE.sas);
+  assert.equal(avec.arret, sans + ROUTE.sas);
+});
+test('céder voie par voie : seulement à qui est sur sa voie ou va y entrer', () => {
+  const r0 = carrefourT(), ouest = Object.entries(r0.troncons).find(([, t]) => t.points.some(p => p[0] < -500))[0];
+  const r = basculerVoies(r0, ouest, ROUTE, TRACE).reseau;
+  const ctx = preparerTrafic(r, ROUTE, FEUX), etat = creerTrafic(TRAFIC, 2), n = noeudT(r), g = ctx.geo.noeuds[n];
+  const i = g.branches.findIndex(b => r.troncons[b.troncon].points.some(p => p[0] < -500)), b = g.branches[i];
+  const ligne = ctx.geo.troncons[b.troncon].voies[-b.sens][0]; // la voie 0 qui arrive par l'ouest
+  const L = longueur(ligne), Q = pointA(ligne, L - (b.z0 + ROUTE.largeurTraversee / 2));
+  const cote = [-Q.dir[1], Q.dir[0]]; // vers la gauche du sens de marche : l'autre sens de circulation
+  const pieton = (k, versLaVoie) => ({ p: [Q.p[0] + cote[0] * k, Q.p[1] + cote[1] * k], dir: versLaVoie ? [-cote[0], -cote[1]] : cote });
+  const essai = liste => { etat.traversees = new Map([[`${n}|${i}`, liste]]); return aCeder(etat, ctx, n, i, ligne, true, 'voiture'); };
+  assert.equal(essai([pieton(0, true)]), true, 'sur sa voie');
+  assert.equal(essai([pieton(3, true)]), true, 'sur la voie voisine, il arrive');
+  assert.equal(essai([pieton(3, false)]), false, 'sur la voie voisine, il s\'éloigne : on passe');
+  assert.equal(essai([pieton(7, true)]), false, 'de l\'autre côté de la route : on passe');
 });

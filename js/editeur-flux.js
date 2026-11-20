@@ -4,7 +4,7 @@
 // hypothèses d'occupation du scénario, et ce que la simulation en tire. Ce module dessine
 // et écoute : il ne modifie rien, il demande à main.js (surOperation), qui applique les
 // règles de js/simulation.js et tient l'historique.
-import { MODES_DEMANDE, SAISIE } from './data/simulation.js?v=0.9.3';
+import { MODES_DEMANDE, SAISIE } from './data/simulation.js?v=0.9.4';
 
 /**
  * racine : l'élément du bandeau ; t, lang : textes.

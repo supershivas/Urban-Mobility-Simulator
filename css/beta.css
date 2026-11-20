@@ -50,6 +50,7 @@
 .beta-groupe[data-groupe="routes"] { --groupe: var(--jeu-encre); }
 .beta-groupe[data-groupe="velo"] { --groupe: var(--beta-velo); }
 .beta-groupe[data-groupe="carrefours"] { --groupe: var(--beta-feux); }
+.beta-groupe[data-groupe="transports"] { --groupe: var(--beta-voiebus); }
 .beta-groupe-nom { padding: 0 4px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--groupe); font-weight: 700; }
 .beta-outils .beta-outil { background: var(--jeu-surface); color: var(--jeu-encre); }
 .beta-outils .beta-outil svg { stroke: var(--groupe); }
