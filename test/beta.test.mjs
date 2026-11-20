@@ -486,3 +486,45 @@ test('rond-point : autant de voies que la plus large des routes d\'accès ; pist
   assert.ok(etat.sortis.voiture > 10, `${etat.sortis.voiture}`);
   sansChevauchement(etat);
 });
+test('présélection avant un carrefour, insertion après : une voie en plus dans un seul sens, et le trafic les prend', async () => {
+  const { basculerInsertion, nbVoies } = await import('../js/beta/reseau.js');
+  const { mouvementsDu, fleches } = await import('../js/beta/mouvements.js');
+  let r = carrefourT();
+  const n = noeudT(r), avant = Object.keys(r.troncons).length;
+  // Vers l'est, au sud de l'axe, juste avant le carrefour : présélection ; juste après : insertion
+  r = basculerInsertion(r, Object.entries(r.troncons).find(([, t]) => t.points.some(p => p[0] < -500))[0], [-15, -3], ROUTE, TRACE).reseau;
+  r = basculerInsertion(r, Object.entries(r.troncons).find(([, t]) => t.points.some(p => p[0] > 500))[0], [15, -3], ROUTE, TRACE).reseau;
+  assert.equal(Object.keys(r.troncons).length, avant + 2, 'deux coupes');
+  const poche = Object.entries(r.troncons).find(([, t]) => t.extra?.[1] === 'gauche'), ins = Object.entries(r.troncons).find(([, t]) => t.extra?.[1] === 'droite');
+  assert.ok(poche && ins);
+  assert.equal(nbVoies(poche[1], 1), 2); assert.equal(nbVoies(poche[1], -1), 1);
+  assert.ok(Math.abs(longueur(poche[1].points) - ROUTE.longueurPreselection) < 0.01);
+  const g = geometrieReseau(r, ROUTE), mv = mouvementsDu(r, g.noeuds[n], n);
+  assert.deepEqual(fleches(g.noeuds[n], mv, `${poche[0]}|1|0`), ['gauche'], 'la voie de présélection tourne à gauche');
+  assert.deepEqual(fleches(g.noeuds[n], mv, `${poche[0]}|1|1`), ['toutdroit'], 'l\'autre va tout droit (pas de droite dans ce T)');
+  const { etat } = simuler(r, 240, 4);
+  sansChevauchement(etat);
+  assert.ok(etat.sortis.voiture > 20, `${etat.sortis.voiture}`);
+  // Un second clic retire, et les tronçons se recollent
+  const r2 = basculerInsertion(r, poche[0], [-15, -3], ROUTE, TRACE).reseau;
+  assert.equal(Object.keys(r2.troncons).length, avant + 1);
+});
+test('bretelle de rond-point : les voitures qui tournent à droite contournent l\'anneau, sans se chevaucher', async () => {
+  const { basculerGiratoire, basculerBretelle } = await import('../js/beta/reseau.js');
+  let r = carrefourT();
+  const n = noeudT(r);
+  r = basculerGiratoire(basculerGiratoire(r, n).reseau, n).reseau; // urbain
+  const est = Object.entries(r.troncons).find(([, t]) => t.points.some(p => p[0] > 500))[0];
+  r = basculerBretelle(r, n, est).reseau;
+  const g = geometrieReseau(r, ROUTE).noeuds[n];
+  assert.deepEqual(g.giratoire.bretelles, [est]);
+  const ctx = preparerTrafic(r, ROUTE, FEUX), etat = creerTrafic(TRAFIC, 12);
+  let vus = 0;
+  for (let i = 0; i < 240 * 30; i++) {
+    avancer(etat, ctx, TRAFIC, VEHICULES, 1 / 30);
+    vus += etat.vehicules.filter(v => v.etape === 'raccord' && v.raccord.bretelle).length;
+  }
+  assert.ok(vus > 30, `${vus} pas sur la bretelle`);
+  sansChevauchement(etat);
+  assert.equal(basculerBretelle(r, n, est).reseau.noeuds[n].bretelles[est], undefined);
+});

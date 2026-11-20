@@ -5,8 +5,8 @@
 // La voie visée se trouve par son décalage à l'axe (mètres, positif à gauche dans le sens de l'axe),
 // mesuré au point cliqué. Une chaussée non découpée (« voies non renseignées ») est d'abord découpée
 // en voies (DECOUPE : proposition, signalée au joueur), puis l'outil s'applique à celle qui est visée.
-import { decalages, changerType, changerSens, retirer, verifier } from './section.js?v=0.9.8';
-import { OUTILS, DECOUPE, BANDES, LARGEURS } from './data/bandes.js?v=0.9.8';
+import { decalages, changerType, changerSens, retirer, verifier } from './section.js?v=0.9.9';
+import { OUTILS, DECOUPE, BANDES, LARGEURS } from './data/bandes.js?v=0.9.9';
 
 const refus = (r, valeurs = {}) => ({ refus: r, valeurs });
 const SUIVANT = { aller: 'retour', retour: 'double', double: 'aller' };

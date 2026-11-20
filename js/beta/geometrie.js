@@ -16,9 +16,9 @@
 // posés là où les trottoirs de deux branches voisines se séparent) : chaque branche recule
 // jusqu'au point où le bord extérieur de son trottoir croise celui de chaque voisine ;
 // plus l'angle est aigu, plus elle recule. Plus jamais deux passages l'un sur l'autre.
-import { longueur, pointA, sousLigne, branches, demiLargeurs, aPiste } from './reseau.js?v=0.9.8';
-import { decalerLigne } from '../geo/decalage.js?v=0.9.8';
-import { GIRATOIRES } from './donnees.js?v=0.9.8';
+import { longueur, pointA, sousLigne, branches, demiLargeurs, aPiste, nbVoies } from './reseau.js?v=0.9.9';
+import { decalerLigne } from '../geo/decalage.js?v=0.9.9';
+import { GIRATOIRES } from './donnees.js?v=0.9.9';
 
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 const cross = (a, b) => a[0] * b[1] - a[1] * b[0];
@@ -36,12 +36,14 @@ export const decalageVoie = (t, voie, R) => -(largeurs(t, R).mediane + (voie + 0
  * une, la moitié intérieure de la piste à double sens d'en face. Décalages positifs à gauche.
  */
 export function decalagesVelo(t, R, sens) {
-  const { x0 } = largeurs(t, R), Ld = R.largeurPisteDouble;
+  const l = largeurs(t, R), Ld = R.largeurPisteDouble;
+  // La piste à droite du sens de marche démarre au bord de sa chaussée ; celle d'en face, au bord de l'autre
+  const x0 = sens === 1 ? l.x0d : l.x0g, x0f = sens === 1 ? l.x0g : l.x0d;
   const droite = sens === 1 ? t.pistes.d : t.pistes.g, gauche = sens === 1 ? t.pistes.g : t.pistes.d;
   const out = [];
   if (droite === 'simple') out.push(-(x0 + R.largeurPiste / 2));
   if (droite === 'double') out.push(-(x0 + (3 * Ld) / 4));
-  if (gauche === 'double') out.push(x0 + Ld / 4);
+  if (gauche === 'double') out.push(x0f + Ld / 4);
   return out;
 }
 /** Les noms des files vélo d'un sens : 'velo' (la première), 'velo2' (la seconde). */
@@ -92,12 +94,17 @@ export function geometrieReseau(reseau, R) {
       // Rond-point : autant de voies dans l'anneau que la plus large des routes qui y arrivent (au moins celles de
       // sa taille) ; de l'extérieur vers le centre : trottoir, piste en anneau (s'il y a des pistes), chaussée, îlot
       const G = GIRATOIRES[n.giratoire], br = noeuds[id].branches;
-      const nA = Math.max(G.voies, ...br.map(x => reseau.troncons[x.troncon].voies));
+      const nA = Math.max(G.voies, ...br.map(x => Math.max(nbVoies(reseau.troncons[x.troncon], 1), nbVoies(reseau.troncons[x.troncon], -1))));
       const interieur = G.rayon - G.largeur, largeur = G.largeur + (nA - G.voies) * GIRATOIRES.voieSup, rayon = interieur + largeur, lv = largeur / nA;
       noeuds[id].giratoire = { taille: n.giratoire, rayon, interieur, voies: nA, plante: G.plante,
         anneaux: Array.from({ length: nA }, (_, k) => rayon - lv * (k + 0.5)) }; // de l'extérieur vers l'intérieur
       const velos = br.some(x => aPiste(reseau.troncons[x.troncon]));
-      for (const x of br) x.recul = rayon + (velos ? GIRATOIRES.bordurePiste : GIRATOIRES.entree);
+      // Avec des bretelles, on laisse entre l'anneau et la piste (ou le trottoir) la place d'une voie et de son îlot
+      const bretelles = Object.keys(n.bretelles ?? {}).filter(t => br.some(x => x.troncon === t));
+      const place = bretelles.length ? GIRATOIRES.bretelle : 0;
+      noeuds[id].giratoire.bretelles = bretelles;
+      noeuds[id].giratoire.rayonBretelle = rayon + 1 + place / 2;
+      for (const x of br) x.recul = rayon + place + (velos ? GIRATOIRES.bordurePiste : GIRATOIRES.entree);
       noeuds[id].recul = Math.max(...br.map(x => x.recul));
     }
     disposer(noeuds[id], reseau, R, !!n.feux && !n.giratoire);
@@ -116,11 +123,8 @@ export function geometrieReseau(reseau, R) {
     const axe = sousLigne(t.points, Math.min(r0, L / 2 - 0.5), Math.max(L - r1, L / 2 + 0.5));
     const inverse = axe.slice().reverse();
     const voies = { 1: [], '-1': [] };
-    for (let v = 0; v < t.voies; v++) {
-      const d = decalageVoie(t, v, R);
-      voies[1].push(decalerLigne(axe, d));
-      voies[-1].push(decalerLigne(inverse, d));
-    }
+    for (let v = 0; v < nbVoies(t, 1); v++) voies[1].push(decalerLigne(axe, decalageVoie(t, v, R)));
+    for (let v = 0; v < nbVoies(t, -1); v++) voies[-1].push(decalerLigne(inverse, decalageVoie(t, v, R)));
     const pistes = aPiste(t) ? { 1: decalagesVelo(t, R, 1).map(d => decalerLigne(axe, d)), '-1': decalagesVelo(t, R, -1).map(d => decalerLigne(inverse, d)) } : null;
     const { g, d } = largeurs(t, R), La = longueur(axe);
     // Trottoirs : la ligne où l'on marche, du point piéton d'un bout à celui de l'autre
@@ -141,13 +145,16 @@ export function geometrieReseau(reseau, R) {
       // Le virage : un axe courbe d'un bout à l'autre ; à gauche du sens de la branche 0 vers la branche 1,
       // la droite de la branche 0 (vue depuis le nœud) et la gauche de la branche 1
       const [b0, b1] = n.branches, A = pointA(b0.ext, 0), B = pointA(b1.ext, 0);
-      const h = Math.hypot(A.p[0] - B.p[0], A.p[1] - B.p[1]) * 0.5;
+      // Cubique au plus près de l'arc de cercle : bras de (4/3)·tan(virage/4)·rayon
+      const cosT = Math.max(-1, Math.min(1, A.dir[0] * B.dir[0] + A.dir[1] * B.dir[1])), virage = Math.PI - Math.acos(cosT);
+      const rayon = n.recul / Math.tan(Math.max(0.05, virage) / 2), h = (4 / 3) * Math.tan(virage / 4) * rayon;
       // Prolongée de 0,6 m dans l'axe de chaque tronçon : ses bouts sont coupés exactement comme les leurs
       // (sinon le dernier segment de la courbe, un peu de biais, laissait voir le trottoir en filet clair à la jonction)
       const axe = [[A.p[0] + A.dir[0] * 0.6, A.p[1] + A.dir[1] * 0.6],
         ...bezier(A.p, [A.p[0] - A.dir[0] * h, A.p[1] - A.dir[1] * h], [B.p[0] - B.dir[0] * h, B.p[1] - B.dir[1] * h], B.p, 16),
         [B.p[0] + B.dir[0] * 0.6, B.p[1] + B.dir[1] * 0.6]];
-      n.virage = { axe, g: Math.max(b0.droite, b1.gauche), d: Math.max(b0.gauche, b1.droite), troncon: b0.troncon, sens: -b0.sens };
+      // Largeurs à chaque bout (vu de la branche 0 vers la branche 1) : elles passent de l'une à l'autre
+      n.virage = { axe, g: Math.max(b0.droite, b1.gauche), d: Math.max(b0.gauche, b1.droite), g0: b0.droite, g1: b1.gauche, d0: b0.gauche, d1: b1.droite, troncon: b0.troncon, sens: -b0.sens };
       n.zone = null;
       continue;
     }
@@ -245,9 +252,14 @@ function reculer(n, R) {
     const [a, b] = n.branches, tour = 2 * Math.PI;
     const th = (((b.angle - a.angle) % tour) + tour) % tour, ecart = Math.abs(Math.PI - th);
     let r = R.reculPassage;
+    // Alignés mais de largeurs différentes (une voie en plus d'un côté) : un biseau, 1 m de large pour 4 m de long
+    const delta = Math.max(Math.abs(a.gauche - b.droite), Math.abs(a.droite - b.gauche));
+    if (delta > 0.1) r = Math.max(r, 2 * delta + 1);
     if (ecart > 0.2) {
-      const theta = Math.min(th, tour - th), wa = Math.max(a.gauche, a.droite) + bord, wb = Math.max(b.gauche, b.droite) + bord;
-      r = Math.max(r, (wb + wa * Math.cos(theta)) / Math.sin(theta) + 1, (wa + wb * Math.cos(theta)) / Math.sin(theta) + 1);
+      // Le virage est un arc de cercle tangent aux deux tronçons : son rayon vaut recul / tan(virage / 2) ;
+      // il doit dépasser la demi-largeur (trottoir compris) du côté intérieur, sinon le bord se replie
+      const theta = Math.min(th, tour - th), virage = Math.PI - theta, w = Math.max(a.gauche, a.droite, b.gauche, b.droite) + bord;
+      r = Math.max(r, (w + 1.5) * Math.tan(virage / 2));
     }
     for (const x of n.branches) x.recul = r;
     n.recul = r;
@@ -338,6 +350,30 @@ function arrondir(n, reseau, R) {
   const piste = n.protege ? Math.max(...n.branches.map(b => b.Lv)) : 0;
   n.zoneTotale = cercle(n.p, Math.max(...n.branches.map(b => b.recul)) + piste);
 }
+
+/**
+ * La bretelle d'un rond-point : de la fin de la voie de droite qui arrive, un arc qui épouse le coin, hors de
+ * l'anneau, jusqu'au début de la voie de droite de la branche voisine (sens trigonométrique : à droite en arrivant).
+ */
+export function cheminBretelle(n, entree, sortie) {
+  const G = n.giratoire, c = n.p, rb = G.rayonBretelle;
+  const fin = entree[entree.length - 1], debut = sortie[0];
+  const t0 = pointA(entree, longueur(entree)).dir, t1 = pointA(sortie, 0).dir;
+  const angle = p => Math.atan2(p[1] - c[1], p[0] - c[0]);
+  let a0 = angle(fin) + 0.12, a1 = angle(debut) - 0.12;
+  while (a1 <= a0) a1 += 2 * Math.PI;
+  const pt = a => [c[0] + rb * Math.cos(a), c[1] + rb * Math.sin(a)], tg = a => [-Math.sin(a), Math.cos(a)];
+  const P0 = pt(a0), P1 = pt(a1), T0 = tg(a0), T1 = tg(a1);
+  const h0 = dist(fin, P0) * 0.5, h1 = dist(P1, debut) * 0.5;
+  const nArc = Math.max(3, Math.ceil(((a1 - a0) * rb) / 3));
+  return [
+    ...bezier(fin, [fin[0] + t0[0] * h0, fin[1] + t0[1] * h0], [P0[0] - T0[0] * h0, P0[1] - T0[1] * h0], P0, 5),
+    ...Array.from({ length: nArc }, (_, i) => pt(a0 + ((a1 - a0) * (i + 1)) / nArc)),
+    ...bezier(P1, [P1[0] + T1[0] * h1, P1[1] + T1[1] * h1], [debut[0] - t1[0] * h1, debut[1] - t1[1] * h1], debut, 5).slice(1),
+  ];
+}
+/** La bretelle est-elle permise de la branche i (tronçon entrée) vers la branche j ? Sa voisine de droite seulement. */
+export const estBretelle = (n, i, j) => !!n.giratoire?.bretelles?.includes(n.branches[i].troncon) && j === (i + 1) % n.degre;
 
 /**
  * Le chemin d'un véhicule dans un rond-point (sens trigonométrique : on roule à droite) : de la fin

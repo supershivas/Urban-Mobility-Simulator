@@ -12,12 +12,12 @@
 // Feux (v0.9.2) : on n'entre qu'au vert de sa branche. Passages piétons : on s'arrête
 // avant un passage où quelqu'un traverse, et l'on n'entre pas dans un carrefour dont le
 // passage de sortie est occupé. Les piétons eux-mêmes vivent dans pietons.js.
-import { createRng } from '../lib/rng.js?v=0.9.8';
-import { longueur, pointA, projeterSurLigne, feuxDe, aPiste, voieBus } from './reseau.js?v=0.9.8';
-import { geometrieReseau, ligneVoie, raccord, seGenent, filesVelo, cheminAnneau, coteEntree, coteSortie, cheminGiratoire } from './geometrie.js?v=0.9.8';
-import { etatFeux, decalageDe } from './feux.js?v=0.9.8';
-import { creerPietons, avancerPietons, reconcilierPietons } from './pietons.js?v=0.9.8';
-import { mouvementsDu, cle as cleMouvement, deCle } from './mouvements.js?v=0.9.8';
+import { createRng } from '../lib/rng.js?v=0.9.9';
+import { longueur, pointA, projeterSurLigne, feuxDe, aPiste, voieBus, nbVoies, extraDe } from './reseau.js?v=0.9.9';
+import { geometrieReseau, ligneVoie, raccord, seGenent, filesVelo, cheminAnneau, coteEntree, coteSortie, cheminGiratoire, cheminBretelle, estBretelle } from './geometrie.js?v=0.9.9';
+import { etatFeux, decalageDe } from './feux.js?v=0.9.9';
+import { creerPietons, avancerPietons, reconcilierPietons } from './pietons.js?v=0.9.9';
+import { mouvementsDu, cle as cleMouvement, deCle } from './mouvements.js?v=0.9.9';
 
 const cleVoie = v => `${v.troncon}|${v.sens}|${v.voie}`;
 
@@ -78,11 +78,15 @@ function raccordDe(ctx, entree, sortie) {
   let r = ctx.raccords.get(cle);
   if (!r) {
     const ne = ctx.geo.noeuds[noeudFin(ctx, entree)];
-    const ligne = ne.giratoire ? cheminGiratoire(ne, ligneVoie(ctx.geo, entree), ligneVoie(ctx.geo, sortie), entree.voie) : raccord(ligneVoie(ctx.geo, entree), ligneVoie(ctx.geo, sortie));
+    // Bretelle : depuis la voie de droite, vers la branche voisine en sens horaire
+    const iE = ne.branches.findIndex(b => b.troncon === entree.troncon && b.sens === -entree.sens), iS = ne.branches.findIndex(b => b.troncon === sortie.troncon && b.sens === sortie.sens);
+    const bretelle = ne.giratoire && estBretelle(ne, iE, iS) && entree.voie === nbVoies(ctx.reseau.troncons[entree.troncon], entree.sens) - 1;
+    const ligne = bretelle ? cheminBretelle(ne, ligneVoie(ctx.geo, entree), ligneVoie(ctx.geo, sortie)) : ne.giratoire ? cheminGiratoire(ne, ligneVoie(ctx.geo, entree), ligneVoie(ctx.geo, sortie), entree.voie) : raccord(ligneVoie(ctx.geo, entree), ligneVoie(ctx.geo, sortie));
     // Le virage du raccord (angle entre l'entrée et la sortie) : tout droit, on ne ralentit pas
     const a = pointA(ligne, 0).dir, b = pointA(ligne, longueur(ligne)).dir;
     const virage = Math.acos(Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1])));
-    r = { cle, ligne, longueur: longueur(ligne), entree: cleVoie(entree), sortie: cleVoie(sortie), virage: ne.giratoire ? Math.PI : virage, fusion: ne.giratoire ? ligne[6] : null };
+    r = { cle, ligne, longueur: longueur(ligne), entree: cleVoie(entree), sortie: cleVoie(sortie), virage: ne.giratoire ? Math.PI : virage, fusion: ne.giratoire && !bretelle ? ligne[6] : null, bretelle,
+      longEntree: ne.giratoire && !bretelle ? longueur(ligne.slice(0, 7)) : 0 };
     ctx.raccords.set(cle, r);
   }
   return r;
@@ -115,14 +119,20 @@ function choisirSuite(etat, ctx, v, mode) {
     return { troncon: s.troncon, sens: s.sens, voie: mode === 'bus' ? voieDe(t, s.sens, 'bus', 0) : voieDe(t, s.sens, mode, s.voie) };
   }
   const b = etat.rng.pick(options), t = ctx.reseau.troncons[b.troncon];
-  return { troncon: b.troncon, sens: b.sens, voie: voieDe(t, b.sens, mode, v.voie) };
+  // Entre deux tronçons qui se suivent : on garde sa voie, sauf là où une voie apparaît (présélection, à gauche :
+  // les autres se décalent, et la voie de gauche s'y range une fois sur deux) ou disparaît (insertion : on se rabat)
+  const tIn = ctx.reseau.troncons[v.troncon], exIn = extraDe(tIn, v.sens), exOut = extraDe(t, b.sens);
+  let k = v.voie;
+  if (exOut === 'gauche' && exIn !== 'gauche') k = v.voie === 0 && etat.rng.chance(0.5) ? 0 : v.voie + 1;
+  else if (exIn === 'gauche' && exOut !== 'gauche') k = Math.max(0, v.voie - 1);
+  return { troncon: b.troncon, sens: b.sens, voie: voieDe(t, b.sens, mode, k) };
 }
 
 /** La voie prise sur un tronçon : un bus prend la voie bus (ou la plus à droite) ; une voiture n'y va jamais. */
 function voieDe(t, sens, mode, voulue) {
   const vb = voieBus(t, sens);
-  if (mode === 'bus') return vb ?? t.voies - 1;
-  const v = Math.min(voulue, t.voies - 1);
+  if (mode === 'bus') return vb ?? nbVoies(t, sens) - 1;
+  const v = Math.min(voulue, nbVoies(t, sens) - 1);
   return vb !== null && v === vb ? v - 1 : v;
 }
 
@@ -156,7 +166,7 @@ export function sources(ctx, T) {
       const intervalle = n.bord ? T.intervalleBord : T.intervalleImpasse;
       // Une demande par bout de route, quelle que soit sa largeur : doubler les voies ajoute de la place, pas des voitures
       const vb = voieBus(t, b.sens);
-      out.push({ cle: `${id}|auto`, noeud: id, mode: 'voiture', voies: Array.from({ length: t.voies }, (_, k) => ({ troncon: b.troncon, sens: b.sens, voie: k })).filter(v => v.voie !== vb), intervalle });
+      out.push({ cle: `${id}|auto`, noeud: id, mode: 'voiture', voies: Array.from({ length: nbVoies(t, b.sens) }, (_, k) => ({ troncon: b.troncon, sens: b.sens, voie: k })).filter(v => v.voie !== vb), intervalle });
       // Les bus arrivent par les bouts de la carte
       if (n.bord) out.push({ cle: `${id}|bus`, noeud: id, mode: 'bus', voies: [{ troncon: b.troncon, sens: b.sens, voie: voieDe(t, b.sens, 'bus', 0) }], intervalle: T.intervalleBus });
     }
@@ -204,7 +214,9 @@ function premierSur(parCle, cles) {
 function devant(veh, parCle, ctx, V, etat) {
   const l = parCle.get(veh.etape === 'voie' ? cleVoie(veh.voie) : veh.raccord.cle);
   const i = l.indexOf(veh), suivant = l[i + 1];
-  if (suivant) return { gap: suivant.s - veh.s - V[suivant.mode].longueur, v: suivant.v };
+  // Dans un rond-point, le suivant sur son propre chemin n'est pas forcément le plus proche : on le compare aux autres
+  const dansGiratoire = veh.etape === 'raccord' && ctx.geo.noeuds[noeudFin(ctx, veh.voie)].giratoire;
+  if (suivant && !dansGiratoire) return { gap: suivant.s - veh.s - V[suivant.mode].longueur, v: suivant.v };
   const reste = veh.L - veh.s;
   if (veh.etape === 'voie') {
     if (!veh.suite) return { gap: Infinity, v: 0 };
@@ -260,14 +272,32 @@ function devant(veh, parCle, ctx, V, etat) {
   // Dans le carrefour : on attend au bout du raccord si quelqu'un traverse la branche de sortie
   const n = noeudFin(ctx, veh.voie);
   if (ctx.geo.noeuds[n].giratoire) {
-    // Dans l'anneau, des chemins différents se partagent la chaussée : on suit qui est devant soi, d'où qu'il vienne
+    // Dans l'anneau, des chemins différents se partagent la chaussée. Sur une voie de l'anneau, on suit le plus
+    // proche devant soi en angle (sens trigonométrique) ; sur sa courbe d'entrée ou de sortie, qui est devant soi.
+    const G = ctx.geo.noeuds[n].giratoire, c = ctx.geo.noeuds[n].p, lv = (G.rayon - G.interieur) / G.voies;
     const { p, dir } = pointA(veh.ligne, veh.s);
-    let gap = Infinity, vd = 0;
+    const voieDe_ = q => { const r = Math.hypot(q[0] - c[0], q[1] - c[1]); const k = G.anneaux.findIndex(a => Math.abs(r - a) < lv * 0.55); return k; };
+    const kv = veh.raccord.bretelle ? -1 : voieDe_(p), thv = Math.atan2(p[1] - c[1], p[0] - c[0]);
+    let gap = suivant ? suivant.s - veh.s - V[suivant.mode].longueur : Infinity, vd = suivant ? suivant.v : 0;
     for (const o of etat.vehicules) {
-      if (o === veh || o.etape !== 'raccord' || noeudFin(ctx, o.voie) !== n) continue;
-      const q = pointA(o.ligne, o.s).p, d = [q[0] - p[0], q[1] - p[1]];
+      if (o === veh || o === suivant || o.etape !== 'raccord' || noeudFin(ctx, o.voie) !== n) continue;
+      const q = pointA(o.ligne, o.s).p, d = [q[0] - p[0], q[1] - p[1]], lo = V[o.mode].longueur;
+      // Venus de la même voie : même courbe d'entrée, même voie d'anneau — l'ordre est celui du parcours
+      if (o.raccord.entree === veh.raccord.entree && o.raccord.bretelle === veh.raccord.bretelle && veh.s < (veh.raccord.longEntree ?? 0) + 4) {
+        if (o.s > veh.s && o.s - veh.s < 40 && o.s - veh.s - lo < gap) { gap = o.s - veh.s - lo; vd = o.v; }
+        continue;
+      }
+      if (kv >= 0 && !o.raccord.bretelle && voieDe_(q) === kv) {
+        let da = Math.atan2(q[1] - c[1], q[0] - c[0]) - thv;
+        da = ((da % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+        const le_long = da * G.anneaux[kv];
+        if (le_long > 0 && le_long < 40 && le_long - lo < gap) { gap = le_long - lo; vd = o.v; }
+        continue;
+      }
       const le_long = d[0] * dir[0] + d[1] * dir[1], cote = Math.abs(d[0] * dir[1] - d[1] * dir[0]);
-      if (le_long > 0 && cote < 2.2 && le_long - V[o.mode].longueur < gap) { gap = le_long - V[o.mode].longueur; vd = o.v; }
+      if (le_long > 0 && cote < 2.2 && le_long - lo < gap) { gap = le_long - lo; vd = o.v; }
+      // Sur sa courbe (entrée, sortie depuis une voie intérieure) : on cède à qui roule sur l'anneau tout près
+      else if (kv < 0 && !veh.raccord.bretelle && voieDe_(q) >= 0 && Math.hypot(d[0], d[1]) < lo + 2.5 && le_long > -1.5 && cote < 3) { gap = Math.min(gap, Math.max(0, le_long - lo)); vd = 0; }
     }
     if (gap < Infinity) {
       const o = premierSur(parCle, [veh.raccord.sortie]);
@@ -315,7 +345,11 @@ function admettre(etat, ctx, T, V, parCle) {
       const place = !sortie || sortie.s > V[sortie.mode].longueur + V[veh.mode].ecart + 1;
       if (g.giratoire) {
         // Rond-point : on cède à qui roule déjà dans l'anneau et arrive vers notre point d'entrée
-        if (place && !anneauCharge(etat, ctx, V, n, r.fusion)) { veh.admis = true; veh.occupe = n; veh.engage = r; }
+        // Par la bretelle : on ne coupe pas l'anneau ; on cède seulement à qui en sort vers la même voie
+        const libre = r.bretelle
+          ? !etat.vehicules.some(o => o.etape === 'raccord' && o.raccord?.sortie === r.sortie && !o.raccord.bretelle && o.L - o.s < 14)
+          : !anneauCharge(etat, ctx, V, n, r.fusion) && !sortiePar(etat, ctx, n, veh.voie);
+        if (place && libre) { veh.admis = true; veh.occupe = n; veh.engage = r; }
         continue;
       }
       const ok = place && engages.every(o => compatibles(ctx, r, o, T.conflit)) && reserves.every(o => compatibles(ctx, r, o, T.conflit));
@@ -379,6 +413,12 @@ export function avancer(etat, ctx, T, V, dt, P) {
   etat.vehicules = restants;
 }
 
+/** Quelqu'un sort-il du rond-point n par la branche où arrive la voie `voie` (sa courbe de sortie croiserait la nôtre) ? */
+function sortiePar(etat, ctx, n, voie) {
+  const t = voie.troncon;
+  return etat.vehicules.some(o => o.etape === 'raccord' && !o.raccord?.bretelle && noeudFin(ctx, o.voie) === n && o.suite?.troncon === t && o.L - o.s < 22);
+}
+
 /** Un véhicule de l'anneau du rond-point n arrive-t-il vers le point d'entrée P (ou y est-il) ? */
 function anneauCharge(etat, ctx, V, n, P) {
   const G = ctx.geo.noeuds[n].giratoire, c = ctx.geo.noeuds[n].p, aP = Math.atan2(P[1] - c[1], P[0] - c[0]);
@@ -386,11 +426,14 @@ function anneauCharge(etat, ctx, V, n, P) {
     if (o.etape !== 'raccord' || noeudFin(ctx, o.voie) !== n) continue;
     const q = pointA(o.ligne, o.s).p, d = Math.hypot(q[0] - P[0], q[1] - P[1]);
     if (d < V[o.mode].longueur + 2.5) return true;
-    const r = Math.hypot(q[0] - c[0], q[1] - c[1]);
-    if (r < G.interieur - 1 || r > G.rayon + 1) continue; // pas encore (ou plus) dans l'anneau
+    if (o.raccord.bretelle) continue; // la bretelle ne passe pas par l'anneau
+    // Dans l'anneau, ou encore sur sa courbe d'entrée : ce qu'il lui reste à tourner (sens trigonométrique) jusqu'à P
+    const r = Math.max(G.interieur, Math.min(G.rayon, Math.hypot(q[0] - c[0], q[1] - c[1])));
     let da = aP - Math.atan2(q[1] - c[1], q[0] - c[0]);
-    da = ((da % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI); // ce qu'il lui reste à tourner (sens trigonométrique) jusqu'à P
-    if (da * r < Math.max(8, o.v * 2.5 + V[o.mode].longueur)) return true;
+    da = ((da % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    // Seulement s'il passe bien par P (il ne sort pas avant) : sa sortie est plus loin que P sur son chemin
+    const restant = o.L - o.s, versP = da * r;
+    if (versP < restant && versP < Math.max(12, o.v * 3 + V[o.mode].longueur + 4)) return true;
   }
   return false;
 }

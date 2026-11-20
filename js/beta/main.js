@@ -4,21 +4,21 @@
 // (pistes de chaque côté, piste à double sens), carrefours (feux et leurs durées).
 // Cycle de vie, commandes, sauvegarde.
 // Les règles sont dans reseau.js et roulage.js (purs ; jamais « trafic.js » : les bloqueurs de publicités le refusent) ; le dessin dans scene.js.
-import { createStore, autosave } from '../lib/save.js?v=0.9.8';
-import { createI18n } from '../lib/i18n.js?v=0.9.8';
-import { createLoop } from '../lib/loop.js?v=0.9.8';
-import { startUpdateCheck, loadVersion } from '../lib/app-update.js?v=0.9.8';
-import { creerHistorique } from '../historique.js?v=0.9.8';
-import { ROLES, PALETTE_BETA } from '../palette.js?v=0.9.8';
-import { contraindre, deplacer, tourner, zoomer } from '../scene/camera.js?v=0.9.8';
-import { TEXTES_BETA } from './textes.js?v=0.9.8';
-import { ROUTE, TRACE, DEPART, VEHICULES, TRAFIC, CAMERA, FEUX, PIETONS } from './donnees.js?v=0.9.8';
-import { reseauDepart, relireReseau, viser, accroche, projetRoute, construireRoute, basculerVoies, basculerVelo, demolir, basculerPisteDouble, coteDe, basculerFeux, reglerFeu, feuxDe, viserCarrefour, basculerBus, busDe, basculerIlot, basculerGiratoire, projeterSurLigne } from './reseau.js?v=0.9.8';
-import { basculerMouvement, mouvementsDu, cle as cleVoie } from './mouvements.js?v=0.9.8';
-import { ligneVoie, raccord } from './geometrie.js?v=0.9.8';
-import { posePieton } from './pietons.js?v=0.9.8';
-import { preparerTrafic, creerTrafic, avancer, reconcilier, poseVehicule, compter } from './roulage.js?v=0.9.8';
-import { creerSceneBeta } from './scene.js?v=0.9.8';
+import { createStore, autosave } from '../lib/save.js?v=0.9.9';
+import { createI18n } from '../lib/i18n.js?v=0.9.9';
+import { createLoop } from '../lib/loop.js?v=0.9.9';
+import { startUpdateCheck, loadVersion } from '../lib/app-update.js?v=0.9.9';
+import { creerHistorique } from '../historique.js?v=0.9.9';
+import { ROLES, PALETTE_BETA } from '../palette.js?v=0.9.9';
+import { contraindre, deplacer, tourner, zoomer } from '../scene/camera.js?v=0.9.9';
+import { TEXTES_BETA } from './textes.js?v=0.9.9';
+import { ROUTE, TRACE, DEPART, VEHICULES, TRAFIC, CAMERA, FEUX, PIETONS } from './donnees.js?v=0.9.9';
+import { reseauDepart, relireReseau, viser, accroche, projetRoute, construireRoute, basculerVoies, basculerVelo, demolir, basculerPisteDouble, coteDe, basculerFeux, reglerFeu, feuxDe, viserCarrefour, basculerBus, busDe, basculerIlot, basculerGiratoire, projeterSurLigne, nbVoies, basculerBretelle, basculerInsertion, longueur as longueurLigne } from './reseau.js?v=0.9.9';
+import { basculerMouvement, mouvementsDu, cle as cleVoie } from './mouvements.js?v=0.9.9';
+import { ligneVoie, raccord } from './geometrie.js?v=0.9.9';
+import { posePieton } from './pietons.js?v=0.9.9';
+import { preparerTrafic, creerTrafic, avancer, reconcilier, poseVehicule, compter } from './roulage.js?v=0.9.9';
+import { creerSceneBeta } from './scene.js?v=0.9.9';
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -127,6 +127,13 @@ function majSurvol() {
   if (outil === 'giratoire') {
     const c = carrefourVise(p);
     if (!c) { scene.majSurvol(); etiquette(null); return; }
+    const coin = coinBretelle(c, p);
+    if (coin) {
+      const r = basculerBretelle(reseau, c.noeud, coin.entree);
+      scene.majSurvol({ carrefour: { p: coin.p, rayon: 3, refus: !!r.refus } });
+      etiquette(r.refus ? t(`refus.${r.refus}`) : t(reseau.noeuds[c.noeud].bretelles?.[coin.entree] ? 'survol.sansbretelle' : 'survol.bretelle'), !!r.refus);
+      return;
+    }
     const r = basculerGiratoire(reseau, c.noeud);
     scene.majSurvol({ carrefour: { p: c.geo.p, rayon: c.geo.recul + 2, refus: !!r.refus } });
     etiquette(r.refus ? t(`refus.${r.refus}`) : t(`survol.giratoire.${r.reseau.noeuds[c.noeud].giratoire ?? 'aucun'}`), !!r.refus);
@@ -163,6 +170,14 @@ function majSurvol() {
     etiquette(r.refus ? t(`refus.${r.refus}`) : t(`survol.ilot.${r.reseau.troncons[v.troncon].ilot ?? 'aucun'}`), !!r.refus);
     return;
   }
+  if (outil === 'insertion') {
+    // Le côté donne le sens ; le bout le plus proche, le carrefour : présélection si l'on y arrive, insertion si l'on en part
+    const cote = coteDe(reseau, v.troncon, p), sens = cote === 'droite' ? 1 : -1, r = basculerInsertion(reseau, v.troncon, p, ROUTE, TRACE);
+    const L = projeterSurLigne(tr.points, p), versA = L.s < longueurLigne(tr.points) / 2, arrive = (sens === 1) !== versA;
+    scene.majSurvol({ troncon: { ...troncon, cote } });
+    etiquette(r.refus ? t(`refus.${r.refus}`) : t(tr.extra?.[sens] ? 'survol.sansInsertion' : arrive ? 'survol.preselection' : 'survol.insertion'), !!r.refus);
+    return;
+  }
   if (outil === 'bus') {
     // La voie bus du sens qui roule de ce côté
     const cote = coteDe(reseau, v.troncon, p), r = basculerBus(reseau, v.troncon, cote);
@@ -189,9 +204,27 @@ function majSurvol() {
   etiquette(r.refus ? t(`refus.${r.refus}`) : t(simples ? 'survol.sansvelo' : tr.pistes.g || tr.pistes.d ? 'survol.velodeux' : 'survol.velo'), !!r.refus);
 }
 
+/**
+ * Sur un rond-point, le pointeur près de l'anneau (pas au centre) vise un coin : la bretelle de tourne-à-droite
+ * qui irait d'une des deux branches de ce coin vers l'autre.
+ */
+function coinBretelle(c, p) {
+  const g = c.geo;
+  if (!g.giratoire) return null;
+  const d = Math.hypot(p[0] - g.p[0], p[1] - g.p[1]);
+  if (d < g.giratoire.interieur + 1) return null;
+  const a = Math.atan2(p[1] - g.p[1], p[0] - g.p[0]), tour = 2 * Math.PI, horaire = x => (((a - x) % tour) + tour) % tour;
+  // L'entrée : la première branche en tournant en sens horaire depuis le pointeur ; la sortie, sa voisine suivante
+  const i = g.branches.reduce((best, b, k) => (horaire(b.angle) < horaire(g.branches[best].angle) ? k : best), 0);
+  const ai = g.branches[i].angle, ecart = (((g.branches[(i + 1) % g.degre].angle - ai) % tour) + tour) % tour;
+  const milieu = ai + ecart / 2, r = g.giratoire.rayonBretelle;
+  return { entree: g.branches[i].troncon, p: [g.p[0] + r * Math.cos(milieu), g.p[1] + r * Math.sin(milieu)] };
+}
+
 /** Le carrefour sous le pointeur (outil Feux). */
 function carrefourVise(p) {
-  const c = viserCarrefour(historique.etat, p, Math.max(18, rayonVisee()));
+  // Un rond-point se vise jusqu'à son bord (son coin, pour une bretelle)
+  const c = viserCarrefour(historique.etat, p, Math.max(outil === 'giratoire' ? 36 : 18, rayonVisee()));
   return c && { ...c, geo: ctx.geo.noeuds[c.noeud] };
 }
 function survolFeux(p) {
@@ -224,8 +257,9 @@ function cliquer(p, maj = false) {
       if (v) depart = accroche(reseau, v, TRACE);
     }
   } else if (outil === 'giratoire') {
-    const c = carrefourVise(p);
-    if (c) faire(basculerGiratoire(reseau, c.noeud), t('toast.giratoire'));
+    const c = carrefourVise(p), coin = c && coinBretelle(c, p);
+    if (coin) faire(basculerBretelle(reseau, c.noeud, coin.entree));
+    else if (c) faire(basculerGiratoire(reseau, c.noeud), t('toast.giratoire'));
   } else if (outil === 'mouvements') {
     cliquerMouvements(p);
   } else if (outil === 'feux') {
@@ -238,6 +272,7 @@ function cliquer(p, maj = false) {
     const v = viser(reseau, p, rayonVisee());
     if (v) {
       if (outil === 'demolir') faire(demolir(reseau, v.troncon), t('toast.demolie'));
+      else if (outil === 'insertion') faire(basculerInsertion(reseau, v.troncon, p, ROUTE, TRACE));
       else if (outil === 'ilot') faire(basculerIlot(reseau, v.troncon, ROUTE, TRACE));
       else if (outil === 'bus') faire(basculerBus(reseau, v.troncon, coteDe(reseau, v.troncon, p)));
       else if (outil === 'double') faire(basculerPisteDouble(reseau, v.troncon, coteDe(reseau, v.troncon, p), ROUTE, TRACE));
@@ -264,7 +299,7 @@ function vueMouvements() {
       liens.push({ entree: e, sortie: sc, ligne: raccord(le, ls) });
     }
   }
-  n.branches.forEach(b => { const t = historique.etat.troncons[b.troncon]; for (let k = 0; k < t.voies; k++) { const l = ligneVoie(ctx.geo, { troncon: b.troncon, sens: b.sens, voie: k }); sorties.push({ cle: cleVoie({ troncon: b.troncon, sens: b.sens, voie: k }), p: l[0] }); } });
+  n.branches.forEach(b => { const t = historique.etat.troncons[b.troncon]; for (let k = 0; k < nbVoies(t, b.sens); k++) { const l = ligneVoie(ctx.geo, { troncon: b.troncon, sens: b.sens, voie: k }); sorties.push({ cle: cleVoie({ troncon: b.troncon, sens: b.sens, voie: k }), p: l[0] }); } });
   return { id, n, liens, entrees, sorties };
 }
 const proche = (liste, p, r) => liste.reduce((best, x) => { const d = Math.hypot(x.p[0] - p[0], x.p[1] - p[1]); return d < r && (!best || d < best.d) ? { ...x, d } : best; }, null);
@@ -415,7 +450,7 @@ vue.addEventListener('wheel', e => {
 // ─── Clavier ───────────────────────────────────────────────────────────────
 const tenues = new Set();
 const ORDRE = ['route', 'voies', 'demolir', 'velo', 'double', 'feux', 'bus', 'ilot', 'giratoire', 'mouvements'];
-const OUTILS = { Delete: 'demolir' };
+const OUTILS = { Delete: 'demolir', KeyI: 'insertion' };
 ORDRE.forEach((o, i) => { OUTILS[`Digit${(i + 1) % 10}`] = o; OUTILS[`Numpad${(i + 1) % 10}`] = o; });
 document.addEventListener('keydown', e => {
   if (document.querySelector('dialog[open]')) return;
@@ -530,7 +565,7 @@ vue.focus();
 
 // ─── Mode debug (section 18) ───────────────────────────────────────────────
 if (DEBUG) {
-  const { installDebug } = await import('../lib/debug.js?v=0.9.8');
+  const { installDebug } = await import('../lib/debug.js?v=0.9.9');
   installDebug({
     state: () => ({
       outil, depart: depart && { ...depart }, projet: projet && { refus: projet.refus ?? null, longueur: projet.longueur, libre: !!projet.fin.libre },

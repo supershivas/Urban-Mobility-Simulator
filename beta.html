@@ -7,8 +7,8 @@
 <title>Urban Mobility Simulator — Carte blanche (bêta)</title>
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="js/lib/game.css?v=0.9.8">
-<link rel="stylesheet" href="css/beta.css?v=0.9.8">
+<link rel="stylesheet" href="js/lib/game.css?v=0.9.9">
+<link rel="stylesheet" href="css/beta.css?v=0.9.9">
 </head>
 <body>
 <!-- Jeu beta « Carte blanche » (v0.9.0) : une carte vierge en 3D, une route, et ce que le joueur y construit.
@@ -67,6 +67,9 @@
       <button class="bouton beta-outil" data-outil="mouvements" data-i18n-title="outil.mouvements" aria-pressed="false">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21v-7c0-4 4-6 8-6h3M16 5l3 3-3 3M8 14c0-3-2-5-5-5"/></svg>
         <span data-i18n="outil.mouvements"></span> <kbd>0</kbd></button>
+      <button class="bouton beta-outil" data-outil="insertion" data-i18n-title="outil.insertion" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V3M12 21V3"/><path d="M12 13c0 3 4 4 6 8" class="tiret"/><path d="M18 3v6"/></svg>
+        <span data-i18n="outil.insertion"></span> <kbd>I</kbd></button>
     </div>
   </nav>
 
@@ -152,6 +155,6 @@
     }, 30000);
   })();
 </script>
-<script type="module" src="js/beta/main.js?v=0.9.8"></script>
+<script type="module" src="js/beta/main.js?v=0.9.9"></script>
 </body>
 </html>

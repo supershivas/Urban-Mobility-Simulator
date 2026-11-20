@@ -12,6 +12,8 @@ export const ROUTE = {
   largeurTraverseeVelo: 2.0, largeurTraverseeVeloDouble: 3.0, // m, traversée cyclable d'un carrefour protégé
   ecartTraversees: 0.6,    // m, entre la traversée cyclable et le passage piéton
   fusionTraversees: 8,     // m, deux passages plus proches n'en font qu'un
+  longueurPreselection: 40, // m, voie de tourne-à-gauche avant un carrefour
+  longueurInsertion: 50,   // m, voie d'insertion après un carrefour, avant de se rabattre
   largeurRefuge: 2.0,      // m, îlot refuge (et zone peinte entre les deux sens)
   largeurTerrePlein: 3.0,  // m, terre-plein central planté
   sas: 4,                  // m, sas vélo aux feux (zone avancée devant les voitures)
@@ -45,6 +47,7 @@ export const GIRATOIRES = {
   grand: { rayon: 24, largeur: 9, voies: 2, plante: true },
   entree: 1.5,             // m entre le bord de l'anneau et le passage piéton (sans pistes)
   bordurePiste: 1,         // m de bordure entre l'anneau et la piste qui en fait le tour
+  bretelle: 6,             // m de plus entre l'anneau et la piste pour une bretelle (voie de 3,5 m et îlot)
   voieSup: 4,              // m de plus par voie d'anneau au-delà de celles de sa taille
 };
 

@@ -262,6 +262,38 @@ export function basculerVoies(reseau, id, R, T, delta = 1) {
   return changer(reseau, id, { ...t, voies, ...(voies < 2 ? { bus: SANS_BUS } : {}) }, R, T);
 }
 
+/**
+ * Voie de présélection ou d'insertion, au clic d'un côté d'un tronçon, près d'un carrefour (Jérôme, v0.9.9).
+ * Le côté donne le sens (côté d : sens +1) ; le bout le plus proche du point donne le carrefour. Si ce sens
+ * y arrive : une voie de tourne-à-gauche sur les `R.longueurPreselection` derniers mètres ; s'il en part :
+ * une voie à droite sur les `R.longueurInsertion` premiers mètres, qui se rabat ensuite. Le tronçon est coupé
+ * à cette distance (le nœud ainsi créé dessine le biseau). Un second clic retire la voie (et recolle).
+ */
+export function basculerInsertion(reseau, id, p, R, T) {
+  const t = reseau.troncons[id];
+  if (!t) return { refus: 'perdu' };
+  const sens = coteDe(reseau, id, p) === 'droite' ? 1 : -1;
+  if (extraDe(t, sens)) {
+    // Retirer : la voie disparaît, et le nœud du biseau se recolle s'il n'a plus de raison d'être
+    let res = avecTroncon(reseau, id, { ...t, extra: { ...(t.extra ?? {}), [sens]: null } }).reseau;
+    for (const n of [t.a, t.b]) res = nettoyerNoeud(res, n);
+    return { reseau: res };
+  }
+  const L = longueur(t.points), s = projeterSurLigne(t.points, p).s, versA = s < L / 2;
+  const bout = versA ? t.a : t.b, arrive = (sens === 1) !== versA; // sens +1 arrive en b
+  if (branches(reseau, bout).length < 3) return { refus: 'pasCarrefourProche' };
+  if (reseau.noeuds[bout].giratoire && arrive) return { refus: 'preselectionGiratoire' };
+  const role = arrive ? 'gauche' : 'droite', d = arrive ? R.longueurPreselection : R.longueurInsertion;
+  let res = reseau, piece = id;
+  if (L > d + 25) {
+    const c = couper(reseau, id, versA ? d : L - d);
+    res = c.reseau;
+    piece = Object.entries(res.troncons).find(([, u]) => (u.a === bout && u.b === c.noeud) || (u.b === bout && u.a === c.noeud))[0];
+  }
+  const u = res.troncons[piece];
+  return changer(res, piece, { ...u, extra: { ...(u.extra ?? {}), [sens]: role } }, R, T);
+}
+
 // ─── Îlots centraux (v0.9.5) ───────────────────────────────────────────────
 const ILOTS = [null, 'refuges', 'terreplein'];
 /** Îlot central suivant : aucun → refuges piétons → terre-plein planté → aucun. */
@@ -278,7 +310,7 @@ export function basculerIlot(reseau, id, R, T) {
 export const SANS_BUS = Object.freeze({ g: false, d: false });
 export const busDe = t => t.bus ?? SANS_BUS;
 /** La voie bus d'un sens d'un tronçon (indice de voie), ou null. */
-export const voieBus = (t, sens) => (busDe(t)[sens === 1 ? 'd' : 'g'] ? t.voies - 1 : null);
+export const voieBus = (t, sens) => (busDe(t)[sens === 1 ? 'd' : 'g'] ? nbVoies(t, sens) - 1 : null);
 
 /** Pose ou retire la voie bus du côté cliqué ; il faut au moins deux voies dans ce sens. */
 export function basculerBus(reseau, id, cote) {
@@ -322,10 +354,19 @@ export function basculerPisteDouble(reseau, id, cote, R, T) {
 export function demiLargeurs(t, R) {
   // Un îlot central écarte les deux sens : refuges (zone peinte, îlots aux passages) ou terre-plein planté
   const mediane = t.ilot === 'refuges' ? R.largeurRefuge / 2 : t.ilot === 'terreplein' ? R.largeurTerrePlein / 2 : 0;
-  const voiture = mediane + t.voies * R.largeurVoie, x0 = voiture + R.separateurPiste;
-  const cote = p => (p === 'simple' ? x0 + R.largeurPiste : p === 'double' ? x0 + R.largeurPisteDouble : voiture);
-  return { g: cote(t.pistes.g), d: cote(t.pistes.d), voiture, x0, mediane };
+  // Côté d (droite de a vers b) : le sens +1 ; côté g : le sens −1 — chacun avec sa voie en plus éventuelle
+  const voitureD = mediane + nbVoies(t, 1) * R.largeurVoie, voitureG = mediane + nbVoies(t, -1) * R.largeurVoie;
+  const x0d = voitureD + R.separateurPiste, x0g = voitureG + R.separateurPiste;
+  const cote = (p, v, x0) => (p === 'simple' ? x0 + R.largeurPiste : p === 'double' ? x0 + R.largeurPisteDouble : v);
+  const voiture = Math.max(voitureG, voitureD);
+  return { g: cote(t.pistes.g, voitureG, x0g), d: cote(t.pistes.d, voitureD, x0d), voiture, voitureG, voitureD, x0: voiture + R.separateurPiste, x0g, x0d, mediane };
 }
+
+// ─── Voies en plus dans un seul sens (v0.9.9) ───────────────────────────────
+// `extra = { '1': role, '-1': role }`, role null, 'gauche' (présélection : une voie de tourne-à-gauche
+// ajoutée près de l'axe, indice 0, les autres se décalent) ou 'droite' (insertion : une voie ajoutée à droite).
+export const extraDe = (t, sens) => t.extra?.[sens] ?? null;
+export const nbVoies = (t, sens) => t.voies + (extraDe(t, sens) ? 1 : 0);
 
 /**
  * Un tronçon élargi tient-il ? Refus si la chaussée (pistes comprises) dépasse R.largeurMax,
@@ -389,8 +430,20 @@ export function basculerGiratoire(reseau, idNoeud) {
   if (!n) return { refus: 'perdu' };
   if (branches(reseau, idNoeud).length < 3) return { refus: 'pasCarrefour' };
   const giratoire = TAILLES[(TAILLES.indexOf(n.giratoire) + 1) % TAILLES.length];
-  const { feux, mouvements, giratoire: _g, ...reste } = n;
-  return avecNoeud(reseau, idNoeud, giratoire ? { ...reste, giratoire } : reste);
+  const { feux, mouvements, giratoire: _g, bretelles, ...reste } = n;
+  return avecNoeud(reseau, idNoeud, giratoire ? { ...reste, giratoire, ...(bretelles ? { bretelles } : {}) } : reste);
+}
+
+/**
+ * Bretelle de tourne-à-droite d'un rond-point (shunt), de la branche du tronçon `entree` vers sa voisine de
+ * droite (sens horaire) : elle contourne l'anneau, séparée par un îlot. Un second clic la retire.
+ */
+export function basculerBretelle(reseau, idNoeud, entree) {
+  const n = reseau.noeuds[idNoeud];
+  if (!n?.giratoire) return { refus: 'bretelleSansGiratoire' };
+  const bretelles = { ...(n.bretelles ?? {}) };
+  if (bretelles[entree]) delete bretelles[entree]; else bretelles[entree] = true;
+  return avecNoeud(reseau, idNoeud, { ...n, bretelles });
 }
 
 /** Le carrefour le plus proche du point p, à moins de `rayon` m (trois branches au moins). */
@@ -431,7 +484,10 @@ function nettoyerNoeud(reseau, idNoeud) {
   // t1 parcouru vers le nœud, puis t2 depuis le nœud ; les côtés des pistes s'échangent quand on retourne un tronçon
   const pistes = b1.sens !== -1 ? retournees(t1.pistes) : t1.pistes;
   const bus = b1.sens !== -1 ? retournees(busDe(t1)) : busDe(t1), bus2 = b2.sens !== 1 ? retournees(busDe(t2)) : busDe(t2);
-  if (t1.voies !== t2.voies || (t1.ilot ?? null) !== (t2.ilot ?? null) || !memesPistes(pistes, b2.sens !== 1 ? retournees(t2.pistes) : t2.pistes) || !memesPistes(bus, bus2)) {
+  // Les voies en plus, vues dans le sens du recollement
+  const ex = (t, inverse) => (inverse ? { 1: extraDe(t, -1), '-1': extraDe(t, 1) } : { 1: extraDe(t, 1), '-1': extraDe(t, -1) });
+  const e1 = ex(t1, b1.sens !== -1), e2 = ex(t2, b2.sens !== 1);
+  if (e1[1] !== e2[1] || e1[-1] !== e2[-1] || t1.voies !== t2.voies || (t1.ilot ?? null) !== (t2.ilot ?? null) || !memesPistes(pistes, b2.sens !== 1 ? retournees(t2.pistes) : t2.pistes) || !memesPistes(bus, bus2)) {
     if (reseau.noeuds[idNoeud].feux) { const { feux, ...n } = reseau.noeuds[idNoeud]; return { ...reseau, noeuds: { ...reseau.noeuds, [idNoeud]: n } }; }
     return reseau;
   }
@@ -442,7 +498,7 @@ function nettoyerNoeud(reseau, idNoeud) {
   const troncons = { ...reseau.troncons }, noeuds = { ...reseau.noeuds };
   delete troncons[b1.troncon]; delete troncons[b2.troncon]; delete noeuds[idNoeud];
   const nouveau = `t${reseau.suivant}`;
-  troncons[nouveau] = { ...t1, a, b, pistes, bus, points: [...avant, ...apres.slice(1)] };
+  troncons[nouveau] = { ...t1, a, b, pistes, bus, extra: e1, points: [...avant, ...apres.slice(1)] };
   return { ...reseau, suivant: reseau.suivant + 1, noeuds, troncons };
 }
 
@@ -460,6 +516,7 @@ export function relireReseau(d) {
     delete t.velo; delete t.piste;
     for (const k of ['g', 'd']) if (!['simple', 'double'].includes(t.pistes[k])) t.pistes[k] = null;
     if (!['refuges', 'terreplein'].includes(t.ilot)) delete t.ilot;
+    if (t.extra) for (const k of ['1', '-1']) if (!['gauche', 'droite'].includes(t.extra[k])) t.extra[k] = null;
     if (t.voies >= 2 && t.bus) t.bus = { g: !!t.bus.g, d: !!t.bus.d }; else delete t.bus;
   }
   return { v: 1, suivant: d.suivant || 1, noeuds: d.noeuds, troncons: d.troncons };

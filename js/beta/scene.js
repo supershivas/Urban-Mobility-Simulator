@@ -2,12 +2,12 @@
 // cyclables, carrefours, véhicules en blocs, et l'aperçu de la route en projet.
 // Ce module dessine et vise : il ne modifie jamais l'état (main.js décide).
 // Repère : x est, y nord (mètres) → scène X = x, Y = haut, Z = −y.
-import * as THREE from '../../vendor/three/three.module.js?v=0.9.8';
-import { pose, metresParPixel } from '../scene/camera.js?v=0.9.8';
-import { decalerLigne, sansDoublons } from '../geo/decalage.js?v=0.9.8';
-import { longueur, pointA, sousLigne, busDe } from './reseau.js?v=0.9.8';
-import { liaisonsVelo, largeurs } from './geometrie.js?v=0.9.8';
-import { mouvementsDu, fleches, cle as cleVoie } from './mouvements.js?v=0.9.8';
+import * as THREE from '../../vendor/three/three.module.js?v=0.9.9';
+import { pose, metresParPixel } from '../scene/camera.js?v=0.9.9';
+import { decalerLigne, sansDoublons } from '../geo/decalage.js?v=0.9.9';
+import { longueur, pointA, sousLigne, busDe, nbVoies, extraDe } from './reseau.js?v=0.9.9';
+import { liaisonsVelo, largeurs, ligneVoie, cheminBretelle } from './geometrie.js?v=0.9.9';
+import { mouvementsDu, fleches, cle as cleVoie } from './mouvements.js?v=0.9.9';
 
 const COUCHE = { sol: 7, limite: 6, trottoir: 5, bordure: 4, asphalte: 3, bus: 2.6, ilot: 2.3, velo: 2, marquage: 1, picto: 0, surlignage: -1, apercu: -2, ombre: -3 };
 
@@ -18,6 +18,20 @@ function ruban(out, ligne, g, d) {
   const A = decalerLigne(ligne, g), B = decalerLigne(ligne, d);
   for (let i = 1; i < ligne.length; i++) {
     const a0 = A[i - 1], a1 = A[i], b0 = B[i - 1], b1 = B[i];
+    out.push(a0[0], 0, -a0[1], b0[0], 0, -b0[1], a1[0], 0, -a1[1], a1[0], 0, -a1[1], b0[0], 0, -b0[1], b1[0], 0, -b1[1]);
+  }
+}
+/** Un ruban dont les deux bords passent linéairement de (g0, d0) au début à (g1, d1) à la fin. */
+function rubanVariable(out, ligne, g0, g1, d0, d1) {
+  ligne = sansDoublons(ligne);
+  if (ligne.length < 2) return;
+  const A0 = decalerLigne(ligne, g0), A1 = decalerLigne(ligne, g1), B0 = decalerLigne(ligne, d0), B1 = decalerLigne(ligne, d1);
+  const L = longueur(ligne);
+  let acc = 0;
+  const f = ligne.map((p, i) => (i === 0 ? 0 : (acc += Math.hypot(p[0] - ligne[i - 1][0], p[1] - ligne[i - 1][1])) / L));
+  const mix = (P, Q, i) => [P[i][0] + (Q[i][0] - P[i][0]) * f[i], P[i][1] + (Q[i][1] - P[i][1]) * f[i]];
+  for (let i = 1; i < ligne.length; i++) {
+    const a0 = mix(A0, A1, i - 1), a1 = mix(A0, A1, i), b0 = mix(B0, B1, i - 1), b1 = mix(B0, B1, i);
     out.push(a0[0], 0, -a0[1], b0[0], 0, -b0[1], a1[0], 0, -a1[1], a1[0], 0, -a1[1], b0[0], 0, -b0[1], b1[0], 0, -b1[1]);
   }
 }
@@ -182,13 +196,19 @@ export function creerSceneBeta({ conteneur, P, R, C }) {
         if (m) for (const sg of [1, -1]) ruban(marq, lignes, sg * (m - 0.05) + w / 2, sg * (m - 0.05) - w / 2);
         else if (t.voies === 1) tirets(marq, lignes, 0, w, 3, 6);
         else { ruban(marq, lignes, 0.12 + w / 2, 0.12 - w / 2); ruban(marq, lignes, -0.12 + w / 2, -0.12 - w / 2); }
-        for (let k = 1; k < t.voies; k++) for (const sg of [1, -1]) {
-          // Une voie bus se sépare des autres par une ligne continue large
-          const versBus = busDe(t)[sg === 1 ? 'g' : 'd'] && k === t.voies - 1, o = sg * (m + k * Lv);
-          if (versBus) ruban(marq, lignes, o + 0.15, o - 0.15); else tirets(marq, lignes, o, w, 3, 6);
+        // Côté g (sg = 1) : le sens −1 ; côté d (sg = −1) : le sens +1 — chacun avec son nombre de voies
+        for (const sg of [1, -1]) {
+          const sens = -sg, nv = nbVoies(t, sens), ex = extraDe(t, sens);
+          for (let k = 1; k < nv; k++) {
+            // Une voie bus se sépare des autres par une ligne continue large ; une présélection par une ligne continue
+            const versBus = busDe(t)[sg === 1 ? 'g' : 'd'] && k === nv - 1, o = sg * (m + k * Lv);
+            if (versBus) ruban(marq, lignes, o + 0.15, o - 0.15);
+            else if (ex === 'gauche' && k === 1) ruban(marq, lignes, o + w / 2, o - w / 2);
+            else tirets(marq, lignes, o, w, ex === 'droite' && k === nv - 1 ? 1 : 3, ex === 'droite' && k === nv - 1 ? 1 : 6);
+          }
+          // Rives : la ligne au bord de la chaussée automobile
+          ruban(marq, lignes, sg * (m + nv * Lv - 0.1) + w / 2, sg * (m + nv * Lv - 0.1) - w / 2);
         }
-        // Rives : la ligne au bord de la chaussée automobile
-        for (const sg of [1, -1]) ruban(marq, lignes, sg * (m + t.voies * Lv - 0.1) + w / 2, sg * (m + t.voies * Lv - 0.1) - w / 2);
         // L'îlot central, entre les lignes d'arrêt : zone peinte hachurée (refuges) ou terre-plein planté et bordé
         if (t.ilot === 'refuges') {
           const Lm = longueur(lignes);
@@ -200,15 +220,15 @@ export function creerSceneBeta({ conteneur, P, R, C }) {
       // Voies bus : la voie la plus à droite de chaque sens, teintée, avec « BUS » au sol
       for (const [k, sg, sens] of [['g', 1, -1], ['d', -1, 1]]) {
         if (!busDe(t)[k]) continue;
-        const x1 = m + t.voies * Lv, x0 = x1 - Lv;
+        const x1 = m + nbVoies(t, sens) * Lv, x0 = x1 - Lv;
         ruban(bus, axe, sg === 1 ? x1 : -x0, sg === 1 ? x0 : -x1);
-        const ligne = g.voies[sens][t.voies - 1], L = longueur(ligne);
+        const ligne = g.voies[sens][nbVoies(t, sens) - 1], L = longueur(ligne);
         for (let s = 15; s < L - 10; s += 45) textesBus.push(pointA(ligne, s));
       }
       // Pistes, de chaque côté : simple, ou à double sens (tirets blancs au milieu)
-      const x0 = largeurs(t, R).x0;
+      const lt0 = largeurs(t, R);
       for (const [k, sg] of [['g', 1], ['d', -1]]) {
-        const p = t.pistes[k];
+        const p = t.pistes[k], x0 = k === 'g' ? lt0.x0g : lt0.x0d;
         if (!p) continue;
         const l = p === 'double' ? R.largeurPisteDouble : R.largeurPiste;
         ruban(velo, axe, sg === 1 ? x0 + l : -x0, sg === 1 ? x0 : -(x0 + l));
@@ -225,12 +245,24 @@ export function creerSceneBeta({ conteneur, P, R, C }) {
       } else if (n.virage) {
         // Un virage entre deux tronçons : la route suit une courbe, marquages compris
         const v = n.virage, t0 = reseau.troncons[v.troncon], l0 = largeurs(t0, R), m = l0.mediane, ax = v.axe;
-        ruban(trot, ax, v.g + A + Tw, -(v.d + A + Tw)); ruban(bord, ax, v.g + A, -(v.d + A)); ruban(asph, ax, v.g, -v.d);
+        // Les largeurs passent d'un bout à l'autre (biseau d'une voie qui apparaît ou disparaît)
+        rubanVariable(trot, ax, v.g0 + A + Tw, v.g1 + A + Tw, -(v.d0 + A + Tw), -(v.d1 + A + Tw));
+        rubanVariable(bord, ax, v.g0 + A, v.g1 + A, -(v.d0 + A), -(v.d1 + A));
+        rubanVariable(asph, ax, v.g0, v.g1, -v.d0, -v.d1);
         if (m) for (const sg of [1, -1]) ruban(marq, ax, sg * (m - 0.05) + w / 2, sg * (m - 0.05) - w / 2);
         else if (t0.voies === 1) tirets(marq, ax, 0, w, 3, 6);
         else { ruban(marq, ax, 0.12 + w / 2, 0.12 - w / 2); ruban(marq, ax, -0.12 + w / 2, -0.12 - w / 2); }
-        for (let k = 1; k < t0.voies; k++) for (const sg of [1, -1]) tirets(marq, ax, sg * (m + k * Lv), w, 3, 6);
-        for (const sg of [1, -1]) ruban(marq, ax, sg * (m + t0.voies * Lv - 0.1) + w / 2, sg * (m + t0.voies * Lv - 0.1) - w / 2);
+        // Rives : elles suivent le biseau ; les séparations de voies seulement là où le nombre de voies ne change pas
+        // À gauche du sens de marche (de la branche 0 vers la branche 1) : la droite de la branche 0 vue depuis le nœud, la gauche de la branche 1
+        const cote = (b, gaucheDeMarche) => { const lb = largeurs(reseau.troncons[b.troncon], R), gaucheExt = b.sens === 1 ? lb.voitureG : lb.voitureD, droiteExt = b.sens === 1 ? lb.voitureD : lb.voitureG; return gaucheDeMarche ? gaucheExt : droiteExt; };
+        const c0 = { g: cote(n.branches[0], false), d: cote(n.branches[0], true) }, c1 = { g: cote(n.branches[1], true), d: cote(n.branches[1], false) };
+        rubanVariable(marq, ax, c0.g - 0.1 + w / 2, c1.g - 0.1 + w / 2, c0.g - 0.1 - w / 2, c1.g - 0.1 - w / 2);
+        rubanVariable(marq, ax, -(c0.d - 0.1) + w / 2, -(c1.d - 0.1) + w / 2, -(c0.d - 0.1) - w / 2, -(c1.d - 0.1) - w / 2);
+        if (Math.abs(c0.g - c1.g) < 0.1 && Math.abs(c0.d - c1.d) < 0.1) for (let k = 1; k < t0.voies; k++) for (const sg of [1, -1]) tirets(marq, ax, sg * (m + k * Lv), w, 3, 6);
+        // L'îlot central suit le virage (il recouvre de 0,3 m celui des tronçons)
+        const La = longueur(ax), milieu = sousLigne(ax, 0.3, La - 0.3);
+        if (t0.ilot === 'refuges') for (let s0 = 1; s0 + 0.5 < La; s0 += 2.5) ruban(marq, sousLigne(ax, s0, s0 + 0.5), m - 0.2, -m + 0.2);
+        else if (t0.ilot === 'terreplein') { ruban(bord, milieu, m - 0.1, -m + 0.1); ruban(plante, milieu, m - 0.4, -m + 0.4); }
         const [b0, b1] = n.branches;
         for (const [p, sg] of [[b0.pisteD || b1.pisteG, 1], [b0.pisteG || b1.pisteD, -1]]) {
           if (!p) continue;
@@ -254,6 +286,15 @@ export function creerSceneBeta({ conteneur, P, R, C }) {
         ruban(marq, rond(G.interieur + 0.35), w / 2, -w / 2);
         tirets(marq, rond(G.rayon - 0.3), 0, w, 1.5, 1.5);
         eventail(bord, disque(n.p, G.rayon + 1, 96)); // la bordure entre l'anneau et la piste (ou le trottoir)
+        // Les bretelles : une voie qui contourne l'anneau, de la voie de droite qui arrive à celle de droite qui part
+        for (const id of G.bretelles ?? []) {
+          const i = n.branches.findIndex(b => b.troncon === id), b = n.branches[i], c = n.branches[(i + 1) % n.degre];
+          const te = reseau.troncons[b.troncon], ts = reseau.troncons[c.troncon];
+          const le = ligneVoie(geo, { troncon: b.troncon, sens: -b.sens, voie: nbVoies(te, -b.sens) - 1 }), ls = ligneVoie(geo, { troncon: c.troncon, sens: c.sens, voie: nbVoies(ts, c.sens) - 1 });
+          const chemin = cheminBretelle(n, le, ls);
+          ruban(bord, chemin, 2.3, -2.3); ruban(asph, chemin, 1.9, -1.9);
+          for (const o of [1.65, -1.65]) ruban(marq, chemin, o + w / 2, o - w / 2);
+        }
       }
       if (n.anneau) {
         // Carrefour protégé : l'anneau cyclable (coins autour d'un îlot, traversées bordées de tirets)
@@ -275,31 +316,33 @@ export function creerSceneBeta({ conteneur, P, R, C }) {
         }
       }
       for (const b of n.branches) {
-        const t = reseau.troncons[b.troncon], lt = largeurs(t, R), V = lt.voiture, m = lt.mediane;
+        const t = reseau.troncons[b.troncon], lt = largeurs(t, R), m = lt.mediane;
+        // Vu depuis le nœud : à gauche les files qui arrivent (sens −b.sens), à droite celles qui partent
+        const VG = b.sens === 1 ? lt.voitureG : lt.voitureD, VD = b.sens === 1 ? lt.voitureD : lt.voitureG, V = Math.max(VG, VD), nArr = nbVoies(t, -b.sens);
         // Passage piéton (sauf s'il a fusionné avec celui d'à côté) : des bandes blanches sur la chaussée automobile
         // seulement (la piste continue en vert à travers le passage, comme dans la réalité)
         if (b.passage) {
           const bande = sousLigne(b.ext, b.z0 + 0.15, b.z0 + Lp - 0.15);
-          for (let o = -V + 0.25; o + 0.5 <= V - 0.1; o += 1) if (o + 0.5 <= -m || o >= m) ruban(marq, bande, o + 0.5, o);
+          for (let o = -VD + 0.25; o + 0.5 <= VG - 0.1; o += 1) if (o + 0.5 <= -m || o >= m) ruban(marq, bande, o + 0.5, o);
           // Le refuge : un îlot surélevé au droit du passage, un peu plus long que lui
           if (m) { const r = sousLigne(b.ext, Math.max(0.2, b.z0 - 0.8), b.z0 + Lp + 0.8); ruban(bord, r, m, -m); ruban(refuge, r, m - 0.25, -m + 0.25); }
         }
         // Rond-point : « cédez le passage » à l'entrée de l'anneau, des dents de requin sur les files qui arrivent
         if (n.giratoire) {
           const q = pointA(b.ext, Math.max(0.3, b.arret - 0.4)), nrm = [-q.dir[1], q.dir[0]];
-          for (let o = m + 0.3; o + 0.5 <= V - 0.1; o += 0.9) {
+          for (let o = m + 0.3; o + 0.5 <= VG - 0.1; o += 0.9) {
             const base = k => [q.p[0] + nrm[0] * k, q.p[1] + nrm[1] * k], pointe = [q.p[0] + nrm[0] * (o + 0.25) + q.dir[0] * 0.7, q.p[1] + nrm[1] * (o + 0.25) + q.dir[1] * 0.7];
             eventail(marq, [base(o), base(o + 0.5), pointe]);
           }
         }
         // Ligne d'arrêt des files qui arrivent (à gauche de la branche vue depuis le nœud)
         const arretVelo = b.arret - b.sas;
-        if (!n.giratoire) ruban(marq, sousLigne(b.ext, arretVelo - 0.2, arretVelo + 0.2), Math.max(V - 0.1, b.gauche - 0.1), m);
+        if (!n.giratoire) ruban(marq, sousLigne(b.ext, arretVelo - 0.2, arretVelo + 0.2), Math.max(VG - 0.1, b.gauche - 0.1), m);
         if (b.sas) {
           // Sas vélo : la ligne des voitures recule ; entre les deux, une zone verte et un vélo par voie
-          ruban(marq, sousLigne(b.ext, b.arret - 0.2, b.arret + 0.2), V - 0.1, m);
-          ruban(velo, sousLigne(b.ext, arretVelo + 0.2, b.arret - 0.2), V - 0.15, m + 0.15);
-          for (let k = 0; k < t.voies; k++) {
+          ruban(marq, sousLigne(b.ext, b.arret - 0.2, b.arret + 0.2), VG - 0.1, m);
+          ruban(velo, sousLigne(b.ext, arretVelo + 0.2, b.arret - 0.2), VG - 0.15, m + 0.15);
+          for (let k = 0; k < nArr; k++) {
             const q = pointA(b.ext, (arretVelo + b.arret) / 2), o = m + (k + 0.5) * Lv;
             sasPictos.push({ p: [q.p[0] - q.dir[1] * o, q.p[1] + q.dir[0] * o], dir: [-q.dir[0], -q.dir[1]] });
           }
@@ -318,7 +361,7 @@ export function creerSceneBeta({ conteneur, P, R, C }) {
         const t = reseau.troncons[b.troncon], m = largeurs(t, R).mediane, ext = b.ext, L = longueur(ext), s0 = Math.max(b.arret, b.arretPassage) + 6;
         if (s0 > L - 3) continue;
         const q = pointA(ext, s0), nrm = [-q.dir[1], q.dir[0]];
-        for (let k = 0; k < t.voies; k++) {
+        for (let k = 0; k < nbVoies(t, -b.sens); k++) {
           const dirs = fleches(n, mv, cleVoie({ troncon: b.troncon, sens: -b.sens, voie: k }));
           if (!dirs.length) continue;
           const o = m + (k + 0.5) * Lv;

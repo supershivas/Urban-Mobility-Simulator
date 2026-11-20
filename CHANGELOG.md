@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.9 — 2026-11-20
+- Bêta : voies de présélection avant un carrefour et voies d'insertion après (outil I), avec leur biseau ; bretelles de tourne-à-droite sur les ronds-points (clic sur un coin)
+- Bêta : les virages suivent un vrai arc, îlot central compris ; plus de bord qui se replie
+- Bêta : dans les ronds-points, les voitures se suivent voie par voie et ne se chevauchent plus
+
 ## 0.9.8 — 2026-11-20
 - Bêta : les ronds-points ont leurs voies marquées, autant que la plus large des routes qui y arrivent
 - Bêta : autour de l'anneau, la piste cyclable puis le trottoir, comme dans la réalité
