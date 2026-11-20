@@ -12,12 +12,12 @@
 // Feux (v0.9.2) : on n'entre qu'au vert de sa branche. Passages piétons : on s'arrête
 // avant un passage où quelqu'un traverse, et l'on n'entre pas dans un carrefour dont le
 // passage de sortie est occupé. Les piétons eux-mêmes vivent dans pietons.js.
-import { createRng } from '../lib/rng.js?v=0.9.6';
-import { longueur, pointA, projeterSurLigne, feuxDe, aPiste, voieBus } from './reseau.js?v=0.9.6';
-import { geometrieReseau, ligneVoie, raccord, seGenent, filesVelo, cheminAnneau, coteEntree, coteSortie, cheminGiratoire } from './geometrie.js?v=0.9.6';
-import { etatFeux, decalageDe } from './feux.js?v=0.9.6';
-import { creerPietons, avancerPietons, reconcilierPietons } from './pietons.js?v=0.9.6';
-import { mouvementsDu, cle as cleMouvement, deCle } from './mouvements.js?v=0.9.6';
+import { createRng } from '../lib/rng.js?v=0.9.7';
+import { longueur, pointA, projeterSurLigne, feuxDe, aPiste, voieBus } from './reseau.js?v=0.9.7';
+import { geometrieReseau, ligneVoie, raccord, seGenent, filesVelo, cheminAnneau, coteEntree, coteSortie, cheminGiratoire } from './geometrie.js?v=0.9.7';
+import { etatFeux, decalageDe } from './feux.js?v=0.9.7';
+import { creerPietons, avancerPietons, reconcilierPietons } from './pietons.js?v=0.9.7';
+import { mouvementsDu, cle as cleMouvement, deCle } from './mouvements.js?v=0.9.7';
 
 const cleVoie = v => `${v.troncon}|${v.sens}|${v.voie}`;
 

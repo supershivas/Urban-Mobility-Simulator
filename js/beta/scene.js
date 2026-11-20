@@ -2,12 +2,12 @@
 // cyclables, carrefours, véhicules en blocs, et l'aperçu de la route en projet.
 // Ce module dessine et vise : il ne modifie jamais l'état (main.js décide).
 // Repère : x est, y nord (mètres) → scène X = x, Y = haut, Z = −y.
-import * as THREE from '../../vendor/three/three.module.js?v=0.9.6';
-import { pose, metresParPixel } from '../scene/camera.js?v=0.9.6';
-import { decalerLigne, sansDoublons } from '../geo/decalage.js?v=0.9.6';
-import { longueur, pointA, sousLigne, busDe } from './reseau.js?v=0.9.6';
-import { liaisonsVelo, largeurs } from './geometrie.js?v=0.9.6';
-import { mouvementsDu, fleches, cle as cleVoie } from './mouvements.js?v=0.9.6';
+import * as THREE from '../../vendor/three/three.module.js?v=0.9.7';
+import { pose, metresParPixel } from '../scene/camera.js?v=0.9.7';
+import { decalerLigne, sansDoublons } from '../geo/decalage.js?v=0.9.7';
+import { longueur, pointA, sousLigne, busDe } from './reseau.js?v=0.9.7';
+import { liaisonsVelo, largeurs } from './geometrie.js?v=0.9.7';
+import { mouvementsDu, fleches, cle as cleVoie } from './mouvements.js?v=0.9.7';
 
 const COUCHE = { sol: 7, limite: 6, trottoir: 5, bordure: 4, asphalte: 3, bus: 2.6, ilot: 2.3, velo: 2, marquage: 1, picto: 0, surlignage: -1, apercu: -2, ombre: -3 };
 

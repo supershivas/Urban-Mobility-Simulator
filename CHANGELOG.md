@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.9.7 — 2026-11-20
+- Bêta : plus de filets clairs en biais là où un virage rejoint les tronçons droits
+
 ## 0.9.6 — 2026-11-20
 - Bêta : la barre d'outils tient dans toutes les fenêtres (icônes seules sous 1800 px, nom au survol)
 

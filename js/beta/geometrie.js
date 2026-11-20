@@ -16,9 +16,9 @@
 // posés là où les trottoirs de deux branches voisines se séparent) : chaque branche recule
 // jusqu'au point où le bord extérieur de son trottoir croise celui de chaque voisine ;
 // plus l'angle est aigu, plus elle recule. Plus jamais deux passages l'un sur l'autre.
-import { longueur, pointA, sousLigne, branches, demiLargeurs, aPiste } from './reseau.js?v=0.9.6';
-import { decalerLigne } from '../geo/decalage.js?v=0.9.6';
-import { GIRATOIRES } from './donnees.js?v=0.9.6';
+import { longueur, pointA, sousLigne, branches, demiLargeurs, aPiste } from './reseau.js?v=0.9.7';
+import { decalerLigne } from '../geo/decalage.js?v=0.9.7';
+import { GIRATOIRES } from './donnees.js?v=0.9.7';
 
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 const cross = (a, b) => a[0] * b[1] - a[1] * b[0];
@@ -138,7 +138,11 @@ export function geometrieReseau(reseau, R) {
       // la droite de la branche 0 (vue depuis le nœud) et la gauche de la branche 1
       const [b0, b1] = n.branches, A = pointA(b0.ext, 0), B = pointA(b1.ext, 0);
       const h = Math.hypot(A.p[0] - B.p[0], A.p[1] - B.p[1]) * 0.5;
-      const axe = bezier(A.p, [A.p[0] - A.dir[0] * h, A.p[1] - A.dir[1] * h], [B.p[0] - B.dir[0] * h, B.p[1] - B.dir[1] * h], B.p, 12);
+      // Prolongée de 0,6 m dans l'axe de chaque tronçon : ses bouts sont coupés exactement comme les leurs
+      // (sinon le dernier segment de la courbe, un peu de biais, laissait voir le trottoir en filet clair à la jonction)
+      const axe = [[A.p[0] + A.dir[0] * 0.6, A.p[1] + A.dir[1] * 0.6],
+        ...bezier(A.p, [A.p[0] - A.dir[0] * h, A.p[1] - A.dir[1] * h], [B.p[0] - B.dir[0] * h, B.p[1] - B.dir[1] * h], B.p, 16),
+        [B.p[0] + B.dir[0] * 0.6, B.p[1] + B.dir[1] * 0.6]];
       n.virage = { axe, g: Math.max(b0.droite, b1.gauche), d: Math.max(b0.gauche, b1.droite), troncon: b0.troncon, sens: -b0.sens };
       n.zone = null;
       continue;

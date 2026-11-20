@@ -67,6 +67,8 @@ Clic : selon l'outil (1 route, 2 voies, 3 ou Suppr démolir, 4 pistes, 5 piste �
 
 ## Pièges
 
+- Virage (nœud à deux branches) : l'axe courbe est prolongé de 0,6 m dans l'axe de chaque tronçon ; sans cela, le dernier segment de la Bézier, un peu de biais, coupait le ruban de travers et laissait voir le trottoir en filet clair à la jonction (0.9.6).
+
 - CSS : les règles des outils doivent passer après `.bouton` (même spécificité) — elles sont préfixées par `.beta-outils` ; une ancienne règle laissée plus bas noircissait l'outil Feux choisi (0.9.2).
 - `ruban` retire les points répétés : un aperçu de route de longueur nulle (pointeur sur le départ) plantait le dessin.
 
