@@ -2,12 +2,12 @@
 // cyclables, carrefours, véhicules en blocs, et l'aperçu de la route en projet.
 // Ce module dessine et vise : il ne modifie jamais l'état (main.js décide).
 // Repère : x est, y nord (mètres) → scène X = x, Y = haut, Z = −y.
-import * as THREE from '../../vendor/three/three.module.js?v=0.9.9';
-import { pose, metresParPixel } from '../scene/camera.js?v=0.9.9';
-import { decalerLigne, sansDoublons } from '../geo/decalage.js?v=0.9.9';
-import { longueur, pointA, sousLigne, busDe, nbVoies, extraDe } from './reseau.js?v=0.9.9';
-import { liaisonsVelo, largeurs, ligneVoie, cheminBretelle } from './geometrie.js?v=0.9.9';
-import { mouvementsDu, fleches, cle as cleVoie } from './mouvements.js?v=0.9.9';
+import * as THREE from '../../vendor/three/three.module.js?v=0.9.10';
+import { pose, metresParPixel } from '../scene/camera.js?v=0.9.10';
+import { decalerLigne, sansDoublons } from '../geo/decalage.js?v=0.9.10';
+import { longueur, pointA, sousLigne, busDe, nbVoies, extraDe } from './reseau.js?v=0.9.10';
+import { liaisonsVelo, largeurs, ligneVoie, cheminBretelle, boutImpasse } from './geometrie.js?v=0.9.10';
+import { mouvementsDu, fleches, cle as cleVoie } from './mouvements.js?v=0.9.10';
 
 const COUCHE = { sol: 7, limite: 6, trottoir: 5, bordure: 4, asphalte: 3, bus: 2.6, ilot: 2.3, velo: 2, marquage: 1, picto: 0, surlignage: -1, apercu: -2, ombre: -3 };
 
@@ -240,8 +240,10 @@ export function creerSceneBeta({ conteneur, P, R, C }) {
     for (const n of Object.values(geo.noeuds)) {
       if (n.zone) {
         // Carrefour protégé : la chaussée se resserre (zone et amorces), les îlots de coin sont du trottoir
-        eventail(asph, n.zone); eventail(bord, agrandir(n.zone, n.p, A)); eventail(trot, agrandir(n.zoneTotale, n.p, A + Tw));
-        for (const q of n.amorces || []) { eventail(asph, q); eventail(bord, agrandir(q, [(q[0][0] + q[3][0]) / 2, (q[0][1] + q[3][1]) / 2], A)); }
+        // Les zones sont des étoiles autour du nœud (ou des disques) : on les remplit en éventail depuis le nœud
+        const etoile = poly => [n.p, ...poly, poly[0]];
+        eventail(asph, etoile(n.zone)); eventail(bord, etoile(agrandir(n.zone, n.p, A))); eventail(trot, etoile(agrandir(n.zoneTotale, n.p, A + Tw)));
+        for (const q of n.amorces || []) { eventail(asph, q); eventail(bord, agrandir(q, [(q[0][0] + q.at(-1)[0]) / 2, (q[0][1] + q.at(-1)[1]) / 2], A)); }
       } else if (n.virage) {
         // Un virage entre deux tronçons : la route suit une courbe, marquages compris
         const v = n.virage, t0 = reseau.troncons[v.troncon], l0 = largeurs(t0, R), m = l0.mediane, ax = v.axe;
@@ -271,8 +273,8 @@ export function creerSceneBeta({ conteneur, P, R, C }) {
         }
       } else if (n.degre === 1 && !n.bord) {
         // Impasse : un bout arrondi
-        const demi = geo.troncons[n.branches[0].troncon].demi;
-        eventail(asph, disque(n.p, demi)); eventail(bord, disque(n.p, demi + A)); eventail(trot, disque(n.p, demi + A + Tw));
+        // Un demi-cercle qui passe d'une largeur à l'autre (un côté peut porter une piste, pas l'autre)
+        eventail(asph, boutImpasse(n, 0)); eventail(bord, boutImpasse(n, A)); eventail(trot, boutImpasse(n, A + Tw));
       }
       if (!n.traversees) continue;
       if (n.giratoire) {

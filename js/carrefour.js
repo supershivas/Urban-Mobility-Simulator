@@ -16,10 +16,10 @@
 // les siens (ceux que le joueur avait choisis sont comptés « perdus »).
 //
 // Les opérations rendent { carrefour } (null : rien à garder) ou { refus, valeurs }.
-import { decalages } from './section.js?v=0.9.9';
-import { MODE_DE_BANDE, COMPATIBLES, REGULATIONS, TRAVERSEES, ANGLES, MODELES_FEUX, VERTS } from './data/carrefours.js?v=0.9.9';
-import { REFERENCES } from './data/simulation.js?v=0.9.9';
-import { longueur, pointA } from './geo/geometrie.js?v=0.9.9';
+import { decalages } from './section.js?v=0.9.10';
+import { MODE_DE_BANDE, COMPATIBLES, REGULATIONS, TRAVERSEES, ANGLES, MODELES_FEUX, VERTS } from './data/carrefours.js?v=0.9.10';
+import { REFERENCES } from './data/simulation.js?v=0.9.10';
+import { longueur, pointA } from './geo/geometrie.js?v=0.9.10';
 
 const DEUX_PI = 2 * Math.PI;
 /** Angle ramené dans ]-π, π]. */

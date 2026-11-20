@@ -86,15 +86,16 @@ test('démolir une impasse referme le carrefour : la route de départ redevient 
   assert.ok(Math.abs(longueur(t.points) - 1100) < 0.01);
   assert.equal(demolir(r, Object.keys(r.troncons)[0]).refus, 'bordDemolir', 'la route qui mène au bord reste');
 });
-test('démolir un tronçon entre deux carrefours referme les deux ; des voies différentes ne se recollent pas', () => {
+test('démolir un tronçon entre deux carrefours : les coudes restent des virages ; des voies différentes ne se recollent pas', () => {
   let r = depart();
   r = construireRoute(r, tirer(r, [0, 0], [0, 150]), TRACE).reseau;
   r = construireRoute(r, tirer(r, [100, 0], [3, 97]), TRACE).reseau;
   const milieu = Object.entries(r.troncons).find(([, t]) => t.points.every(p => p[1] === 0) && t.points.every(p => p[0] >= -1 && p[0] <= 201))[0];
   const avant = Object.keys(r.troncons).length;
   const apres = demolir(r, milieu).reseau;
-  assert.equal(Object.keys(apres.troncons).length, avant - 3, 'un tronçon démoli, deux paires recollées');
-  assert.equal(Object.values(apres.noeuds).filter(n => branches(apres, Object.keys(apres.noeuds).find(k => apres.noeuds[k] === n)).length === 2).length, 0, 'plus aucun nœud de passage');
+  // Les deux nœuds deviennent des coins à angle droit : ils restent, comme virages
+  assert.equal(Object.keys(apres.troncons).length, avant - 1, 'un tronçon démoli, les coudes ne se recollent pas en pointe');
+  assert.equal(Object.keys(apres.noeuds).filter(k => branches(apres, k).length === 2 && !apres.noeuds[k].bord).length, 2, 'deux virages');
   // Sur la route nouvelle : une moitié en 2 × 2, l'autre non → le nœud reste quand on démolit la diagonale
   const diag = Object.keys(r.troncons).at(-1);
   const nord = Object.entries(r.troncons).find(([id, t]) => id !== diag && t.points.at(-1)[1] > 140)[0];

@@ -157,7 +157,7 @@ Forme des carrefours (oreilles, îlots), raccords hors des carrefours, affectati
 | `js/scene/` | `docs/domaines/scene3d.md`, en-têtes des trois modules, `test/scene|camera.test.mjs`, réglages `scene` |
 | interface, CSS, commandes, palette | `docs/domaines/interface.md`, conventions §3, §5, §7, §8 |
 | `package.json`, `vendor/`, `.claude/` | `docs/domaines/outillage.md` |
-| `beta.html`, `js/beta/`, `css/beta.css` | `docs/domaines/beta.md`, `test/beta.test.mjs` |
+| `beta.html`, `js/beta/`, `css/beta.css` | `docs/domaines/beta.md`, `test/beta*.test.mjs` |
 
 ## Vérification (section 19 de game-system)
 

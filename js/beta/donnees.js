@@ -49,6 +49,7 @@ export const GIRATOIRES = {
   bordurePiste: 1,         // m de bordure entre l'anneau et la piste qui en fait le tour
   bretelle: 6,             // m de plus entre l'anneau et la piste pour une bretelle (voie de 3,5 m et îlot)
   voieSup: 4,              // m de plus par voie d'anneau au-delà de celles de sa taille
+  evasement: 5,            // m dont l'entrée et la sortie s'élargissent au plus en touchant l'anneau (sans en sortir)
 };
 
 export const DEPART = { longueur: 2400 }; // m, la route de départ, d'ouest en est ; ses bouts sont loin dans la brume

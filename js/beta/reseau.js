@@ -9,6 +9,8 @@
 // voisine) ou 'double' (à double sens, chacun tient sa droite).
 // Un nœud peut porter des feux : { verts: [s par branche, dans l'ordre des angles], pietons: s }.
 
+import { GIRATOIRES, ROUTE } from './donnees.js?v=0.9.10';
+
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1]];
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1];
 const norme = a => Math.hypot(a[0], a[1]);
@@ -175,11 +177,11 @@ export function projetRoute(reseau, depart, pointeur, R, T) {
   }
   const trace = tracerArc(depart, fin.p, R.pasArc);
   const projet = { depart, fin, ...trace };
-  const refus = refusProjet(reseau, projet, T);
+  const refus = refusProjet(reseau, projet, T, R);
   return refus ? { ...projet, refus } : projet;
 }
 
-function refusProjet(reseau, projet, T) {
+function refusProjet(reseau, projet, T, R) {
   const { depart, fin, points } = projet;
   if (projet.longueur < T.longueurMin) return 'court';
   if (Math.abs(projet.rayon) < T.rayonMin) return 'serre';
@@ -194,16 +196,26 @@ function refusProjet(reseau, projet, T) {
     // Déjà reliés directement : pas de second tronçon entre les deux mêmes nœuds
     if (fin.noeud && depart.noeud && Object.values(reseau.troncons).some(t => (t.a === fin.noeud && t.b === depart.noeud) || (t.b === fin.noeud && t.a === depart.noeud))) return 'double';
   }
-  // Le tracé ne frôle ni ne croise aucune route, hors de ses deux bouts
-  const L = projet.longueur, marge0 = T.ecartRoutes + 1, marge1 = fin.libre ? 0 : 2 * T.ecartRoutes + 1;
+  // Le tracé ne frôle ni ne croise aucune route : l'écart tient compte des largeurs (chaussée, pistes, trottoirs) des deux
+  // routes ; près de ses bouts, on ne regarde pas les routes auxquelles il s'accroche (il les touche forcément)
+  const bordure = R.accotement + R.largeurTrottoir, moi = R.largeurVoie + bordure;
+  const touche = cote => new Set(Object.entries(reseau.troncons).filter(([id, t]) => (cote.noeud ? t.a === cote.noeud || t.b === cote.noeud : id === cote.troncon)).map(([id]) => id));
+  const auDepart = touche(depart), aLArrivee = fin.libre ? new Set() : touche(fin);
+  const L = projet.longueur;
+  const tropPres = (p, s) => Object.entries(reseau.troncons).some(([id, t]) => {
+    const l = demiLargeurs(t, R), requis = moi + Math.max(l.g, l.d) + bordure + 0.5;
+    if (auDepart.has(id) && s < requis + 3) return false;
+    if (aLArrivee.has(id) && L - s < 2 * requis + 3) return false;
+    return projeterSurLigne(t.points, p).d < Math.max(T.ecartRoutes, requis);
+  });
   let s = 0;
   for (let i = 0; i < points.length; i++) {
     if (i > 0) s += dist(points[i - 1], points[i]);
-    if (s < marge0 || s > L - marge1) continue;
-    if (distanceAuReseau(reseau, points[i], new Set()) < T.ecartRoutes) return 'proche';
+    if (s < T.ecartRoutes + 1 || (!fin.libre && s > L - 2 * T.ecartRoutes - 1)) continue;
+    if (tropPres(points[i], s)) return 'proche';
   }
   // Une impasse ne finit pas sur le flanc d'une route trop proche
-  if (fin.libre && distanceAuReseau(reseau, fin.p, new Set()) < T.ecartRoutes) return 'proche';
+  if (fin.libre && tropPres(fin.p, L)) return 'proche';
   return null;
 }
 
@@ -386,7 +398,7 @@ function changer(reseau, id, t, R, T) {
           const p = pointA(t.points, s).p;
           // Près d'un carrefour partagé, les deux routes se touchent forcément
           if (commun.some(n => Math.hypot(p[0] - reseau.noeuds[n].x, p[1] - reseau.noeuds[n].y) < demi + Math.max(lu.g, lu.d) + T.ecartRoutes)) continue;
-          if (projeterSurLigne(u.points, p).d < demi + Math.max(lu.g, lu.d) + R.accotement * 2 + R.largeurTrottoir) return { refus: 'chevauche' };
+          if (projeterSurLigne(u.points, p).d < demi + Math.max(lu.g, lu.d) + 2 * (R.accotement + R.largeurTrottoir)) return { refus: 'chevauche' };
         }
       }
     }
@@ -425,11 +437,43 @@ export function reglerFeu(reseau, idNoeud, phase, delta, F) {
 
 const TAILLES = [undefined, 'mini', 'urbain', 'grand'];
 /** Rond-point suivant sur un carrefour : aucun → mini → urbain → grand → aucun. Il remplace les feux et les mouvements choisis. */
+/**
+ * Un rond-point de cette taille tient-il ? Chaque route doit garder, entre l'anneau et l'autre bout, la place
+ * d'un passage, d'une piste et d'un bout de rue (et de l'autre rond-point s'il y en a un).
+ */
+export function giratoireTient(reseau, idNoeud, taille) {
+  // Le rayon tel qu'il se construit (geometrie.js) : une voie d'anneau de plus par voie d'accès au-delà de sa taille, et la place des bretelles
+  const place = (id, x) => {
+    // Un carrefour ordinaire recule d'autant que ses rues sont larges (trottoirs, traversées cyclable et piétonne comprises)
+    if (!x) return Math.max(12, ...branches(reseau, id).map(b => { const l = demiLargeurs(reseau.troncons[b.troncon], ROUTE); return Math.max(l.g, l.d); })) + 2 * (ROUTE.accotement + ROUTE.largeurTrottoir) + 8;
+    const G = GIRATOIRES[x], br = branches(reseau, id);
+    const nA = Math.max(G.voies, ...br.map(b => Math.max(nbVoies(reseau.troncons[b.troncon], 1), nbVoies(reseau.troncons[b.troncon], -1))));
+    const bretelles = Object.keys(reseau.noeuds[id].bretelles ?? {}).some(t => br.some(b => b.troncon === t));
+    return G.rayon + (nA - G.voies) * GIRATOIRES.voieSup + (bretelles ? GIRATOIRES.bretelle : 0) + 10;
+  };
+  return !taille || branches(reseau, idNoeud).every(b => {
+    const t = reseau.troncons[b.troncon], idAutre = t.a === idNoeud ? t.b : t.a, autre = reseau.noeuds[idAutre];
+    return longueur(t.points) >= place(idNoeud, taille) + (autre?.bord ? 0 : place(idAutre, autre?.giratoire));
+  });
+}
+
+/** La taille du rond-point tel qu'il se construit : celle choisie, ou la plus grande qui tient encore (une rue a pu être raccourcie depuis). */
+export function giratoireEffectif(reseau, idNoeud) {
+  const n = reseau.noeuds[idNoeud];
+  for (let i = TAILLES.indexOf(n?.giratoire); i > 0; i--) if (giratoireTient(reseau, idNoeud, TAILLES[i])) return TAILLES[i];
+  return undefined;
+}
+
 export function basculerGiratoire(reseau, idNoeud) {
   const n = reseau.noeuds[idNoeud];
   if (!n) return { refus: 'perdu' };
   if (branches(reseau, idNoeud).length < 3) return { refus: 'pasCarrefour' };
-  const giratoire = TAILLES[(TAILLES.indexOf(n.giratoire) + 1) % TAILLES.length];
+  const tient = taille => giratoireTient(reseau, idNoeud, taille);
+  // Taille suivante, en sautant celles qui ne tiennent pas
+  const i0 = TAILLES.indexOf(n.giratoire);
+  let giratoire;
+  for (let k = 1; k <= TAILLES.length; k++) { giratoire = TAILLES[(i0 + k) % TAILLES.length]; if (tient(giratoire)) break; }
+  if (giratoire === undefined && n.giratoire === undefined) return { refus: 'giratoireCourt' };
   const { feux, mouvements, giratoire: _g, bretelles, ...reste } = n;
   return avecNoeud(reseau, idNoeud, giratoire ? { ...reste, giratoire, ...(bretelles ? { bretelles } : {}) } : reste);
 }
@@ -481,6 +525,11 @@ function nettoyerNoeud(reseau, idNoeud) {
   }
   if (br.length !== 2 || br[0].troncon === br[1].troncon || reseau.noeuds[idNoeud].bord) return reseau;
   const [b1, b2] = br, t1 = reseau.troncons[b1.troncon], t2 = reseau.troncons[b2.troncon];
+  // Un coude marqué reste un nœud (un virage, dessiné avec sa courbe) : recollé, il ferait une pointe que les trottoirs ne suivent pas
+  if (b1.dir[0] * b2.dir[0] + b1.dir[1] * b2.dir[1] > -Math.cos(0.35)) {
+    if (reseau.noeuds[idNoeud].feux) { const { feux, ...n } = reseau.noeuds[idNoeud]; return { ...reseau, noeuds: { ...reseau.noeuds, [idNoeud]: n } }; }
+    return reseau;
+  }
   // t1 parcouru vers le nœud, puis t2 depuis le nœud ; les côtés des pistes s'échangent quand on retourne un tronçon
   const pistes = b1.sens !== -1 ? retournees(t1.pistes) : t1.pistes;
   const bus = b1.sens !== -1 ? retournees(busDe(t1)) : busDe(t1), bus2 = b2.sens !== 1 ? retournees(busDe(t2)) : busDe(t2);

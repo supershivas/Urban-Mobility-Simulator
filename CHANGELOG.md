@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.10 — 2026-11-20
+- Bêta : les carrefours se dessinent sans incohérence — bordures arrondies comme les trottoirs, chaussée qui s'élargit en douceur, pistes qui longent la rue au lieu de faire un détour
+- Bêta : un rond-point ne se pose plus là où une rue est trop courte ; les routes trop proches et les coudes en pointe sont refusés
+- Bêta : vélos et voitures ne se chevauchent plus aux traversées cyclables ; les voies sans issue ont toujours une sortie
+
 ## 0.9.9 — 2026-11-20
 - Bêta : voies de présélection avant un carrefour et voies d'insertion après (outil I), avec leur biseau ; bretelles de tourne-à-droite sur les ronds-points (clic sur un coin)
 - Bêta : les virages suivent un vrai arc, îlot central compris ; plus de bord qui se replie

@@ -16,9 +16,9 @@
 // posés là où les trottoirs de deux branches voisines se séparent) : chaque branche recule
 // jusqu'au point où le bord extérieur de son trottoir croise celui de chaque voisine ;
 // plus l'angle est aigu, plus elle recule. Plus jamais deux passages l'un sur l'autre.
-import { longueur, pointA, sousLigne, branches, demiLargeurs, aPiste, nbVoies } from './reseau.js?v=0.9.9';
-import { decalerLigne } from '../geo/decalage.js?v=0.9.9';
-import { GIRATOIRES } from './donnees.js?v=0.9.9';
+import { longueur, pointA, sousLigne, branches, demiLargeurs, aPiste, nbVoies, giratoireEffectif } from './reseau.js?v=0.9.10';
+import { decalerLigne } from '../geo/decalage.js?v=0.9.10';
+import { GIRATOIRES } from './donnees.js?v=0.9.10';
 
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 const cross = (a, b) => a[0] * b[1] - a[1] * b[0];
@@ -90,13 +90,14 @@ export function geometrieReseau(reseau, R) {
       b.droite = b.sens === 1 ? l.d : l.g;
     }
     reculer(noeuds[id], R);
-    if (n.giratoire && noeuds[id].degre >= 3) {
+    const taille = noeuds[id].degre >= 3 ? giratoireEffectif(reseau, id) : undefined;
+    if (taille) {
       // Rond-point : autant de voies dans l'anneau que la plus large des routes qui y arrivent (au moins celles de
       // sa taille) ; de l'extérieur vers le centre : trottoir, piste en anneau (s'il y a des pistes), chaussée, îlot
-      const G = GIRATOIRES[n.giratoire], br = noeuds[id].branches;
+      const G = GIRATOIRES[taille], br = noeuds[id].branches;
       const nA = Math.max(G.voies, ...br.map(x => Math.max(nbVoies(reseau.troncons[x.troncon], 1), nbVoies(reseau.troncons[x.troncon], -1))));
       const interieur = G.rayon - G.largeur, largeur = G.largeur + (nA - G.voies) * GIRATOIRES.voieSup, rayon = interieur + largeur, lv = largeur / nA;
-      noeuds[id].giratoire = { taille: n.giratoire, rayon, interieur, voies: nA, plante: G.plante,
+      noeuds[id].giratoire = { taille, rayon, interieur, voies: nA, plante: G.plante,
         anneaux: Array.from({ length: nA }, (_, k) => rayon - lv * (k + 0.5)) }; // de l'extérieur vers l'intérieur
       const velos = br.some(x => aPiste(reseau.troncons[x.troncon]));
       // Avec des bretelles, on laisse entre l'anneau et la piste (ou le trottoir) la place d'une voie et de son îlot
@@ -104,10 +105,21 @@ export function geometrieReseau(reseau, R) {
       const place = bretelles.length ? GIRATOIRES.bretelle : 0;
       noeuds[id].giratoire.bretelles = bretelles;
       noeuds[id].giratoire.rayonBretelle = rayon + 1 + place / 2;
-      for (const x of br) x.recul = rayon + place + (velos ? GIRATOIRES.bordurePiste : GIRATOIRES.entree);
+      // Le recul se mesure le long de la branche ; une branche qui tourne près du rond-point doit reculer davantage,
+      // pour que ses bords (trottoirs compris) restent hors de l'anneau
+      for (const x of br) {
+        const besoin = rayon + place + (velos ? GIRATOIRES.bordurePiste : GIRATOIRES.entree), t = reseau.troncons[x.troncon];
+        const ligne = x.sens === 1 ? t.points : t.points.slice().reverse(), L = longueur(ligne), c = noeuds[id].p;
+        const w = Math.max(x.gauche, x.droite) + bord + tw;
+        let r = besoin;
+        const dehors = q => { const { p: a, dir } = pointA(ligne, q), nrm = [-dir[1], dir[0]];
+          return dist(a, c) >= besoin - 0.01 && [w, -w].every(o => dist([a[0] + nrm[0] * o, a[1] + nrm[1] * o], c) >= besoin); };
+        while (r < L / 2 && !dehors(r)) r += 0.5;
+        x.recul = r;
+      }
       noeuds[id].recul = Math.max(...br.map(x => x.recul));
     }
-    disposer(noeuds[id], reseau, R, !!n.feux && !n.giratoire);
+    disposer(noeuds[id], reseau, R, !!n.feux && !taille);
   }
   // Deux passages presque collés (un tronçon court entre deux carrefours) n'en font qu'un : celui du bout a
   for (const [id, t] of Object.entries(reseau.troncons)) {
@@ -120,7 +132,9 @@ export function geometrieReseau(reseau, R) {
   for (const [id, t] of Object.entries(reseau.troncons)) {
     const L = longueur(t.points);
     const r0 = reculDe(t.a, id, 1), r1 = reculDe(t.b, id, -1);
-    const axe = sousLigne(t.points, Math.min(r0, L / 2 - 0.5), Math.max(L - r1, L / 2 + 0.5));
+    // Sans sommet à moins de 0,2 m d'un bout : un segment minuscule donnait au bout des voies une direction de travers
+    const brut = sousLigne(t.points, Math.min(r0, L / 2 - 0.5), Math.max(L - r1, L / 2 + 0.5));
+    const axe = brut.filter((p, i) => i === 0 || i === brut.length - 1 || (dist(p, brut[0]) > 0.2 && dist(p, brut[brut.length - 1]) > 0.2));
     const inverse = axe.slice().reverse();
     const voies = { 1: [], '-1': [] };
     for (let v = 0; v < nbVoies(t, 1); v++) voies[1].push(decalerLigne(axe, decalageVoie(t, v, R)));
@@ -158,12 +172,28 @@ export function geometrieReseau(reseau, R) {
       n.zone = null;
       continue;
     }
-    const coins = [n.p];
-    for (const b of n.branches) {
+    // La zone : une étoile autour du nœud, du coin de droite au coin de gauche de chaque branche, dans l'ordre
+    // trigonométrique ; elle suit les bords et ne déborde pas quand les branches ne sont pas alignées
+    const coins = [];
+    n.branches.forEach((b, i) => {
       const pa = pointA(b.ext, 0), nrm = [-pa.dir[1], pa.dir[0]];
-      coins.push([pa.p[0] + nrm[0] * b.gauche, pa.p[1] + nrm[1] * b.gauche], [pa.p[0] - nrm[0] * b.droite, pa.p[1] - nrm[1] * b.droite]);
-    }
-    n.zone = enveloppe(coins);
+      const droite = [pa.p[0] - nrm[0] * b.droite, pa.p[1] - nrm[1] * b.droite], gauche = [pa.p[0] + nrm[0] * b.gauche, pa.p[1] + nrm[1] * b.gauche];
+      coins.push(droite, gauche);
+      // Un coin de plus d'un demi-tour (branches serrées d'un côté) : le bord fait le tour au lieu de couper le carrefour
+      if (angleCoin(n, i) > Math.PI + 0.05) {
+        const c = n.branches[(i + 1) % n.degre], pc = pointA(c.ext, 0), nc = [-pc.dir[1], pc.dir[0]];
+        coins.push(...arcAutour(n.p, gauche, [pc.p[0] - nc[0] * c.droite, pc.p[1] - nc[1] * c.droite]).slice(1, -1));
+      } else if (angleCoin(n, i) > Math.PI * 0.75) {
+        // Branches presque alignées de largeurs différentes : le bord passe de l'une à l'autre en douceur (comme les voies)
+        const c = n.branches[(i + 1) % n.degre], pc = pointA(c.ext, 0), nc = [-pc.dir[1], pc.dir[0]];
+        coins.push(...enDouceur(gauche, pa.dir, [pc.p[0] - nc[0] * c.droite, pc.p[1] - nc[1] * c.droite], pc.dir));
+      } else {
+        // Un coin ordinaire : la bordure s'arrondit comme le trottoir qui la longe
+        const c = n.branches[(i + 1) % n.degre], pc = pointA(c.ext, 0), nc = [-pc.dir[1], pc.dir[0]];
+        coins.push(...coinArrondi(gauche, pa.dir, [pc.p[0] - nc[0] * c.droite, pc.p[1] - nc[1] * c.droite], pc.dir).slice(1, -1));
+      }
+    });
+    n.zone = coins;
     n.zoneTotale = n.zone;
     if (n.giratoire) arrondir(n, reseau, R);
     else if (n.protege) compacter(n, reseau, R);
@@ -210,16 +240,27 @@ function reseauPieton(reseau, noeuds, troncons, R) {
       const pg = points[`${id}:0:g`], pd = points[`${id}:0:d`];
       if (n.bord) { pg.bord = pd.bord = true; continue; }
       // Impasse : le tour du bout arrondi
-      const ang0 = Math.atan2(pg.p[1] - n.p[1], pg.p[0] - n.p[0]), r = (dist(pg.p, n.p) + dist(pd.p, n.p)) / 2;
-      const arc = Array.from({ length: 9 }, (_, j) => { const a = ang0 + (Math.PI * j) / 8; return [n.p[0] + r * Math.cos(a), n.p[1] + r * Math.sin(a)]; });
-      arc[0] = pg.p; arc[8] = pd.p;
+      // Le tour du bout arrondi, au milieu du trottoir (qui passe d'une largeur à l'autre, comme le bout)
+      const arc = arcAutour(n.p, pg.p, pd.p);
       lier(`${id}:0:g`, `${id}:0:d`, arc, { coin: id });
+      continue;
+    }
+    if (n.virage) {
+      // Virage ou biseau : le trottoir suit le bord de la courbe, à largeur variable, d'un tronçon à l'autre
+      const v = n.virage, ax = v.axe.slice(1, -1), w = R.accotement + R.largeurTrottoir / 2;
+      const droite = decalageVariable(ax, -(v.d0 + w), -(v.d1 + w)), gauche = decalageVariable(ax, v.g0 + w, v.g1 + w);
+      const p0g = points[`${id}:0:g`], p1d = points[`${id}:1:d`], p1g = points[`${id}:1:g`], p0d = points[`${id}:0:d`];
+      droite[0] = p0g.p; droite[droite.length - 1] = p1d.p;
+      const gaucheR = gauche.slice().reverse(); gaucheR[0] = p1g.p; gaucheR[gaucheR.length - 1] = p0d.p;
+      lier(`${id}:0:g`, `${id}:1:d`, droite, { coin: id });
+      lier(`${id}:1:g`, `${id}:0:d`, gaucheR, { coin: id });
       continue;
     }
     for (let i = 0; i < k; i++) {
       const a = points[`${id}:${i}:g`], b = points[`${id}:${(i + 1) % k}:d`];
       // Le coin de trottoir s'arrondit : courbe dont le point de contrôle est le croisement des deux trottoirs prolongés
-      const ligne = n.giratoire ? arcAutour(n.p, a.p, b.p) : coinArrondi(a.p, pointA(n.branches[i].ext, 0).dir, b.p, pointA(n.branches[(i + 1) % k].ext, 0).dir);
+      const u = pointA(n.branches[i].ext, 0).dir, v = pointA(n.branches[(i + 1) % k].ext, 0).dir, ang = angleCoin(n, i);
+      const ligne = n.giratoire || ang > Math.PI + 0.05 ? arcAutour(n.p, a.p, b.p) : ang > Math.PI * 0.75 ? [a.p, ...enDouceur(a.p, u, b.p, v), b.p] : coinArrondi(a.p, u, b.p, v);
       lier(`${id}:${i}:g`, `${id}:${(i + 1) % k}:d`, ligne, { coin: id });
       if (n.traversees && n.branches[i].passage) {
         const b = n.branches[i], pd = points[`${id}:${i}:d`].p, pg = points[`${id}:${i}:g`].p;
@@ -318,18 +359,30 @@ function disposer(n, reseau, R, feux) {
  */
 function compacter(n, reseau, R) {
   const k = n.degre, tour = 2 * Math.PI, croise = (wi, wj, th) => (th < Math.PI - 1e-3 ? (wj + wi * Math.cos(th)) / Math.sin(th) : 0);
-  const voiture = b => largeurs(reseau.troncons[b.troncon], R).voiture;
-  const coins = [], amorces = [];
+  // Chaque côté de la branche a sa largeur (une voie de présélection n'élargit qu'un sens) : à gauche en partant du nœud, à droite
+  const cote = (b, gauche) => { const l = largeurs(reseau.troncons[b.troncon], R); return (b.sens === 1) === gauche ? l.voitureG : l.voitureD; };
+  const coins = [], amorces = [], lisses = [];
   n.branches.forEach((b, i) => {
-    const g = n.branches[(i + 1) % k], d = n.branches[(i - 1 + k) % k], w = voiture(b) + 0.3;
-    const r = Math.max(croise(w, voiture(g) + 0.3, (((g.angle - b.angle) % tour) + tour) % tour), croise(w, voiture(d) + 0.3, (((b.angle - d.angle) % tour) + tour) % tour)) + 1;
-    const pa = pointA(b.ext, 0), u = pa.dir, nrm = [-u[1], u[0]], recul = Math.max(0, b.recul - Math.min(r, b.recul));
-    const au = (s, o) => [pa.p[0] - u[0] * s + nrm[0] * o, pa.p[1] - u[1] * s + nrm[1] * o];
-    const V = voiture(b);
-    coins.push(au(recul, V), au(recul, -V));
-    if (recul > 0.05) amorces.push([au(0, V), au(recul, V), au(recul, -V), au(0, -V)]);
+    const g = n.branches[(i + 1) % k], d = n.branches[(i - 1 + k) % k], Vg = cote(b, true), Vd = cote(b, false);
+    const r = Math.max(croise(Vg + 0.3, cote(g, false) + 0.3, (((g.angle - b.angle) % tour) + tour) % tour), croise(Vd + 0.3, cote(d, true) + 0.3, (((b.angle - d.angle) % tour) + tour) % tour)) + 1;
+    const recul = Math.max(0, b.recul - Math.min(r, b.recul)), t = reseau.troncons[b.troncon];
+    // Le long de la route réelle (elle peut tourner juste avant le carrefour), à s m en deçà du bout de la branche
+    const ligne = b.sens === 1 ? t.points : t.points.slice().reverse();
+    const au = (s, o) => { const q = pointA(ligne, b.recul - s), nq = [-q.dir[1], q.dir[0]]; return [q.p[0] + nq[0] * o, q.p[1] + nq[1] * o]; };
+    // Dans l'ordre trigonométrique autour du nœud : le coin de droite de la branche, puis celui de gauche
+    coins.push(au(recul, -Vd), au(recul, Vg));
+    if (angleCoin(n, i) > Math.PI * 0.75 && angleCoin(n, i) < Math.PI + 0.05) lisses.push(coins.length); // à adoucir, une fois le coin suivant connu
+    b.amorce = recul; // les voies continuent tout droit jusque-là, puis tournent dans la zone resserrée
+    b.amorceAxe = Array.from({ length: 5 }, (_, q) => au((recul * q) / 4, 0)); // l'axe de l'amorce, vers le nœud (la rue peut y tourner)
+    if (recul > 0.05) amorces.push([au(0, Vg), au(recul, Vg), au(recul, -Vd), au(0, -Vd)]);
   });
-  n.zone = enveloppe([n.p, ...coins]);
+  // Entre deux branches presque alignées de largeurs différentes, le bord passe de l'une à l'autre en douceur
+  const dirs = n.branches.map(b => pointA(b.ext, 0).dir);
+  for (const j of lisses.reverse()) {
+    const i = j / 2 - 1, a = coins[j - 1], z = coins[j % coins.length];
+    coins.splice(j, 0, ...enDouceur(a, dirs[i], z, dirs[(i + 1) % k]));
+  }
+  n.zone = coins; // une étoile autour du nœud (elle suit le bord de chaque branche, sans déborder entre elles)
   n.amorces = amorces;
 }
 
@@ -339,10 +392,21 @@ const cercle = (c, r, n = 48) => Array.from({ length: n }, (_, i) => [c[0] + r *
 function arrondir(n, reseau, R) {
   const G = n.giratoire, amorces = [];
   for (const b of n.branches) {
-    const pa = pointA(b.ext, 0), u = pa.dir, nrm = [-u[1], u[0]], V = largeurs(reseau.troncons[b.troncon], R).voiture + 0.3;
-    const recul = b.recul - G.rayon + 1;
-    const au = (s, o) => [pa.p[0] - u[0] * s + nrm[0] * o, pa.p[1] - u[1] * s + nrm[1] * o];
-    amorces.push([au(0, V), au(recul, V), au(recul, -V), au(0, -V)]);
+    const l = largeurs(reseau.troncons[b.troncon], R);
+    const Vg = (b.sens === 1 ? l.voitureG : l.voitureD) + 0.3, Vd = (b.sens === 1 ? l.voitureD : l.voitureG) + 0.3, V = Math.max(Vg, Vd);
+    // L'entrée et la sortie s'évasent vers l'anneau (les voitures y tournent déjà) ; l'amorce va jusqu'à l'anneau, même au bord
+    const E = GIRATOIRES.evasement, recul = b.recul - Math.sqrt(Math.max(0, G.rayon * G.rayon - (V + E) * (V + E))) + 0.5;
+    // Le long de la route réelle (elle peut tourner avant l'anneau) ; l'évasement reste dans l'anneau (à 0,4 m près),
+    // jamais sur la bordure ni sur la piste qui en fait le tour
+    const t = reseau.troncons[b.troncon], ligne = b.sens === 1 ? t.points : t.points.slice().reverse(), Rl = G.rayon + 0.4;
+    const au = (s, o) => { const q = pointA(ligne, b.recul - s), nq = [-q.dir[1], q.dir[0]]; return [q.p[0] + nq[0] * o, q.p[1] + nq[1] * o]; };
+    const large = (s, V0, sg) => {
+      const q = pointA(ligne, b.recul - s), d = [q.p[0] - n.p[0], q.p[1] - n.p[1]], m = sg * (-q.dir[1] * d[0] + q.dir[0] * d[1]);
+      const disc = m * m - (d[0] * d[0] + d[1] * d[1]) + Rl * Rl;
+      return disc > 0 ? Math.min(V0 + E, Math.max(V0, -m + Math.sqrt(disc))) : V0;
+    };
+    const pas = Array.from({ length: 13 }, (_, q) => (recul * q) / 12);
+    amorces.push([...pas.map(s => au(s, large(s, Vg, 1))), ...pas.slice().reverse().map(s => au(s, -large(s, Vd, -1)))]);
   }
   n.zone = cercle(n.p, G.rayon);
   n.amorces = amorces;
@@ -438,7 +502,9 @@ function anneau(n, R) {
         ligne = Array.from({ length: 9 }, (_, m) => { const t = m / 8, q = 1 - t; return [q * q * a[0] + 2 * q * t * ctl[0] + t * t * z[0], q * q * a[1] + 2 * q * t * ctl[1] + t * t * z[1]]; });
       }
     }
-    if (n.giratoire) ligne = arcAutour(n.p, a, z); // autour d'un rond-point, la piste suit un cercle, juste au bord de l'anneau
+    // Autour d'un rond-point, ou d'un coin rentrant : un arc ; entre deux branches presque alignées : un S doux le long de la rue
+    if (n.giratoire || angleCoin(n, i) > Math.PI + 0.05) ligne = arcAutour(n.p, a, z);
+    else if (angleCoin(n, i) > Math.PI * 0.75) ligne = [a, ...enDouceur(a, u, z, v), z];
     const kinds = [b.pisteG, c.pisteD];
     coins.push({ i, ligne, largeur: kinds.includes('double') ? R.largeurPisteDouble : R.largeurPiste, piste: kinds.some(Boolean) });
   });
@@ -456,9 +522,14 @@ export function cheminAnneau(n, i, c, j, c2) {
   const arete = (p, sens) => {
     // Position p → p + sens (mod N) : un coin entre g(b) et d(b+1), une traversée entre d(b) et g(b)
     const q = (p + sens + N) % N, bas = sens === 1 ? p : q;
-    if (bas % 2 === 1) { const co = A.coins[(bas - 1) / 2]; return { ligne: sens === 1 ? co.ligne : co.ligne.slice().reverse(), traversee: null, id: `${n.id}|c${(bas - 1) / 2}` }; }
-    const tr = A.traversees[bas / 2];
-    return { ligne: sens === 1 ? tr.ligne : tr.ligne.slice().reverse(), traversee: `${n.id}|${bas / 2}`, double: tr.double, id: `${n.id}|t${bas / 2}` };
+    // À double sens, chacun tient sa droite (un quart de la largeur), sinon deux vélos se croisent de face
+    const aDroite = (ligne, double, largeur) => (double ? decalerLigne(ligne, -largeur / 4) : ligne);
+    if (bas % 2 === 1) {
+      const co = A.coins[(bas - 1) / 2], l = sens === 1 ? co.ligne : co.ligne.slice().reverse();
+      return { ligne: aDroite(l, co.largeur > 2.2, co.largeur), traversee: null, id: `${n.id}|c${(bas - 1) / 2}` };
+    }
+    const tr = A.traversees[bas / 2], l = sens === 1 ? tr.ligne : tr.ligne.slice().reverse();
+    return { ligne: aDroite(l, tr.double, tr.largeur), traversee: `${n.id}|${bas / 2}`, double: tr.double, id: `${n.id}|t${bas / 2}` };
   };
   const parcours = sens => {
     const out = [];
@@ -473,6 +544,65 @@ export function cheminAnneau(n, i, c, j, c2) {
 /** Côté de l'anneau où arrive une file vélo ('velo' : à sa droite = gauche de la branche) et d'où part une file. */
 export const coteEntree = voie => (voie === 'velo' ? 'g' : 'd');
 export const coteSortie = voie => (voie === 'velo' ? 'd' : 'g');
+
+/**
+ * Le bout arrondi d'une impasse, élargi de w : du bord gauche au bord droit de la branche (vue depuis le nœud),
+ * en faisant le tour par l'avant ; le rayon passe d'une demi-largeur à l'autre. Polygone [nœud, …arc].
+ */
+export function boutImpasse(n, w) {
+  const b = n.branches[0], pa = pointA(b.ext, 0), nrm = [-pa.dir[1], pa.dir[0]];
+  const g = [n.p[0] + nrm[0] * (b.gauche + w), n.p[1] + nrm[1] * (b.gauche + w)], d = [n.p[0] - nrm[0] * (b.droite + w), n.p[1] - nrm[1] * (b.droite + w)];
+  return [n.p, ...arcAutour(n.p, g, d)];
+}
+
+/**
+ * Le chemin d'une voie dans un virage (nœud à deux branches) : il suit la courbe de la route, à une distance de
+ * l'axe qui passe en douceur de celle de la voie qui arrive à celle de la voie qui part (comme le bord de la chaussée) ;
+ * une Bézier directe couperait le coin quand une voie disparaît dans la courbe.
+ */
+/** Une voie prolongée le long de l'amorce d'une branche (axe vers le nœud), à la même distance de l'axe que le point p. */
+export function longerAmorce(axe, p) {
+  const d = pointA(axe, 0).dir, o = d[0] * (p[1] - axe[0][1]) - d[1] * (p[0] - axe[0][0]);
+  const ligne = decalerLigne(axe, o);
+  ligne[0] = p;
+  return ligne;
+}
+
+export function cheminVirage(n, iE, entree, sortie) {
+  const ax = n.virage.axe.slice(1, -1), axe = iE === 0 ? ax : ax.slice().reverse();
+  const fin = entree[entree.length - 1], debut = sortie[0];
+  const lateral = (p, q, d) => d[0] * (p[1] - q[1]) - d[1] * (p[0] - q[0]);
+  const o0 = lateral(fin, axe[0], pointA(axe, 0).dir), o1 = lateral(debut, axe.at(-1), pointA(axe, longueur(axe)).dir);
+  const ligne = decalageVariable(axe, o0, o1);
+  ligne[0] = fin; ligne[ligne.length - 1] = debut;
+  return ligne;
+}
+
+/** Les points intérieurs d'un bord qui va de a (bord d'une branche de direction u) à z (direction v), en S doux, comme les raccords des voies. */
+function enDouceur(a, u, z, v) {
+  const k = dist(a, z) * 0.45, c1 = [a[0] - u[0] * k, a[1] - u[1] * k], c2 = [z[0] - v[0] * k, z[1] - v[1] * k];
+  return Array.from({ length: 7 }, (_, q) => {
+    const t = (q + 1) / 8, w = 1 - t;
+    return [0, 1].map(j => w * w * w * a[j] + 3 * w * w * t * c1[j] + 3 * w * t * t * c2[j] + t * t * t * z[j]);
+  });
+}
+
+/** L'angle (sens trigonométrique) du coin entre la branche i et la suivante. */
+export const angleCoin = (n, i) => {
+  const a = n.branches[i].angle, b = n.branches[(i + 1) % n.degre].angle;
+  return (((b - a) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) || 2 * Math.PI;
+};
+
+/** La ligne décalée d'une distance qui passe de w0 (au début) à w1 (à la fin), proportionnellement à la longueur. */
+export function decalageVariable(ligne, w0, w1) {
+  const A = decalerLigne(ligne, w0), B = decalerLigne(ligne, w1), L = longueur(ligne) || 1;
+  let acc = 0;
+  return ligne.map((p, i) => {
+    if (i) acc += dist(p, ligne[i - 1]);
+    const u = acc / L, f = u * u * (3 - 2 * u); // en douceur, comme les voies qui se rabattent
+    return [A[i][0] + (B[i][0] - A[i][0]) * f, A[i][1] + (B[i][1] - A[i][1]) * f];
+  });
+}
 
 /** Un arc autour de c, de a à z dans le sens trigonométrique (le rayon passe de |a − c| à |z − c|). */
 export function arcAutour(c, a, z) {

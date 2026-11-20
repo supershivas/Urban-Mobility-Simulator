@@ -5,7 +5,7 @@
 // (glisser d'une voie qui arrive vers une voie qui part, clic sur une liaison pour la retirer) ;
 // les voitures les suivent ; des flèches au sol les montrent.
 // Clé d'une voie : `tronçon|sens|voie` (sens de circulation sur le tronçon, voie 0 = près de l'axe).
-import { voieBus, nbVoies, extraDe } from './reseau.js?v=0.9.9';
+import { voieBus, nbVoies, extraDe } from './reseau.js?v=0.9.10';
 
 export const cle = v => `${v.troncon}|${v.sens}|${v.voie}`;
 export const deCle = k => { const [troncon, sens, voie] = k.split('|'); return { troncon, sens: +sens, voie: +voie }; };
@@ -35,8 +35,9 @@ function parDefaut(reseau, g, e) {
   // Une voie de présélection (voie 0 d'un sens « gauche ») ne fait que tourner à gauche ; les autres ne tournent plus à gauche
   const poche = extraDe(t, e.sens) === 'gauche';
   if (poche && e.voie === 0) {
-    return g.branches.map((b, j) => ({ b, j })).filter(({ j }) => j !== e.branche && direction(g, e.branche, j) === 'gauche')
+    const gauche = g.branches.map((b, j) => ({ b, j })).filter(({ j }) => j !== e.branche && direction(g, e.branche, j) === 'gauche')
       .map(({ b }) => cle({ troncon: b.troncon, sens: b.sens, voie: 0 }));
+    if (gauche.length) return gauche; // sinon (plus de branche à gauche), la voie va où elle peut
   }
   const voitures = [...Array(n).keys()].filter(k => k !== vb && !(poche && k === 0)); // une voie bus suit les mêmes mouvements que sa voisine
   const rang = e.voie === vb ? voitures.length - 1 : voitures.indexOf(e.voie), m = voitures.length;
@@ -55,6 +56,8 @@ function parDefaut(reseau, g, e) {
     const k = d === 'droite' ? ns - 1 : d === 'gauche' ? 0 : Math.min(e.voie, ns - 1);
     out.push(cle({ troncon: b.troncon, sens: b.sens, voie: k }));
   });
+  // Jamais de voie sans issue : si aucune règle ne la mène nulle part, elle va partout où l'on peut aller
+  if (!out.length) g.branches.forEach((b, j) => { if (j !== e.branche) out.push(cle({ troncon: b.troncon, sens: b.sens, voie: Math.min(e.voie, nbVoies(reseau.troncons[b.troncon], b.sens) - 1) })); });
   return out;
 }
 
