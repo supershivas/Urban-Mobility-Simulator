@@ -469,3 +469,20 @@ test('virage à angle droit : les deux bouts reculent et la route se courbe', ()
   const n = Object.values(geometrieReseau(r, ROUTE).noeuds).find(x => x.degre === 2);
   assert.ok(n.virage && n.recul > 4, `recul ${n.recul}`);
 });
+test('rond-point : autant de voies que la plus large des routes d\'accès ; piste puis trottoir à l\'extérieur', async () => {
+  const { basculerGiratoire } = await import('../js/beta/reseau.js');
+  let r = carrefourT();
+  const n = noeudT(r);
+  const ouest = Object.entries(r.troncons).find(([, t]) => t.points.some(p => p[0] < -500))[0];
+  for (let k = 0; k < 2; k++) r = basculerVoies(r, ouest, ROUTE, TRACE).reseau; // 3 × 3
+  for (const id of Object.keys(r.troncons)) r = basculerVelo(r, id, ROUTE, TRACE).reseau;
+  r = basculerGiratoire(r, n).reseau; // mini, d'ordinaire à une voie
+  const g = geometrieReseau(r, ROUTE).noeuds[n];
+  assert.equal(g.giratoire.voies, 3);
+  assert.equal(g.giratoire.anneaux.length, 3);
+  // La traversée cyclable commence à 1 m du bord de l'anneau : la piste fait le tour juste contre lui
+  assert.ok(g.branches.every(b => Math.abs(b.recul - (g.giratoire.rayon + 1)) < 1e-9));
+  const { etat } = simuler(r, 200, 5, PIETONS);
+  assert.ok(etat.sortis.voiture > 10, `${etat.sortis.voiture}`);
+  sansChevauchement(etat);
+});

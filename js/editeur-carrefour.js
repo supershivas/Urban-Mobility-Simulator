@@ -5,8 +5,8 @@
 // sortantes à raccorder ou à détacher. Ce module dessine et écoute : il ne modifie
 // jamais le carrefour, il demande à main.js (surOperation), qui applique les règles
 // de js/carrefour.js et tient l'historique.
-import { REGULATIONS, ANGLES, VERTS } from './data/carrefours.js?v=0.9.7';
-import { normaliser } from './carrefour.js?v=0.9.7';
+import { REGULATIONS, ANGLES, VERTS } from './data/carrefours.js?v=0.9.8';
+import { normaliser } from './carrefour.js?v=0.9.8';
 
 export const lettre = i => String.fromCharCode(65 + i);
 

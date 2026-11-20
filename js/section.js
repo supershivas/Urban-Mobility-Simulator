@@ -8,7 +8,7 @@
 // Règle centrale (pilier 2) : la somme des largeurs ne dépasse jamais l'emprise.
 // Le reste éventuel est de l'espace « libre », dessiné après la dernière bande.
 // Les calculs se font en décimètres entiers : aucune somme flottante ne dérive.
-import { BANDES, BANDE_DEPUIS_SURFACE, LARGEURS } from './data/bandes.js?v=0.9.7';
+import { BANDES, BANDE_DEPUIS_SURFACE, LARGEURS } from './data/bandes.js?v=0.9.8';
 
 export const dm = m => Math.round(m * 10);
 const m = d => d / 10;

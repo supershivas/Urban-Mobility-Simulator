@@ -4,21 +4,21 @@
 // (pistes de chaque côté, piste à double sens), carrefours (feux et leurs durées).
 // Cycle de vie, commandes, sauvegarde.
 // Les règles sont dans reseau.js et roulage.js (purs ; jamais « trafic.js » : les bloqueurs de publicités le refusent) ; le dessin dans scene.js.
-import { createStore, autosave } from '../lib/save.js?v=0.9.7';
-import { createI18n } from '../lib/i18n.js?v=0.9.7';
-import { createLoop } from '../lib/loop.js?v=0.9.7';
-import { startUpdateCheck, loadVersion } from '../lib/app-update.js?v=0.9.7';
-import { creerHistorique } from '../historique.js?v=0.9.7';
-import { ROLES, PALETTE_BETA } from '../palette.js?v=0.9.7';
-import { contraindre, deplacer, tourner, zoomer } from '../scene/camera.js?v=0.9.7';
-import { TEXTES_BETA } from './textes.js?v=0.9.7';
-import { ROUTE, TRACE, DEPART, VEHICULES, TRAFIC, CAMERA, FEUX, PIETONS } from './donnees.js?v=0.9.7';
-import { reseauDepart, relireReseau, viser, accroche, projetRoute, construireRoute, basculerVoies, basculerVelo, demolir, basculerPisteDouble, coteDe, basculerFeux, reglerFeu, feuxDe, viserCarrefour, basculerBus, busDe, basculerIlot, basculerGiratoire, projeterSurLigne } from './reseau.js?v=0.9.7';
-import { basculerMouvement, mouvementsDu, cle as cleVoie } from './mouvements.js?v=0.9.7';
-import { ligneVoie, raccord } from './geometrie.js?v=0.9.7';
-import { posePieton } from './pietons.js?v=0.9.7';
-import { preparerTrafic, creerTrafic, avancer, reconcilier, poseVehicule, compter } from './roulage.js?v=0.9.7';
-import { creerSceneBeta } from './scene.js?v=0.9.7';
+import { createStore, autosave } from '../lib/save.js?v=0.9.8';
+import { createI18n } from '../lib/i18n.js?v=0.9.8';
+import { createLoop } from '../lib/loop.js?v=0.9.8';
+import { startUpdateCheck, loadVersion } from '../lib/app-update.js?v=0.9.8';
+import { creerHistorique } from '../historique.js?v=0.9.8';
+import { ROLES, PALETTE_BETA } from '../palette.js?v=0.9.8';
+import { contraindre, deplacer, tourner, zoomer } from '../scene/camera.js?v=0.9.8';
+import { TEXTES_BETA } from './textes.js?v=0.9.8';
+import { ROUTE, TRACE, DEPART, VEHICULES, TRAFIC, CAMERA, FEUX, PIETONS } from './donnees.js?v=0.9.8';
+import { reseauDepart, relireReseau, viser, accroche, projetRoute, construireRoute, basculerVoies, basculerVelo, demolir, basculerPisteDouble, coteDe, basculerFeux, reglerFeu, feuxDe, viserCarrefour, basculerBus, busDe, basculerIlot, basculerGiratoire, projeterSurLigne } from './reseau.js?v=0.9.8';
+import { basculerMouvement, mouvementsDu, cle as cleVoie } from './mouvements.js?v=0.9.8';
+import { ligneVoie, raccord } from './geometrie.js?v=0.9.8';
+import { posePieton } from './pietons.js?v=0.9.8';
+import { preparerTrafic, creerTrafic, avancer, reconcilier, poseVehicule, compter } from './roulage.js?v=0.9.8';
+import { creerSceneBeta } from './scene.js?v=0.9.8';
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -530,7 +530,7 @@ vue.focus();
 
 // ─── Mode debug (section 18) ───────────────────────────────────────────────
 if (DEBUG) {
-  const { installDebug } = await import('../lib/debug.js?v=0.9.7');
+  const { installDebug } = await import('../lib/debug.js?v=0.9.8');
   installDebug({
     state: () => ({
       outil, depart: depart && { ...depart }, projet: projet && { refus: projet.refus ?? null, longueur: projet.longueur, libre: !!projet.fin.libre },

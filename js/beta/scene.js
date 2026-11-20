@@ -2,12 +2,12 @@
 // cyclables, carrefours, véhicules en blocs, et l'aperçu de la route en projet.
 // Ce module dessine et vise : il ne modifie jamais l'état (main.js décide).
 // Repère : x est, y nord (mètres) → scène X = x, Y = haut, Z = −y.
-import * as THREE from '../../vendor/three/three.module.js?v=0.9.7';
-import { pose, metresParPixel } from '../scene/camera.js?v=0.9.7';
-import { decalerLigne, sansDoublons } from '../geo/decalage.js?v=0.9.7';
-import { longueur, pointA, sousLigne, busDe } from './reseau.js?v=0.9.7';
-import { liaisonsVelo, largeurs } from './geometrie.js?v=0.9.7';
-import { mouvementsDu, fleches, cle as cleVoie } from './mouvements.js?v=0.9.7';
+import * as THREE from '../../vendor/three/three.module.js?v=0.9.8';
+import { pose, metresParPixel } from '../scene/camera.js?v=0.9.8';
+import { decalerLigne, sansDoublons } from '../geo/decalage.js?v=0.9.8';
+import { longueur, pointA, sousLigne, busDe } from './reseau.js?v=0.9.8';
+import { liaisonsVelo, largeurs } from './geometrie.js?v=0.9.8';
+import { mouvementsDu, fleches, cle as cleVoie } from './mouvements.js?v=0.9.8';
 
 const COUCHE = { sol: 7, limite: 6, trottoir: 5, bordure: 4, asphalte: 3, bus: 2.6, ilot: 2.3, velo: 2, marquage: 1, picto: 0, surlignage: -1, apercu: -2, ombre: -3 };
 
@@ -248,7 +248,12 @@ export function creerSceneBeta({ conteneur, P, R, C }) {
         const G = n.giratoire;
         eventail(ilotC, disque(n.p, G.interieur, 48));
         eventail(G.plante ? planteC : apron, disque(n.p, G.interieur - (G.plante ? 0.6 : 1.2), 48));
-        if (G.voies === 2) { const r = G.rayon - (G.rayon - G.interieur) / 2, c = disque(n.p, r, 64); tirets(marq, [...c, c[0]], 0, w, 3, 3); }
+        // Les lignes de l'anneau : tirets entre les voies, ligne pleine contre l'îlot, tirets au bord extérieur (on y entre)
+        const rond = r => { const c = disque(n.p, r, 96); return [...c, c[0]]; }, lv = (G.rayon - G.interieur) / G.voies;
+        for (let k = 1; k < G.voies; k++) tirets(marq, rond(G.rayon - lv * k), 0, w, 3, 3);
+        ruban(marq, rond(G.interieur + 0.35), w / 2, -w / 2);
+        tirets(marq, rond(G.rayon - 0.3), 0, w, 1.5, 1.5);
+        eventail(bord, disque(n.p, G.rayon + 1, 96)); // la bordure entre l'anneau et la piste (ou le trottoir)
       }
       if (n.anneau) {
         // Carrefour protégé : l'anneau cyclable (coins autour d'un îlot, traversées bordées de tirets)

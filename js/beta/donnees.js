@@ -43,7 +43,9 @@ export const GIRATOIRES = {
   mini: { rayon: 11, largeur: 6, voies: 1, plante: false },
   urbain: { rayon: 16, largeur: 6.5, voies: 1, plante: true },
   grand: { rayon: 24, largeur: 9, voies: 2, plante: true },
-  entree: 3,               // m entre le bord de l'anneau et la traversée cyclable (ou le passage)
+  entree: 1.5,             // m entre le bord de l'anneau et le passage piéton (sans pistes)
+  bordurePiste: 1,         // m de bordure entre l'anneau et la piste qui en fait le tour
+  voieSup: 4,              // m de plus par voie d'anneau au-delà de celles de sa taille
 };
 
 export const DEPART = { longueur: 2400 }; // m, la route de départ, d'ouest en est ; ses bouts sont loin dans la brume

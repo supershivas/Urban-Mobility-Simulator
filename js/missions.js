@@ -1,7 +1,7 @@
 // Les missions (v0.8) : où en est la mission en cours, d'après le trafic simulé. Pur, testé
 // (test/missions.test.mjs). main.js appelle evaluer() une fois par seconde simulée et garde l'état rendu
 // ({ tenuS, echantillons, ... }) ; rien ici ne touche au scénario ni au DOM.
-import { MISSIONS } from './data/missions.js?v=0.9.7';
+import { MISSIONS } from './data/missions.js?v=0.9.8';
 
 export const mission = id => MISSIONS.find(m => m.id === id) ?? null;
 /** La mission qui suit (null : c'était la dernière). */

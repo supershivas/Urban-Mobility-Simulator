@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.8 — 2026-11-20
+- Bêta : les ronds-points ont leurs voies marquées, autant que la plus large des routes qui y arrivent
+- Bêta : autour de l'anneau, la piste cyclable puis le trottoir, comme dans la réalité
+
 ## 0.9.7 — 2026-11-20
 - Bêta : plus de filets clairs en biais là où un virage rejoint les tronçons droits
 

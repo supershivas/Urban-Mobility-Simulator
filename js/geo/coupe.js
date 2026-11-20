@@ -7,7 +7,7 @@
 // côté les surfaces publiques contiguës (trou toléré : TROU_MAX) ; la coupe s'arrête
 // à la première interruption (parcelle privée, bâtiment, fin des données).
 
-import { distance, longueur } from './geometrie.js?v=0.9.7';
+import { distance, longueur } from './geometrie.js?v=0.9.8';
 
 /** Types de surface UrbIS comptés dans l'emprise publique d'une rue (spécification LandCover). */
 export const TYPES_EMPRISE = new Set(['S', 'SC', 'SW', 'M', 'C', 'K', 'A', 'AC']);
