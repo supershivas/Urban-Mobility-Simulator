@@ -4,7 +4,9 @@
 // impossible se refuse à voix haute, l'écran montre la raison).
 //
 // Repère : mètres, x vers l'est, y vers le nord. Un tronçon garde ses voies par
-// sens (1 ou 2) et sa piste cyclable (des deux côtés ou pas du tout).
+// sens (1 ou 2) et sa piste cyclable `piste` : null, 'deux' (une piste à sens unique
+// de chaque côté), 'gauche' ou 'droite' (une piste à double sens de ce côté, vu de a vers b).
+// Un nœud peut porter des feux : { verts: [s par branche, dans l'ordre des angles], pietons: s }.
 
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1]];
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1];
@@ -67,7 +69,7 @@ export function reseauDepart({ longueur: L }) {
     v: 1,
     suivant: 3,
     noeuds: { n1: { x: -L / 2, y: 0, bord: true }, n2: { x: L / 2, y: 0, bord: true } },
-    troncons: { t1: { a: 'n1', b: 'n2', points: [[-L / 2, 0], [L / 2, 0]], voies: 1, velo: false } },
+    troncons: { t1: { a: 'n1', b: 'n2', points: [[-L / 2, 0], [L / 2, 0]], voies: 1, piste: null } },
   };
 }
 
@@ -246,7 +248,7 @@ export function construireRoute(reseau, projet, T) {
   const res = r.reseau, id = `t${res.suivant}`;
   const pts = projet.points.map(p => [...p]);
   pts[0] = pos(res.noeuds[idA]); pts[pts.length - 1] = pos(res.noeuds[idB]);
-  return { reseau: { ...res, suivant: res.suivant + 1, troncons: { ...res.troncons, [id]: { a: idA, b: idB, points: pts, voies, velo: false } } }, troncon: id };
+  return { reseau: { ...res, suivant: res.suivant + 1, troncons: { ...res.troncons, [id]: { a: idA, b: idB, points: pts, voies, piste: null } } }, troncon: id };
 }
 
 /** Double les voies d'un tronçon (1 → 2 par sens), ou les ramène à une. */
@@ -257,11 +259,64 @@ export function basculerVoies(reseau, id, R) {
   return { reseau: { ...reseau, troncons: { ...reseau.troncons, [id]: { ...t, voies } } } };
 }
 
-/** Ajoute une piste cyclable des deux côtés d'un tronçon, ou la retire. */
+const avecTroncon = (reseau, id, t) => ({ reseau: { ...reseau, troncons: { ...reseau.troncons, [id]: t } } });
+
+/** Une piste à sens unique de chaque côté d'un tronçon, ou plus de piste (une piste à double sens devient deux pistes). */
 export function basculerVelo(reseau, id) {
   const t = reseau.troncons[id];
   if (!t) return { refus: 'perdu' };
-  return { reseau: { ...reseau, troncons: { ...reseau.troncons, [id]: { ...t, velo: !t.velo } } } };
+  return avecTroncon(reseau, id, { ...t, piste: t.piste === 'deux' ? null : 'deux' });
+}
+
+/** Le côté d'un tronçon où tombe le point p : 'gauche' ou 'droite', vu de a vers b. */
+export function coteDe(reseau, id, p) {
+  const t = reseau.troncons[id], pr = projeterSurLigne(t.points, p);
+  return (p[0] - pr.p[0]) * -pr.dir[1] + (p[1] - pr.p[1]) * pr.dir[0] >= 0 ? 'gauche' : 'droite';
+}
+
+/** Une piste à double sens du côté `cote` ; un second clic du même côté la retire. */
+export function basculerPisteDouble(reseau, id, cote) {
+  const t = reseau.troncons[id];
+  if (!t) return { refus: 'perdu' };
+  return avecTroncon(reseau, id, { ...t, piste: t.piste === cote ? null : cote });
+}
+
+// ─── Feux ──────────────────────────────────────────────────────────────────
+/** Les feux d'un nœud, ramenés à son nombre de branches (une branche ajoutée ou démolie : durées par défaut). */
+export function feuxDe(reseau, idNoeud, F) {
+  const n = reseau.noeuds[idNoeud], k = branches(reseau, idNoeud).length;
+  if (!n?.feux || k < 3) return null;
+  return n.feux.verts?.length === k ? n.feux : { verts: Array(k).fill(F.vert), pietons: n.feux.pietons ?? F.vertPietons };
+}
+const avecNoeud = (reseau, id, n) => ({ reseau: { ...reseau, noeuds: { ...reseau.noeuds, [id]: n } } });
+
+/** Pose des feux sur un carrefour (trois branches au moins), ou les retire. */
+export function basculerFeux(reseau, idNoeud, F) {
+  const n = reseau.noeuds[idNoeud];
+  if (!n) return { refus: 'perdu' };
+  if (n.feux) { const { feux, ...reste } = n; return avecNoeud(reseau, idNoeud, reste); }
+  const k = branches(reseau, idNoeud).length;
+  if (k < 3) return { refus: 'pasCarrefour' };
+  return avecNoeud(reseau, idNoeud, { ...n, feux: { verts: Array(k).fill(F.vert), pietons: F.vertPietons } });
+}
+
+/** Allonge ou raccourcit un vert : phase = indice de branche, ou 'pietons'. */
+export function reglerFeu(reseau, idNoeud, phase, delta, F) {
+  const feux = feuxDe(reseau, idNoeud, F);
+  if (!feux) return { refus: 'perdu' };
+  const borne = v => Math.max(F.min, Math.min(F.max, v + delta));
+  const nouveaux = phase === 'pietons' ? { ...feux, pietons: borne(feux.pietons) } : { ...feux, verts: feux.verts.map((v, i) => (i === phase ? borne(v) : v)) };
+  return avecNoeud(reseau, idNoeud, { ...reseau.noeuds[idNoeud], feux: nouveaux });
+}
+
+/** Le carrefour le plus proche du point p, à moins de `rayon` m (trois branches au moins). */
+export function viserCarrefour(reseau, p, rayon) {
+  let best = null;
+  for (const [id, n] of Object.entries(reseau.noeuds)) {
+    const d = Math.hypot(n.x - p[0], n.y - p[1]);
+    if (d <= rayon && (!best || d < best.d) && branches(reseau, id).length >= 3) best = { noeud: id, d };
+  }
+  return best;
 }
 
 /**
@@ -283,10 +338,19 @@ function nettoyerNoeud(reseau, idNoeud) {
   if (!reseau.noeuds[idNoeud]) return reseau;
   const br = branches(reseau, idNoeud);
   if (br.length === 0) { const noeuds = { ...reseau.noeuds }; delete noeuds[idNoeud]; return { ...reseau, noeuds }; }
+  if (br.length < 3 && reseau.noeuds[idNoeud].feux) { // plus un carrefour : plus de feux
+    const { feux, ...n } = reseau.noeuds[idNoeud];
+    reseau = { ...reseau, noeuds: { ...reseau.noeuds, [idNoeud]: n } };
+  }
   if (br.length !== 2 || br[0].troncon === br[1].troncon || reseau.noeuds[idNoeud].bord) return reseau;
   const [b1, b2] = br, t1 = reseau.troncons[b1.troncon], t2 = reseau.troncons[b2.troncon];
-  if (t1.voies !== t2.voies || t1.velo !== t2.velo) return reseau;
-  // t1 parcouru vers le nœud, puis t2 depuis le nœud
+  // t1 parcouru vers le nœud, puis t2 depuis le nœud ; une piste d'un seul côté change de nom quand on retourne le tronçon
+  const cote = (t, inverse) => (inverse && (t.piste === 'gauche' || t.piste === 'droite') ? (t.piste === 'gauche' ? 'droite' : 'gauche') : t.piste);
+  const piste = cote(t1, b1.sens !== -1);
+  if (t1.voies !== t2.voies || piste !== cote(t2, b2.sens !== 1)) {
+    if (reseau.noeuds[idNoeud].feux) { const { feux, ...n } = reseau.noeuds[idNoeud]; return { ...reseau, noeuds: { ...reseau.noeuds, [idNoeud]: n } }; }
+    return reseau;
+  }
   const avant = b1.sens === -1 ? t1.points : t1.points.slice().reverse();
   const apres = b2.sens === 1 ? t2.points : t2.points.slice().reverse();
   const a = b1.sens === -1 ? t1.a : t1.b, b = b2.sens === 1 ? t2.b : t2.a;
@@ -294,7 +358,7 @@ function nettoyerNoeud(reseau, idNoeud) {
   const troncons = { ...reseau.troncons }, noeuds = { ...reseau.noeuds };
   delete troncons[b1.troncon]; delete troncons[b2.troncon]; delete noeuds[idNoeud];
   const nouveau = `t${reseau.suivant}`;
-  troncons[nouveau] = { ...t1, a, b, points: [...avant, ...apres.slice(1)] };
+  troncons[nouveau] = { ...t1, a, b, piste, points: [...avant, ...apres.slice(1)] };
   return { ...reseau, suivant: reseau.suivant + 1, noeuds, troncons };
 }
 
@@ -304,7 +368,10 @@ export function relireReseau(d) {
   for (const t of Object.values(d.troncons)) {
     if (!d.noeuds[t.a] || !d.noeuds[t.b] || !Array.isArray(t.points) || t.points.length < 2) return null;
     t.voies = t.voies === 2 ? 2 : 1;
-    t.velo = !!t.velo;
+    // 0.9.0 et 0.9.1 : `velo` (booléen) → `piste`
+    if (!('piste' in t)) t.piste = t.velo ? 'deux' : null;
+    delete t.velo;
+    if (!['deux', 'gauche', 'droite'].includes(t.piste)) t.piste = null;
   }
   return { v: 1, suivant: d.suivant || 1, noeuds: d.noeuds, troncons: d.troncons };
 }

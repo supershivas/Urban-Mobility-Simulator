@@ -1,20 +1,22 @@
 // Le jeu beta « Carte blanche » (v0.9.0) : une carte vierge en 3D, une route à
-// double sens où passent des voitures, et trois outils — tirer une route depuis
-// n'importe quel point d'une autre (en arc), doubler les voies d'un tronçon,
-// lui ajouter une piste cyclable. Cycle de vie, commandes, sauvegarde.
+// double sens où passent des voitures, des vélos et des piétons, et six outils en
+// trois groupes — routes (tirer une route en arc, doubler les voies, démolir), vélo
+// (pistes de chaque côté, piste à double sens), carrefours (feux et leurs durées).
+// Cycle de vie, commandes, sauvegarde.
 // Les règles sont dans reseau.js et roulage.js (purs ; jamais « trafic.js » : les bloqueurs de publicités le refusent) ; le dessin dans scene.js.
-import { createStore, autosave } from '../lib/save.js?v=0.9.1';
-import { createI18n } from '../lib/i18n.js?v=0.9.1';
-import { createLoop } from '../lib/loop.js?v=0.9.1';
-import { startUpdateCheck, loadVersion } from '../lib/app-update.js?v=0.9.1';
-import { creerHistorique } from '../historique.js?v=0.9.1';
-import { ROLES, PALETTE_BETA } from '../palette.js?v=0.9.1';
-import { contraindre, deplacer, tourner, zoomer } from '../scene/camera.js?v=0.9.1';
-import { TEXTES_BETA } from './textes.js?v=0.9.1';
-import { ROUTE, TRACE, DEPART, VEHICULES, TRAFIC, CAMERA } from './donnees.js?v=0.9.1';
-import { reseauDepart, relireReseau, viser, accroche, projetRoute, construireRoute, basculerVoies, basculerVelo, demolir } from './reseau.js?v=0.9.1';
-import { preparerTrafic, creerTrafic, avancer, reconcilier, poseVehicule, compter } from './roulage.js?v=0.9.1';
-import { creerSceneBeta } from './scene.js?v=0.9.1';
+import { createStore, autosave } from '../lib/save.js?v=0.9.2';
+import { createI18n } from '../lib/i18n.js?v=0.9.2';
+import { createLoop } from '../lib/loop.js?v=0.9.2';
+import { startUpdateCheck, loadVersion } from '../lib/app-update.js?v=0.9.2';
+import { creerHistorique } from '../historique.js?v=0.9.2';
+import { ROLES, PALETTE_BETA } from '../palette.js?v=0.9.2';
+import { contraindre, deplacer, tourner, zoomer } from '../scene/camera.js?v=0.9.2';
+import { TEXTES_BETA } from './textes.js?v=0.9.2';
+import { ROUTE, TRACE, DEPART, VEHICULES, TRAFIC, CAMERA, FEUX, PIETONS } from './donnees.js?v=0.9.2';
+import { reseauDepart, relireReseau, viser, accroche, projetRoute, construireRoute, basculerVoies, basculerVelo, demolir, basculerPisteDouble, coteDe, basculerFeux, reglerFeu, feuxDe, viserCarrefour } from './reseau.js?v=0.9.2';
+import { posePieton } from './pietons.js?v=0.9.2';
+import { preparerTrafic, creerTrafic, avancer, reconcilier, poseVehicule, compter } from './roulage.js?v=0.9.2';
+import { creerSceneBeta } from './scene.js?v=0.9.2';
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -22,6 +24,8 @@ const DEBUG = params.has('debug');
 
 for (const [role, couleur] of Object.entries(ROLES)) document.documentElement.style.setProperty(`--jeu-${role}`, couleur);
 for (const k of ['sol', 'velo', 'refus', 'apercu']) document.documentElement.style.setProperty(`--beta-${k}`, PALETTE_BETA[k]);
+document.documentElement.style.setProperty('--beta-feux', PALETTE_BETA.feuOrange);
+document.documentElement.style.setProperty('--beta-feuvert', PALETTE_BETA.feuVert);
 
 // Même préfixe que le jeu principal : la langue choisie là-bas vaut ici ; la carte beta a sa propre entrée
 const store = createStore({
@@ -50,11 +54,12 @@ function toast(texte) {
 // ─── État ──────────────────────────────────────────────────────────────────
 const sauve = store.load('beta');
 const historique = creerHistorique(relireReseau(sauve?.reseau) || reseauDepart(DEPART));
-let ctx = preparerTrafic(historique.etat, ROUTE);
+let ctx = preparerTrafic(historique.etat, ROUTE, FEUX);
 let trafic = creerTrafic(TRAFIC, DEBUG && params.has('seed') ? +params.get('seed') : TRAFIC.graine);
 let outil = 'route';
 let depart = null;      // l'accroche du départ d'une route en projet
 let projet = null;      // la route en projet sous le pointeur
+let carrefourChoisi = null; // le carrefour dont le panneau des feux est ouvert
 let pointeur = null;    // [x, y] au sol, et position écran
 let pauseJoueur = false;
 let vitesse = 1;
@@ -71,9 +76,10 @@ const majCamera = e => { cam = contraindre(e, limites); scene.appliquerCamera(ca
 majCamera(cam);
 
 function majReseau() {
-  ctx = preparerTrafic(historique.etat, ROUTE);
+  ctx = preparerTrafic(historique.etat, ROUTE, FEUX);
   reconcilier(trafic, ctx);
   scene.majReseau(historique.etat, ctx.geo);
+  majPanneauFeux();
   $('annuler').disabled = !historique.peutAnnuler;
   $('retablir').disabled = !historique.peutRetablir;
 }
@@ -85,6 +91,8 @@ autosave(sauvegarder, { everyMs: 10000 });
 // ─── Outils ────────────────────────────────────────────────────────────────
 function choisirOutil(o) {
   outil = o; depart = null; projet = null;
+  if (o !== 'feux') carrefourChoisi = null;
+  majPanneauFeux();
   for (const b of document.querySelectorAll('[data-outil]')) b.setAttribute('aria-pressed', String(b.dataset.outil === o));
   majSurvol();
   window.__jeu?.log('outil', { outil });
@@ -108,6 +116,7 @@ function majSurvol() {
   $('aide').textContent = outil === 'route' ? t(depart ? 'aide.route.trace' : 'aide.route.depart') : t(`aide.${outil}`);
   if (!pointeur) { scene.majSurvol(); etiquette(null); return; }
   const p = pointeur.sol;
+  if (outil === 'feux') { survolFeux(p); return; }
   if (outil === 'route' && depart) {
     projet = projetRoute(reseau, depart, p, ROUTE, TRACE);
     scene.majSurvol({ projet });
@@ -123,16 +132,36 @@ function majSurvol() {
     etiquette(t('survol.depart'));
     return;
   }
-  const tr = reseau.troncons[v.troncon], g = ctx.geo.troncons[v.troncon];
+  const tr = reseau.troncons[v.troncon], g = ctx.geo.troncons[v.troncon], troncon = { ligne: g.axe, g: g.g, d: g.d };
   if (outil === 'demolir') {
     // Ce qui partirait, en rouge ; un tronçon du bord ne se démolit pas : l'étiquette dit pourquoi
     const r = demolir(reseau, v.troncon);
-    scene.majSurvol({ troncon: { ligne: g.axe, demi: g.demi, demolir: true } });
+    scene.majSurvol({ troncon: { ...troncon, demolir: true } });
     etiquette(r.refus ? t(`refus.${r.refus}`) : t('survol.demolir'), true);
     return;
   }
-  scene.majSurvol({ troncon: { ligne: g.axe, demi: g.demi } });
-  etiquette(outil === 'voies' ? t(tr.voies > 1 ? 'survol.simple' : 'survol.doubler') : t(tr.velo ? 'survol.sansvelo' : 'survol.velo'));
+  if (outil === 'double') {
+    // Le côté sous le pointeur : la piste à double sens s'y posera
+    const cote = coteDe(reseau, v.troncon, p);
+    scene.majSurvol({ troncon: { ...troncon, cote } });
+    etiquette(t(tr.piste === cote ? 'survol.sansdouble' : 'survol.double'));
+    return;
+  }
+  scene.majSurvol({ troncon });
+  etiquette(outil === 'voies' ? t(tr.voies > 1 ? 'survol.simple' : 'survol.doubler')
+    : t(tr.piste === 'deux' ? 'survol.sansvelo' : tr.piste ? 'survol.velodeux' : 'survol.velo'));
+}
+
+/** Le carrefour sous le pointeur (outil Feux). */
+function carrefourVise(p) {
+  const c = viserCarrefour(historique.etat, p, Math.max(18, rayonVisee()));
+  return c && { ...c, geo: ctx.geo.noeuds[c.noeud] };
+}
+function survolFeux(p) {
+  const c = carrefourVise(p);
+  if (!c) { scene.majSurvol(); etiquette(null); return; }
+  scene.majSurvol({ carrefour: { p: c.geo.p, rayon: c.geo.recul + ROUTE.largeurTraversee + 2 } });
+  etiquette(t(historique.etat.noeuds[c.noeud].feux ? 'survol.reglerFeux' : 'survol.poserFeux'));
 }
 
 function faire(resultat, message) {
@@ -157,10 +186,17 @@ function cliquer(p) {
       const v = viser(reseau, p, rayonVisee());
       if (v) depart = accroche(reseau, v, TRACE);
     }
+  } else if (outil === 'feux') {
+    const c = carrefourVise(p);
+    if (!c) { carrefourChoisi = null; majPanneauFeux(); return; }
+    if (!reseau.noeuds[c.noeud].feux) faire(basculerFeux(reseau, c.noeud, FEUX), t('toast.feux'));
+    carrefourChoisi = c.noeud;
+    majPanneauFeux();
   } else {
     const v = viser(reseau, p, rayonVisee());
     if (v) {
       if (outil === 'demolir') faire(demolir(reseau, v.troncon), t('toast.demolie'));
+      else if (outil === 'double') faire(basculerPisteDouble(reseau, v.troncon, coteDe(reseau, v.troncon, p)));
       else faire(outil === 'voies' ? basculerVoies(reseau, v.troncon, ROUTE) : basculerVelo(reseau, v.troncon));
     }
   }
@@ -170,6 +206,49 @@ function cliquer(p) {
 function annulerProjet() { if (!depart) return false; depart = null; projet = null; majSurvol(); return true; }
 function annuler() { if (historique.annuler()) { annulerProjet(); majReseau(); sauvegarder(); majSurvol(); toast(t('toast.annule')); } }
 function retablir() { if (historique.retablir()) { annulerProjet(); majReseau(); sauvegarder(); majSurvol(); toast(t('toast.retabli')); } }
+// ─── Panneau des feux : la durée du vert de chaque phase ───────────────────
+const BOUSSOLE = ['e', 'ne', 'n', 'no', 'o', 'so', 's', 'se'];
+const directionDe = dir => BOUSSOLE[((Math.round(Math.atan2(dir[1], dir[0]) / (Math.PI / 4)) % 8) + 8) % 8];
+function majPanneauFeux() {
+  const el = $('panneau-feux');
+  const feux = carrefourChoisi && feuxDe(historique.etat, carrefourChoisi, FEUX);
+  if (!feux || outil !== 'feux') { el.hidden = true; carrefourChoisi = feux ? carrefourChoisi : null; return; }
+  const g = ctx.geo.noeuds[carrefourChoisi];
+  const lignes = feux.verts.map((v, i) => ({ phase: i, nom: t('feux.depuis', { dir: t(`dir.${directionDe(pointAxe(g.branches[i]))}`) }), v }));
+  lignes.push({ phase: 'pietons', nom: t('feux.pietons'), v: feux.pietons });
+  el.replaceChildren();
+  const tete = document.createElement('div'); tete.className = 'feux-tete';
+  const h = document.createElement('h2'); h.textContent = t('feux.titre');
+  const fermer = document.createElement('button'); fermer.className = 'bouton feux-fermer'; fermer.textContent = '×'; fermer.setAttribute('aria-label', t('feux.fermer'));
+  fermer.onclick = () => { carrefourChoisi = null; majPanneauFeux(); vue.focus(); };
+  tete.append(h, fermer);
+  el.append(tete);
+  for (const l of lignes) {
+    const ligne = document.createElement('div'); ligne.className = 'feux-ligne'; ligne.dataset.phase = l.phase;
+    const nom = document.createElement('span'); nom.className = 'feux-nom'; nom.textContent = l.nom;
+    const moins = document.createElement('button'); moins.className = 'bouton'; moins.textContent = '−'; moins.setAttribute('aria-label', t('feux.moins', { nom: l.nom }));
+    const val = document.createElement('output'); val.textContent = t('feux.secondes', { s: l.v });
+    const plus = document.createElement('button'); plus.className = 'bouton'; plus.textContent = '+'; plus.setAttribute('aria-label', t('feux.plus', { nom: l.nom }));
+    moins.disabled = l.v <= FEUX.min; plus.disabled = l.v >= FEUX.max;
+    moins.onclick = () => faire(reglerFeu(historique.etat, carrefourChoisi, l.phase, -FEUX.pas, FEUX));
+    plus.onclick = () => faire(reglerFeu(historique.etat, carrefourChoisi, l.phase, +FEUX.pas, FEUX));
+    ligne.append(nom, moins, val, plus);
+    el.append(ligne);
+  }
+  const retirer = document.createElement('button'); retirer.className = 'bouton feux-retirer'; retirer.textContent = t('feux.retirer');
+  retirer.onclick = () => { const id = carrefourChoisi; carrefourChoisi = null; faire(basculerFeux(historique.etat, id, FEUX), t('toast.sansfeux')); vue.focus(); };
+  el.append(retirer);
+  el.hidden = false;
+  majPhaseCourante();
+}
+const pointAxe = b => { const e = b.ext; return [e[1][0] - e[0][0], e[1][1] - e[0][1]]; };
+/** La phase au vert est soulignée dans le panneau. */
+function majPhaseCourante() {
+  if (!carrefourChoisi || $('panneau-feux').hidden) return;
+  const etat = trafic.feux[carrefourChoisi];
+  for (const l of $('panneau-feux').querySelectorAll('.feux-ligne')) l.classList.toggle('en-cours', !!etat && String(etat.phase) === l.dataset.phase);
+}
+
 $('annuler').onclick = annuler;
 $('retablir').onclick = retablir;
 
@@ -216,7 +295,9 @@ vue.addEventListener('wheel', e => {
 
 // ─── Clavier ───────────────────────────────────────────────────────────────
 const tenues = new Set();
-const OUTILS = { Digit1: 'route', Digit2: 'voies', Digit3: 'velo', Digit4: 'demolir', Numpad1: 'route', Numpad2: 'voies', Numpad3: 'velo', Numpad4: 'demolir', Delete: 'demolir' };
+const ORDRE = ['route', 'voies', 'demolir', 'velo', 'double', 'feux'];
+const OUTILS = { Delete: 'demolir' };
+ORDRE.forEach((o, i) => { OUTILS[`Digit${i + 1}`] = o; OUTILS[`Numpad${i + 1}`] = o; });
 document.addEventListener('keydown', e => {
   if (document.querySelector('dialog[open]')) return;
   if (e.ctrlKey || e.metaKey) {
@@ -225,7 +306,7 @@ document.addEventListener('keydown', e => {
     return;
   }
   if (OUTILS[e.code]) { choisirOutil(OUTILS[e.code]); return; }
-  if (e.code === 'Escape') { if (!annulerProjet()) ouvrirMenu(); return; }
+  if (e.code === 'Escape') { if (annulerProjet()) return; if (carrefourChoisi) { carrefourChoisi = null; majPanneauFeux(); return; } ouvrirMenu(); return; }
   if (e.code === 'Space') { e.preventDefault(); basculerPause(); return; }
   if (e.code === 'KeyX') { changerVitesse(); return; }
   if (e.code === 'Home') { majCamera(cameraDepart()); return; }
@@ -266,19 +347,22 @@ $('vitesse-texte').textContent = t('vitesse', { n: vitesse });
 let dernierCompte = '';
 function majCompte() {
   const n = compter(trafic);
-  const texte = t('compte', { voitures: n.voiture, velos: n.velo }) + (trafic.abandons ? t('compte.abandons', { n: trafic.abandons }) : '');
+  const texte = t('compte', { voitures: n.voiture, velos: n.velo, pietons: trafic.pietons.length }) + (trafic.abandons ? t('compte.abandons', { n: trafic.abandons }) : '');
   if (texte !== dernierCompte) { $('compte').textContent = texte; dernierCompte = texte; }
 }
 
 let dernierePose = 0;
 const boucle = createLoop({
   step: 1 / 30,
-  update: dt => avancer(trafic, ctx, TRAFIC, VEHICULES, dt),
+  update: dt => avancer(trafic, ctx, TRAFIC, VEHICULES, dt, PIETONS),
   render: () => {
     const maintenant = performance.now();
     clavierCamera(Math.min(0.05, (maintenant - (dernierePose || maintenant)) / 1000));
     dernierePose = maintenant;
     scene.majVehicules(trafic.vehicules.map(v => ({ mode: v.mode, id: v.id, ...poseVehicule(v, TRAFIC) })), VEHICULES);
+    scene.majPietons(trafic.pietons.map(p => ({ id: p.id, ...posePieton(p, PIETONS) })), VEHICULES.pieton);
+    scene.majFeux(trafic.feux);
+    majPhaseCourante();
     scene.rendre();
     majCompte();
   },
@@ -314,7 +398,7 @@ $('retour').addEventListener('click', sauvegarder);
 // ─── Démarrage ─────────────────────────────────────────────────────────────
 /** La route de départ est longue (ses bouts sont dans la brume) : on fait rouler le trafic avant d'ouvrir. */
 function prechauffer() {
-  for (let i = 0; i < TRAFIC.prechauffage * 30; i++) avancer(trafic, ctx, TRAFIC, VEHICULES, 1 / 30);
+  for (let i = 0; i < TRAFIC.prechauffage * 30; i++) avancer(trafic, ctx, TRAFIC, VEHICULES, 1 / 30, PIETONS);
 }
 prechauffer();
 choisirOutil('route');
@@ -327,12 +411,12 @@ vue.focus();
 
 // ─── Mode debug (section 18) ───────────────────────────────────────────────
 if (DEBUG) {
-  const { installDebug } = await import('../lib/debug.js?v=0.9.1');
+  const { installDebug } = await import('../lib/debug.js?v=0.9.2');
   installDebug({
     state: () => ({
       outil, depart: depart && { ...depart }, projet: projet && { refus: projet.refus ?? null, longueur: projet.longueur, libre: !!projet.fin.libre },
       troncons: Object.keys(historique.etat.troncons).length, noeuds: Object.keys(historique.etat.noeuds).length,
-      vehicules: compter(trafic), abandons: trafic.abandons, sortis: trafic.sortis, camera: cam,
+      vehicules: compter(trafic), pietons: trafic.pietons.length, feux: Object.keys(ctx.feux).length, carrefourChoisi, abandons: trafic.abandons, sortis: trafic.sortis, camera: cam,
     }),
     setTimeScale: s => boucle.setTimeScale(s),
     reset: () => { historique.reinitialiser(reseauDepart(DEPART)); majReseau(); },

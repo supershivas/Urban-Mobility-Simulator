@@ -44,14 +44,67 @@
 .bouton svg .tiret { stroke-dasharray: 2 3; stroke-width: 1.5; }
 .beta-retour svg { width: 18px; height: 18px; }
 
-/* Les outils : clair au repos, foncé quand il est choisi ; la piste cyclable garde son vert */
-.beta-outil { background: var(--jeu-surface); color: var(--jeu-encre); }
-@media (hover: hover) { .beta-outil:hover { background: var(--jeu-fond); } }
-.beta-outil[aria-pressed="true"] { background: var(--jeu-encre); color: var(--jeu-surface); }
-.beta-outil[data-outil="velo"] svg { stroke: var(--beta-velo); }
-.beta-outil[data-outil="demolir"][aria-pressed="true"] { background: var(--beta-refus); }
-.beta-outil[data-outil="velo"][aria-pressed="true"] { background: var(--beta-velo); }
-.beta-outil[data-outil="velo"][aria-pressed="true"] svg { stroke: var(--jeu-surface); }
+/* Les outils : groupés, une couleur par groupe (--groupe), clair au repos, plein quand il est choisi */
+.beta-outils { gap: 6px; }
+.beta-groupe { display: flex; align-items: center; gap: 2px; padding-left: 6px; border-left: 3px solid var(--groupe); }
+.beta-groupe[data-groupe="routes"] { --groupe: var(--jeu-encre); }
+.beta-groupe[data-groupe="velo"] { --groupe: var(--beta-velo); }
+.beta-groupe[data-groupe="carrefours"] { --groupe: var(--beta-feux); }
+.beta-groupe-nom { padding: 0 4px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--groupe); font-weight: 700; }
+.beta-outils .beta-outil { background: var(--jeu-surface); color: var(--jeu-encre); }
+.beta-outils .beta-outil svg { stroke: var(--groupe); }
+@media (hover: hover) { .beta-outils .beta-outil:hover { background: var(--jeu-fond); } }
+.beta-outils .beta-outil[aria-pressed="true"] { background: var(--groupe); color: var(--jeu-surface); }
+.beta-outils .beta-outil[aria-pressed="true"] svg { stroke: var(--jeu-surface); }
+.beta-outils .beta-groupe[data-groupe="carrefours"] .beta-outil[aria-pressed="true"] { color: var(--jeu-encre); }
+.beta-outils .beta-groupe[data-groupe="carrefours"] .beta-outil[aria-pressed="true"] svg { stroke: var(--jeu-encre); }
+.beta-outils .beta-outil[data-outil="demolir"] svg { stroke: var(--beta-refus); }
+.beta-outils .beta-outil[data-outil="demolir"][aria-pressed="true"] { background: var(--beta-refus); }
+.beta-outils .beta-outil[data-outil="demolir"][aria-pressed="true"] svg { stroke: var(--jeu-surface); }
+
+/* Le panneau des feux : au-dessus des outils, à droite */
+.beta-panneau-feux {
+  position: absolute; z-index: 2; right: var(--pas); bottom: calc(var(--pas) * 2 + var(--jeu-cible) + 48px);
+  width: 320px; padding: var(--pas) calc(var(--pas) * 1.5) calc(var(--pas) * 1.5);
+  background: var(--jeu-surface); color: var(--jeu-encre); border-top: 3px solid var(--beta-feux); box-shadow: 0 1px 0 var(--jeu-ombre);
+}
+.feux-tete { display: flex; align-items: center; justify-content: space-between; }
+.feux-tete h2 { margin: 0; font-size: var(--t-texte); }
+.feux-fermer { min-width: var(--jeu-cible); justify-content: center; background: var(--jeu-surface); color: var(--jeu-encre); font-size: 20px; }
+.feux-ligne { display: grid; grid-template-columns: 1fr var(--jeu-cible) 3.5em var(--jeu-cible); align-items: center; gap: 4px; margin-top: 4px; padding-left: 6px; border-left: 3px solid transparent; }
+.feux-ligne.en-cours { border-left-color: var(--beta-feuvert); font-weight: 700; }
+.feux-ligne .bouton { justify-content: center; padding: 0; font-size: 18px; }
+.feux-ligne output { text-align: center; font-variant-numeric: tabular-nums; }
+.feux-nom { font-size: var(--t-petit); }
+.feux-retirer { margin-top: var(--pas); width: 100%; justify-content: center; }
+
+.beta-pied p {
+  position: absolute; z-index: 2;
+  background: var(--jeu-surface); color: var(--jeu-encre);
+  box-shadow: 0 1px 0 var(--jeu-ombre);
+}
+.beta-tete { top: var(--pas); left: var(--pas); display: flex; align-items: center; gap: calc(var(--pas) * 2); padding-right: calc(var(--pas) * 2); }
+.beta-titre { margin: 0; font-size: 16px; letter-spacing: .06em; text-transform: uppercase; }
+.beta-titre small { font-size: var(--t-petit); letter-spacing: .04em; padding: 1px 6px; background: var(--beta-velo); color: var(--jeu-surface); vertical-align: 2px; }
+.beta-version { font-size: var(--t-petit); }
+
+.beta-outils { bottom: var(--pas); left: 50%; transform: translateX(-50%); display: flex; gap: 4px; padding: 4px; }
+.beta-actions { top: var(--pas); right: var(--pas); display: flex; gap: 4px; padding: 4px; }
+
+.bouton {
+  display: inline-flex; align-items: center; gap: var(--pas);
+  min-height: var(--jeu-cible); padding: 0 calc(var(--pas) * 1.5);
+  background: var(--jeu-encre); color: var(--jeu-fond);
+  border: 0; font: inherit; font-size: var(--t-texte); cursor: pointer; text-decoration: none; white-space: nowrap;
+}
+.bouton:focus-visible, a:focus-visible { outline: 2px solid var(--jeu-accent); outline-offset: 2px; }
+@media (hover: hover) { .bouton:hover { background: var(--jeu-lien); } }
+.bouton:disabled { cursor: default; background: var(--jeu-ombre); }
+.bouton kbd { font: inherit; font-size: var(--t-petit); padding: 0 6px; border: var(--trait) solid currentColor; }
+.bouton svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.bouton svg .tiret { stroke-dasharray: 2 3; stroke-width: 1.5; }
+.beta-retour svg { width: 18px; height: 18px; }
+
 
 .beta-pied p { margin: 0; padding: 6px 10px; max-width: min(640px, 60vw); }
 #aide { left: 50%; transform: translateX(-50%); bottom: calc(var(--pas) * 2 + var(--jeu-cible) + 8px); font-weight: 600; text-align: center; max-width: min(760px, 70vw); }
@@ -78,7 +131,11 @@ dialog form { margin-top: calc(var(--pas) * 2); }
 @media (max-width: 1280px) {
   .beta-actions .icone-texte kbd, .beta-version { display: none; }
 }
+@media (max-width: 1500px) {
+  /* Seul l'outil choisi garde son nom ; les autres se reconnaissent à l'icône (et à leur infobulle) */
+  .beta-outil[aria-pressed="false"] span { display: none; }
+}
 @media (max-width: 1100px) {
-  .beta-outil span { display: none; }
   .beta-camera { display: none; }
 }
+.beta-groupe[data-groupe="carrefours"] .beta-groupe-nom { color: var(--jeu-encre); } /* l’ambre seul se lit mal sur blanc */

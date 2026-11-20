@@ -4,7 +4,8 @@
 //     (la route de départ est coupée : 3 tronçons) ; un pointeur trop près montre un refus écrit ;
 //  3. l'outil « Doubler » passe un tronçon à 2 × 2 voies, l'outil « Piste cyclable » lui ajoute ses pistes ;
 //  4. des voitures roulent sur la route nouvelle, des vélos sur la piste ;
-//  5. l'outil « Démolir » retire un tronçon (ses carrefours se referment), refuse celui qui mène au bord.
+//  5. piste à double sens, feux (panneau, durées), piétons ;
+//  6. l'outil « Démolir » retire un tronçon (ses carrefours se referment), refuse celui qui mène au bord.
 // Captures dans captures/beta/ (ou --sortie <dossier>).
 //   node outils/critere-beta.mjs [--sortie dossier]
 import { mkdirSync } from 'node:fs';
@@ -69,12 +70,37 @@ await page.evaluate(() => window.__jeu.camera({ cible: [-150, 0], distance: 220 
 await page.waitForTimeout(200);
 await page.keyboard.press('2');
 await souris(-250, 0);
-await page.keyboard.press('3');
+await page.keyboard.press('4');
 await souris(-250, 0);
 await souris(-50, 0);
 const reseau = await page.evaluate(() => window.__jeu.reseau());
 const ouest = Object.values(reseau.troncons).find(t => t.points.some(p => p[0] < -1000));
-verifier(ouest?.voies === 2 && ouest?.velo, 'à l\'ouest : 2 × 2 voies et pistes cyclables');
+verifier(ouest?.voies === 2 && ouest?.piste === 'deux', 'à l\'ouest : 2 × 2 voies et pistes cyclables');
+
+// Piste à double sens (touche 5) : au nord de la route, à la place des deux pistes
+await page.keyboard.press('5');
+await souris(-250, 7, false);
+const surDouble = await page.textContent('#etiquette');
+await souris(-250, 7);
+const ouest2 = Object.values((await page.evaluate(() => window.__jeu.reseau())).troncons).find(t => t.points.some(p => p[0] < -1000));
+verifier(ouest2?.piste === 'gauche', `piste à double sens au nord (« ${surDouble} ») : ${ouest2?.piste}`);
+
+// Feux (touche 6) sur le premier carrefour : le panneau s'ouvre, + allonge le vert de la première phase
+await page.evaluate(() => window.__jeu.camera({ cible: [0, 0], distance: 120 }));
+await page.waitForTimeout(200);
+await page.keyboard.press('6');
+await souris(0, 0, false);
+const surFeux = await page.textContent('#etiquette');
+await souris(0, 0);
+e = await etat();
+const panneau = await page.$eval('#panneau-feux', el => !el.hidden && el.querySelectorAll('.feux-ligne').length);
+verifier(e.feux === 1 && panneau === 4, `feux posés (« ${surFeux} ») : ${e.feux} carrefour, panneau de ${panneau} phases`);
+const avantVert = await page.$eval('.feux-ligne output', el => el.textContent);
+await page.click('.feux-ligne .bouton:last-child');
+const apresVert = await page.$eval('.feux-ligne output', el => el.textContent);
+verifier(avantVert !== apresVert, `durée du premier vert : ${avantVert} → ${apresVert}`);
+await page.screenshot({ path: `${sortie}/5-feux.png` });
+await page.keyboard.press('Escape');
 await page.keyboard.press('1');
 
 await page.evaluate(() => window.__jeu.timeScale(4));
@@ -84,6 +110,10 @@ e = await etat();
 const sur = await page.evaluate(() => Object.values(window.__jeu.reseau().troncons).filter(t => t.points.some(p => Math.abs(p[1]) > 1)).length);
 verifier(e.vehicules.velo > 0, `${e.vehicules.velo} vélos, ${e.vehicules.voiture} voitures, ${e.abandons} abandons, sorties ${JSON.stringify(e.sortis)}`);
 verifier(sur >= 3, `${sur} tronçons hors de la route de départ`);
+verifier(e.pietons > 30, `${e.pietons} piétons sur les trottoirs`);
+await page.evaluate(() => window.__jeu.camera({ distance: 55, cible: [0, 0], inclinaison: 0.95, azimut: 0.6 }));
+await page.waitForTimeout(400);
+await page.screenshot({ path: `${sortie}/6-carrefour.png` });
 await page.evaluate(() => window.__jeu.camera({ distance: 140, cible: [-60, 40] }));
 await page.waitForTimeout(400);
 await page.screenshot({ path: `${sortie}/3-construit.png` });
@@ -95,10 +125,12 @@ await page.screenshot({ path: `${sortie}/4-piste.png` });
 await page.evaluate(() => window.__jeu.camera({ cible: [0, 40], distance: 260, azimut: 0.35, inclinaison: 0.85 }));
 await page.waitForTimeout(200);
 const avantDemolir = (await etat()).troncons;
-await page.keyboard.press('4');
+await page.evaluate(() => window.__jeu.camera({ cible: [0, 40], distance: 260, azimut: 0.35, inclinaison: 0.85 }));
+await page.waitForTimeout(200);
+await page.keyboard.press('3');
 await souris(...milieu, false);
 verifier(/./.test(await page.textContent('#etiquette')), `survol : « ${await page.textContent('#etiquette')} »`);
-await page.screenshot({ path: `${sortie}/5-demolir.png` });
+await page.screenshot({ path: `${sortie}/7-demolir.png` });
 await souris(...milieu);
 e = await etat();
 verifier(e.troncons < avantDemolir, `démolie : ${avantDemolir} → ${e.troncons} tronçons`);
